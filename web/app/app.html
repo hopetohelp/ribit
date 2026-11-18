@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fafbff">
+  <title>ריבית</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="bar">
+    <span class="brand">ריבית</span>
+    <button type="button" class="plain menu-trigger" id="menu" aria-label="תפריט" aria-expanded="false" aria-controls="menu-items">⋯</button>
+    <div id="menu-items" class="menu" hidden>
+      <button type="button" id="theme" class="plain">מראה כהה</button>
+      <button type="button" id="about" class="plain">אודות</button>
+    </div>
+  </header>
+  <main id="main">
+    <section id="editor" class="screen" aria-labelledby="editor-title">
+      <h1 id="editor-title">חישוב השקעה</h1>
+      <div id="tracks" class="segments" role="group" aria-label="בחירת מסלול" hidden>
+        <button type="button" data-track="0" aria-pressed="true">מסלול א׳</button>
+        <button type="button" data-track="1" aria-pressed="false">מסלול ב׳</button>
+      </div>
+      <form id="calculator" novalidate>
+        <label class="field"><span>סכום התחלתי</span><input name="initial" type="text" inputmode="decimal" dir="ltr" maxlength="24" placeholder="0"></label>
+        <label class="field"><span>הפקדה חוזרת</span>
+          <select name="frequency"><option value="NONE">ללא</option><option value="MONTHLY">חודשית</option><option value="YEARLY">שנתית</option></select>
+        </label>
+        <label id="deposit-field" class="field" hidden><span>סכום להפקדה</span><input name="deposit" type="text" inputmode="decimal" dir="ltr" maxlength="24" placeholder="0"></label>
+        <label class="field"><span>תשואה שנתית %</span><input name="annualRate" type="text" inputmode="decimal" dir="ltr" maxlength="16" placeholder="0"></label>
+        <div class="pair">
+          <label class="field"><span>שנים</span><input name="years" type="text" inputmode="numeric" dir="ltr" maxlength="3" placeholder="0"></label>
+          <label class="field"><span>חודשים</span><input name="months" type="text" inputmode="numeric" dir="ltr" maxlength="2" placeholder="0"></label>
+        </div>
+        <button type="button" id="advanced" class="plain disclosure" aria-expanded="false" aria-controls="advanced-fields"><span>מתקדם</span><span aria-hidden="true">⌄</span></button>
+        <div id="advanced-fields" hidden>
+          <label class="field"><span>מטבע</span>
+            <select name="currency"><option value="ILS">₪ שקל</option><option value="USD">$ דולר</option><option value="EUR">€ אירו</option><option value="GBP">£ ליש״ט</option></select>
+          </label>
+          <label id="timing-field" class="field" hidden><span>מועד ההפקדה</span>
+            <select name="timing"><option value="END">בסוף התקופה</option><option value="START">בתחילת התקופה</option></select>
+          </label>
+          <div class="pair charges">
+            <label class="field"><span>דמי הפקדה %</span><input name="depositFee" type="text" inputmode="decimal" dir="ltr" maxlength="16" placeholder="0"></label>
+            <label class="field"><span>דמי צבירה לשנה %</span><input name="balanceFee" type="text" inputmode="decimal" dir="ltr" maxlength="16" placeholder="0"></label>
+          </div>
+          <label class="field"><span>אינפלציה לשנה %</span><input name="inflation" type="text" inputmode="decimal" dir="ltr" maxlength="16" placeholder="0"></label>
+          <label class="field"><span>מס במימוש</span>
+            <select name="taxType"><option value="NONE">ללא מס</option><option value="NOMINAL">נומינלי</option><option value="REAL">ריאלי</option></select>
+          </label>
+          <label id="tax-rate-field" class="field" hidden><span>שיעור מס %</span><input name="taxRate" type="text" inputmode="decimal" dir="ltr" maxlength="16" placeholder="0"></label>
+          <label id="basis-field" class="check" hidden><input type="checkbox" name="includeDepositFeeInBasis"><span>כלול דמי הפקדה בבסיס המס</span></label>
+          <button type="button" id="help" class="plain text-action">הסברים</button>
+        </div>
+        <p id="form-error" class="error" role="alert" hidden></p>
+        <button type="submit" id="compute" class="primary full">חישוב</button>
+      </form>
+    </section>
+    <section id="result" class="screen" aria-labelledby="result-title" hidden>
+      <div class="result-heading"><h1 id="result-title">תוצאה</h1><button type="button" id="new" class="plain text-action">חדש</button></div>
+      <div id="money-mode" class="segments" role="group" aria-label="יחידות תצוגה" hidden>
+        <button type="button" data-value="net" aria-pressed="true">סכום עתידי</button>
+        <button type="button" data-value="realNet" aria-pressed="false">כסף של היום</button>
+      </div>
+      <div id="result-data">
+        <div id="hero" class="hero"><span id="hero-label"></span><output id="hero-amount" dir="ltr"></output><span id="hero-period"></span></div>
+        <div id="result-tracks" class="track-list" hidden></div>
+        <figure id="chart">
+          <figcaption>יתרה נטו במימוש</figcaption>
+          <canvas id="growth" role="img" aria-label="גרף היתרה לאורך זמן"></canvas>
+          <div class="axis" dir="ltr"><span dir="rtl">התחלה</span><span id="chart-period" dir="rtl"></span></div>
+        </figure>
+      </div>
+      <div class="actions">
+        <button type="button" id="save" class="primary">שמירה</button>
+        <button type="button" id="edit" class="outline">עריכה</button>
+      </div>
+      <button type="button" id="details" class="plain disclosure" aria-expanded="false" aria-controls="details-content">פירוט <span aria-hidden="true">⌄</span></button>
+      <div id="details-content" hidden></div>
+    </section>
+    <section id="saved" class="screen" aria-labelledby="saved-title" hidden>
+      <h1 id="saved-title">שמורים</h1>
+      <div id="saved-list"></div>
+    </section>
+  </main>
+  <nav class="tabs" aria-label="מסכים">
+    <button type="button" data-view="single" aria-pressed="true">מחשבון</button>
+    <button type="button" data-view="compare" aria-pressed="false">השוואה</button>
+    <button type="button" data-view="saved" aria-pressed="false">שמורים</button>
+  </nav>
+  <div id="status" role="status" class="status" hidden></div>
+  <div id="dialog-backdrop" class="backdrop" hidden>
+    <section id="dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+      <div class="dialog-heading"><h2 id="dialog-title"></h2><button type="button" id="dialog-close" class="plain" aria-label="סגירה">×</button></div>
+      <div id="dialog-content"></div>
+    </section>
+  </div>
+  <script src="vendor/decimal.js" defer></script>
+  <script src="finance.js" defer></script>
+  <script src="storage.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

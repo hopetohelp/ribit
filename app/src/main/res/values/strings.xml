@@ -4,7 +4,7 @@
     <style name="Theme.Ribit" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">#F5F6F0</item>
-        <item name="android:colorAccent">#315B44</item>
+        <item name="android:windowBackground">#FAFBFF</item>
+        <item name="android:colorAccent">#2549D4</item>
     </style>
 </resources>

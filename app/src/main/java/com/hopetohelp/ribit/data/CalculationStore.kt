@@ -1,6 +1,7 @@
 package com.hopetohelp.ribit.data
 
 import android.content.Context
+import android.util.Base64
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
@@ -10,9 +11,16 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Upsert
 import com.hopetohelp.ribit.domain.Calculation
+import java.io.ByteArrayOutputStream
 import java.util.UUID
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 
 @Entity(tableName = "calculations")
 data class SavedCalculation(
@@ -23,6 +31,7 @@ data class SavedCalculation(
     val snapshot: String,
 )
 
+@Serializable
 data class SavedSummary(
     val id: String,
     val title: String,
@@ -69,24 +78,37 @@ class CalculationStore(context: Context) {
 
     val summaries: Flow<List<SavedSummary>> = dao.observeAll()
 
-    suspend fun save(id: String?, title: String, calculation: Calculation): String {
+    suspend fun save(id: String?, title: String, planCount: Int, calculation: JsonObject): String {
         val savedId = id ?: UUID.randomUUID().toString()
+        val encoded = json.encodeToString(calculation)
+        val bytes = ByteArrayOutputStream()
+        GZIPOutputStream(bytes).use { it.write(encoded.toByteArray(Charsets.UTF_8)) }
         dao.save(
             SavedCalculation(
                 id = savedId,
                 title = title,
                 updatedAt = System.currentTimeMillis(),
-                planCount = calculation.plans.size,
-                snapshot = json.encodeToString(calculation),
+                planCount = planCount,
+                snapshot = "gzip:" + Base64.encodeToString(bytes.toByteArray(), Base64.NO_WRAP),
             ),
         )
         return savedId
     }
 
-    suspend fun load(id: String): Pair<String, Calculation>? {
+    suspend fun load(id: String): Pair<String, JsonObject>? {
         val entry = dao.find(id) ?: return null
-        val calculation = json.decodeFromString<Calculation>(entry.snapshot)
-        require(calculation.modelVersion == 1)
+        val source = if (entry.snapshot.startsWith("gzip:")) {
+            val bytes = Base64.decode(entry.snapshot.removePrefix("gzip:"), Base64.NO_WRAP)
+            GZIPInputStream(bytes.inputStream()).bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } else {
+            entry.snapshot
+        }
+        val calculation = json.decodeFromString<JsonObject>(source)
+        when (calculation["modelVersion"]?.jsonPrimitive?.int ?: 1) {
+            1 -> json.decodeFromString<Calculation>(source)
+            2 -> Unit
+            else -> error("Unsupported calculation format")
+        }
         return entry.title to calculation
     }
 

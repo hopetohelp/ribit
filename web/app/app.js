@@ -1,0 +1,696 @@
+(function () {
+  'use strict';
+
+  var finance = window.RibitFinance;
+  var store = window.RibitStorage;
+  var Money = finance.Money;
+  var form = document.getElementById('calculator');
+  var fields = form.elements;
+  var trackNames = ['מסלול א׳', 'מסלול ב׳'];
+  var state = {
+    view: 'single',
+    active: 0,
+    comparing: false,
+    sessions: { single: session(1), compare: session(2) },
+    dialogFocus: null,
+    busy: false,
+    dark: false
+  };
+  var keys = ['initial', 'deposit', 'annualRate', 'years', 'months', 'frequency', 'timing',
+    'depositFee', 'balanceFee', 'taxType', 'taxRate', 'includeDepositFeeInBasis'];
+  var toastTimer;
+  var previewFocus;
+
+  function byId(id) { return document.getElementById(id); }
+  function listen(id, action) { byId(id).addEventListener('click', action); }
+  function text(id, content) { byId(id).textContent = content; }
+  function make(tag, content, style) {
+    var item = document.createElement(tag);
+    if (content != null) item.textContent = content;
+    if (style) item.className = style;
+    return item;
+  }
+
+  function action(label, handler, style) {
+    var button = make('button', label, style || 'plain text-action');
+    button.type = 'button';
+    button.addEventListener('click', handler);
+    return button;
+  }
+
+  function draft() {
+    return {
+      initial: '', deposit: '', annualRate: '', years: '', months: '', frequency: 'NONE',
+      timing: 'END', depositFee: '', balanceFee: '', taxType: 'NONE', taxRate: '',
+      includeDepositFeeInBasis: false
+    };
+  }
+
+  function session(count) {
+    return {
+      drafts: count === 1 ? [draft()] : [draft(), draft()],
+      inflation: '', currency: 'ILS', calculation: null, id: null, title: null,
+      result: false, display: 'net'
+    };
+  }
+
+  function current() { return state.sessions[state.comparing ? 'compare' : 'single']; }
+
+  function visibility(target, visible) {
+    target.hidden = !visible;
+  }
+
+  function disclosure(buttonId, containerId, opened) {
+    byId(buttonId).setAttribute('aria-expanded', String(opened));
+    visibility(byId(containerId), opened);
+  }
+
+  function setAdvanced(opened, reveal) {
+    disclosure('advanced', 'advanced-fields', opened);
+    if (opened && reveal) byId('advanced').scrollIntoView();
+  }
+
+  function setMenu(opened) {
+    disclosure('menu', 'menu-items', opened);
+  }
+
+  function readDraft() {
+    var value = {};
+    keys.forEach(function (key) { value[key] = fields[key].type === 'checkbox' ? fields[key].checked : fields[key].value; });
+    return value;
+  }
+
+  function stash() {
+    if (state.view === 'saved' || current().result) return;
+    var currentSession = current();
+    currentSession.drafts[state.active] = readDraft();
+    currentSession.inflation = fields.inflation.value;
+    currentSession.currency = fields.currency.value;
+  }
+
+  function updateConditionalFields() {
+    var recurring = fields.frequency.value !== 'NONE';
+    var taxed = fields.taxType.value !== 'NONE';
+    visibility(byId('deposit-field'), recurring);
+    visibility(byId('timing-field'), recurring);
+    visibility(byId('tax-rate-field'), taxed);
+    visibility(byId('basis-field'), taxed && Number(normalDigits(fields.depositFee.value).replace(',', '.')) > 0);
+  }
+
+  function fill() {
+    var currentSession = current();
+    var currentDraft = currentSession.drafts[state.active];
+    keys.forEach(function (key) {
+      if (fields[key].type === 'checkbox') fields[key].checked = currentDraft[key];
+      else fields[key].value = currentDraft[key];
+    });
+    fields.currency.value = currentSession.currency;
+    fields.inflation.value = currentSession.inflation;
+    updateConditionalFields();
+    Array.prototype.forEach.call(byId('tracks').children, function (button, index) {
+      button.setAttribute('aria-pressed', String(index === state.active));
+    });
+  }
+
+  function clearError() {
+    visibility(byId('form-error'), false);
+    Array.prototype.forEach.call(form.querySelectorAll('[aria-invalid]'), function (field) {
+      field.removeAttribute('aria-invalid');
+    });
+  }
+
+  function pageTop() { byId('main').scrollTop = 0; }
+
+  function view(name) {
+    stash();
+    setMenu(false);
+    state.view = name;
+    if (name !== 'saved') {
+      state.comparing = name === 'compare';
+      state.active = 0;
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (button) {
+      button.setAttribute('aria-pressed', String(button.getAttribute('data-view') === name));
+    });
+    if (name === 'saved') {
+      showSection('saved');
+      loadSaved();
+    } else if (current().result) {
+      showResults();
+    } else {
+      showEditor();
+    }
+  }
+
+  function showSection(id) {
+    ['editor', 'result', 'saved'].forEach(function (section) { visibility(byId(section), section === id); });
+    pageTop();
+  }
+
+  function showEditor() {
+    current().result = false;
+    fill();
+    clearError();
+    visibility(byId('tracks'), state.comparing);
+    text('editor-title', state.comparing ? 'השוואת מסלולים' : 'חישוב השקעה');
+    text('compute', state.comparing ? 'השוואה' : 'חישוב');
+    setAdvanced(false);
+    showSection('editor');
+  }
+
+  function normalDigits(raw) {
+    return raw.trim().replace(/[٠-٩۰-۹]/g, function (digit) { return String(digit.charCodeAt(0) & 15); })
+      .replace(/−/g, '-').replace(/٫/g, '.').replace(/٬/g, ',');
+  }
+
+  function parse(raw, field, min, max, decimals, blank, group) {
+    var value = normalDigits(raw);
+    if (!value && blank) return blank;
+    if (group && /^[+-]?[1-9]\d{0,2}(,\d{3})+(\.\d+)?$/.test(value)) value = value.replace(/,/g, '');
+    else value = value.replace(',', '.');
+    if (!/^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(value)) throw { field: field, message: 'הזינו מספר תקין' };
+    var number = new Money(value);
+    if (number.lt(min) || number.gt(max) || number.dp() > decimals) throw { field: field, message: 'הערך מחוץ לטווח' };
+    return number.toString();
+  }
+
+  function planFrom(input, inflation) {
+    var initial = parse(input.initial, 'initial', 0, '999999999999.99', 2, '0', true);
+    var deposit = input.frequency === 'NONE' ? '0' : parse(input.deposit, 'deposit', 0, '999999999999.99', 2, '0', true);
+    var annualRate = parse(input.annualRate, 'annualRate', '-99.9999', 1000, 4, null);
+    var years = parse(input.years, 'years', 0, 100, 0, '0');
+    var months = parse(input.months, 'months', 0, 11, 0, '0');
+    var duration = Number(years) * 12 + Number(months);
+    if (duration < 1 || duration > 1200) throw { field: 'years', message: 'מחודש אחד עד 100 שנים' };
+    var depositFee = parse(input.depositFee, 'depositFee', 0, 100, 4, '0');
+    var balanceFee = parse(input.balanceFee, 'balanceFee', 0, '99.9999', 4, '0');
+    var taxRate = input.taxType === 'NONE' ? '0' : parse(input.taxRate, 'taxRate', 0, 100, 4, null);
+    return {
+      initial: initial, deposit: deposit, annualRate: annualRate, months: duration,
+      frequency: input.frequency, timing: input.timing, depositFee: depositFee,
+      balanceFee: balanceFee, inflation: inflation, taxType: input.taxType,
+      taxRate: taxRate, includeDepositFeeInBasis: input.includeDepositFeeInBasis
+    };
+  }
+
+  function calculate(event) {
+    event.preventDefault();
+    stash();
+    clearError();
+    var currentSession = current();
+    var index = state.active;
+    try {
+      var inflation = parse(currentSession.inflation, 'inflation', '-99.9999', 1000, 4, '0');
+      var plans = currentSession.drafts.map(function (input, position) {
+        index = position;
+        return planFrom(input, inflation);
+      });
+      currentSession.calculation = finance.calculate(currentSession.currency, plans);
+      currentSession.result = true;
+      showResults();
+    } catch (error) {
+      if (!error.field) return notify('החישוב נכשל');
+      state.active = index;
+      fill();
+      var field = fields[error.field];
+      if (byId('advanced-fields').contains(field)) setAdvanced(true, false);
+      field.setAttribute('aria-invalid', 'true');
+      text('form-error', error.message);
+      visibility(byId('form-error'), true);
+      field.focus();
+    }
+  }
+
+  function duration(months) {
+    var years = Math.floor(months / 12);
+    var remaining = months % 12;
+    var y = years === 1 ? 'שנה' : years + ' שנים';
+    var m = remaining === 1 ? 'חודש' : remaining + ' חודשים';
+    return years && remaining ? y + ' ו־' + m : years ? y : m;
+  }
+
+  function money(value) { return finance.amount(value, current().currency, true); }
+  function last(points) { return points[points.length - 1]; }
+
+  function showResults() {
+    var currentSession = current();
+    var calculation = currentSession.calculation;
+    var projections = calculation.projections;
+    var compare = projections.length === 2;
+    var mode = currentSession.display;
+    var final = projections.map(function (projection) { return last(projection.points); });
+    var common = compare ? Math.min(final[0].month, final[1].month) : final[0].month;
+    var amount = finance.value(final[0], mode);
+    var label = 'נטו במימוש';
+    if (compare) {
+      var a = new Money(finance.value(projections[0].points[common], mode));
+      var b = new Money(finance.value(projections[1].points[common], mode));
+      var gap = a.minus(b).toDecimalPlaces(2);
+      amount = gap.abs();
+      label = gap.eq(0) ? 'פער נטו · היתרות שוות' : 'פער נטו · ' + (gap.gt(0) ? trackNames[0] : trackNames[1]);
+    }
+    text('result-title', currentSession.title || (compare ? 'תוצאות ההשוואה' : 'תוצאה'));
+    text('hero-label', label);
+    text('hero-period', 'אחרי ' + duration(common));
+    text('hero-amount', money(amount));
+    visibility(byId('money-mode'), calculation.plans.some(function (plan) { return Number(plan.inflation) !== 0 && !!plan.inflation; }));
+    Array.prototype.forEach.call(byId('money-mode').children, function (button) {
+      button.setAttribute('aria-pressed', String(button.getAttribute('data-value') === mode));
+    });
+
+    var list = byId('result-tracks');
+    list.textContent = '';
+    visibility(list, compare);
+    if (compare) final.forEach(function (point, index) {
+      var row = make('div', null, 'track-row');
+      var name = make('span', null, 'track-name');
+      name.appendChild(make('span', null, 'swatch' + (index ? ' second' : '')));
+      name.appendChild(document.createTextNode(trackNames[index]));
+      row.appendChild(name);
+      var value = make('strong', money(finance.value(point, mode)));
+      value.dir = 'ltr';
+      row.appendChild(value);
+      if (final[0].month !== final[1].month) name.appendChild(document.createTextNode(' · ' + duration(point.month)));
+      list.appendChild(row);
+    });
+    disclosure('details', 'details-content', false);
+    showSection('result');
+    draw();
+  }
+
+  function draw() {
+    if (state.view === 'saved' || !current().result || byId('result').hidden) return;
+    var canvas = byId('growth');
+    var width = canvas.clientWidth;
+    var height = canvas.clientHeight;
+    if (!width || !height) return;
+    var dpi = window.devicePixelRatio || 1;
+    canvas.width = Math.round(width * dpi);
+    canvas.height = Math.round(height * dpi);
+    var context = canvas.getContext('2d');
+    context.scale(dpi, dpi);
+    var series = current().calculation.projections;
+    var mode = current().display;
+    var maximum = new Money(1);
+    var months = 1;
+    series.forEach(function (projection) {
+      var points = projection.points;
+      months = Math.max(months, last(points).month);
+      for (var j = 0; j < points.length; j++) {
+        var value = new Money(finance.value(points[j], mode));
+        if (value.gt(maximum)) maximum = value;
+      }
+    });
+    text('chart-period', duration(months));
+    canvas.setAttribute('aria-label', 'גרף יתרה נטו לאורך ' + duration(months) + (mode === 'realNet' ? ', בכסף של היום' : ''));
+    context.strokeStyle = state.dark ? '#384744' : '#dae2f0';
+    context.lineWidth = 1;
+    for (var row = 0; row <= 4; row++) {
+      var line = 5 + (height - 10) * row / 4;
+      context.beginPath(); context.moveTo(3, line); context.lineTo(width - 3, line); context.stroke();
+    }
+    series.forEach(function (projection, index) {
+      var points = projection.points;
+      context.strokeStyle = index ? (state.dark ? '#a1adb7' : '#63718b') : (state.dark ? '#d7f875' : '#2549d4');
+      context.lineWidth = index ? 1.8 : 2.7;
+      if (context.setLineDash) context.setLineDash(index ? [5, 4] : []);
+      context.beginPath();
+      var stride = Math.max(1, Math.floor(points.length / 160));
+      function lineTo(point, first) {
+        var x = 3 + (width - 6) * point.month / months;
+        var y = height - 5 - (height - 10) * Number(new Money(finance.value(point, mode)).div(maximum));
+        if (first) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
+      for (var i = 0; i < points.length; i += stride) lineTo(points[i], i === 0);
+      lineTo(last(points), false);
+      context.stroke();
+    });
+  }
+
+  function metric(parent, label, amount) {
+    var row = make('div', null, 'metric');
+    row.appendChild(make('span', label));
+    var value = make('strong', money(amount));
+    value.dir = 'ltr';
+    row.appendChild(value);
+    parent.appendChild(row);
+  }
+
+  function fillDetails() {
+    var panel = byId('details-content');
+    panel.textContent = '';
+    var projections = current().calculation.projections;
+    projections.forEach(function (projection, index) {
+      var final = last(projection.points);
+      var part = make('div', null, 'summary');
+      if (projections.length === 2) part.appendChild(make('h3', trackNames[index]));
+      metric(part, 'סך הפקדות', final.contributed);
+      if (Number(final.depositFees)) metric(part, 'דמי הפקדה', final.depositFees);
+      if (Number(final.balanceFees)) metric(part, 'דמי צבירה', final.balanceFees);
+      metric(part, 'יתרה לפני מס', final.balance);
+      if (current().calculation.plans[index].taxType && current().calculation.plans[index].taxType !== 'NONE') {
+        metric(part, 'מס משוער', final.tax);
+      }
+      metric(part, 'נטו במימוש', finance.value(final, 'net'));
+      if (Number(current().calculation.plans[index].inflation)) metric(part, 'נטו בכסף של היום', finance.value(final, 'realNet'));
+      part.appendChild(make('h3', 'פירוט שנתי', 'year-title'));
+      projection.points.forEach(function (point) {
+        if (point.month > 0 && (point.month % 12 === 0 || point.month === final.month)) {
+          metric(part, 'אחרי ' + duration(point.month), finance.value(point, current().display));
+        }
+      });
+      panel.appendChild(part);
+    });
+  }
+
+  function notify(message) {
+    clearTimeout(toastTimer);
+    text('status', message);
+    visibility(byId('status'), true);
+    toastTimer = setTimeout(function () { visibility(byId('status'), false); }, 3200);
+  }
+
+  function openDialog(title, render) {
+    var focused = document.activeElement;
+    state.dialogFocus = byId('menu-items').contains(focused) ? byId('menu') : focused;
+    setMenu(false);
+    text('dialog-title', title);
+    var content = byId('dialog-content');
+    content.textContent = '';
+    render(content);
+    visibility(byId('dialog-backdrop'), true);
+    byId('dialog-close').focus();
+  }
+
+  function closeDialog() {
+    if (state.busy) return;
+    visibility(byId('dialog-backdrop'), false);
+    if (state.dialogFocus && document.body.contains(state.dialogFocus)) state.dialogFocus.focus();
+    state.dialogFocus = null;
+  }
+
+  function saveDialog() {
+    var selected = current();
+    openDialog('שמירת חישוב', function (content) {
+      var form = make('form');
+      var label = make('label', null, 'field');
+      label.appendChild(make('span', 'שם'));
+      var input = make('input');
+      input.value = selected.title || '';
+      input.required = true;
+      input.maxLength = 80;
+      label.appendChild(input);
+      form.appendChild(label);
+      var actions = make('div', null, 'actions');
+      var submit = make('button', 'שמירה', 'primary');
+      submit.type = 'submit';
+      actions.appendChild(submit);
+      if (selected.id) actions.appendChild(action('שמירת עותק', function () { if (form.reportValidity ? form.reportValidity() : input.value.trim()) save(true); }, 'outline'));
+      form.appendChild(actions);
+      content.appendChild(form);
+
+      function save(copy) {
+        var title = input.value.trim();
+        if (!title || state.busy) return;
+        state.busy = true;
+        Array.prototype.forEach.call(actions.children, function (button) { button.disabled = true; });
+        store.request('save', { id: copy ? null : selected.id, title: title, calculation: selected.calculation }, function (error, id) {
+          state.busy = false;
+          Array.prototype.forEach.call(actions.children, function (button) { button.disabled = false; });
+          if (error) return notify('השמירה נכשלה');
+          selected.id = id;
+          selected.title = title;
+          text('result-title', title);
+          closeDialog();
+          notify('נשמר');
+        });
+      }
+
+      form.addEventListener('submit', function (event) { event.preventDefault(); save(false); });
+    });
+  }
+
+  function draftFrom(plan) {
+    var options = finance.financialOptions(plan);
+    return {
+      initial: plan.initial, deposit: plan.deposit, annualRate: plan.annualRate,
+      years: String(Math.floor(plan.months / 12)), months: String(plan.months % 12),
+      frequency: plan.frequency, timing: plan.timing, depositFee: options.depositFee,
+      balanceFee: options.balanceFee, taxType: options.taxType, taxRate: options.taxRate,
+      includeDepositFeeInBasis: options.includeDepositFeeInBasis
+    };
+  }
+
+  function openSaved(id) {
+    store.request('load', { id: id }, function (error, entry) {
+      if (state.view !== 'saved') return;
+      if (error || !entry || !entry.calculation) return notify('הפתיחה נכשלה');
+      var calculation = entry.calculation;
+      var target = calculation.plans.length === 2 ? 'compare' : 'single';
+      state.sessions[target] = {
+        drafts: calculation.plans.map(draftFrom), currency: calculation.currency,
+        inflation: calculation.plans[0].inflation || '',
+        calculation: calculation, id: id, title: entry.title, result: true, display: 'net'
+      };
+      view(target);
+    });
+  }
+
+  function removeSaved(entry) {
+    openDialog('למחוק את החישוב?', function (content) {
+      content.appendChild(make('p', entry.title));
+      content.appendChild(action('מחיקה', function () {
+        if (state.busy) return;
+        state.busy = true;
+        store.request('remove', { id: entry.id }, function (error) {
+          state.busy = false;
+          if (error) return notify('המחיקה נכשלה');
+          Object.keys(state.sessions).forEach(function (key) {
+            if (state.sessions[key].id === entry.id) {
+              state.sessions[key].id = null;
+              state.sessions[key].title = null;
+            }
+          });
+          closeDialog();
+          loadSaved();
+          notify('נמחק');
+        });
+      }, 'primary'));
+    });
+  }
+
+  function loadSaved() {
+    var list = byId('saved-list');
+    list.textContent = '';
+    store.request('list', {}, function (error, entries) {
+      if (state.view !== 'saved') return;
+      if (error) return notify('טעינת שמורים נכשלה');
+      list.textContent = '';
+      if (!entries.length) list.appendChild(make('p', 'אין חישובים שמורים', 'dim'));
+      entries.forEach(function (entry) {
+        var record = make('article', null, 'record');
+        record.appendChild(make('h2', entry.title));
+        var date = new Date(entry.updatedAt).toLocaleDateString('he-IL');
+        record.appendChild(make('p', (entry.planCount === 1 ? 'חישוב' : 'השוואה') + ' · ' + date, 'dim'));
+        var actions = make('div', null, 'actions');
+        var open = action('פתיחה', function () { openSaved(entry.id); });
+        open.setAttribute('aria-label', 'פתיחה, ' + entry.title);
+        var remove = action('מחיקה', function () { removeSaved(entry); });
+        remove.setAttribute('aria-label', 'מחיקה, ' + entry.title);
+        actions.appendChild(open);
+        actions.appendChild(remove);
+        record.appendChild(actions);
+        list.appendChild(record);
+      });
+    });
+  }
+
+  function explanations() {
+    openDialog('הסברים', function (content) {
+      var list = make('ul');
+      [
+        'התשואה השנתית אפקטיבית ולפני דמי ניהול.',
+        'דמי הפקדה מנוכים מכל הפקדה. דמי צבירה מנוכים מדי חודש.',
+        'אינפלציה קובעת כמה שווה הכסף במחירי היום.',
+        'מס נומינלי מחושב על רווח מעל בסיס העלות. מס ריאלי מצמיד כל הפקדה למדד עד המימוש. ירידת מדד אינה מקטינה את בסיס המס.',
+        'כל נקודה בגרף מראה שווי נטו אילו מומש המסלול באותו מועד.'
+      ].forEach(function (line) { list.appendChild(make('li', line)); });
+      content.appendChild(list);
+    });
+  }
+
+  function about() {
+    openDialog('אודות ריבית', function (content) {
+      var mail = make('a', 'hopetohelp.il@gmail.com');
+      mail.href = 'mailto:hopetohelp.il@gmail.com';
+      var site = make('a', 'ribit.hopetohelp.net');
+      site.href = 'https://ribit.hopetohelp.net';
+      site.target = '_blank';
+      site.rel = 'noopener';
+      [mail, site].forEach(function (link) {
+        var row = make('p');
+        link.dir = 'ltr';
+        row.appendChild(link);
+        content.appendChild(row);
+      });
+    });
+  }
+
+  function setTheme(dark, remember) {
+    state.dark = dark;
+    document.body.classList.toggle('dark', dark);
+    text('theme', dark ? 'מראה בהיר' : 'מראה כהה');
+    if (remember) {
+      try { localStorage.setItem('ribit-dark', dark ? '1' : '0'); } catch (error) { /* preference unavailable */ }
+    }
+    if (window.RibitDevice && window.RibitDevice.theme) window.RibitDevice.theme(dark);
+    draw();
+  }
+
+  function back() {
+    if (!byId('dialog-backdrop').hidden) { closeDialog(); return true; }
+    if (!byId('menu-items').hidden) { setMenu(false); return true; }
+    if (state.view !== 'saved' && current().result) { showEditor(); return true; }
+    if (!byId('advanced-fields').hidden) { setAdvanced(false, false); return true; }
+    if (state.view !== 'single') { view('single'); return true; }
+    return false;
+  }
+
+  function focusable(scope) {
+    return Array.prototype.filter.call(scope.querySelectorAll('button, input, select, a[href]'), function (element) {
+      return !element.disabled && element.getClientRects().length > 0;
+    });
+  }
+
+  function moveFocus(key, from) {
+    var inDialog = !byId('dialog-backdrop').hidden;
+    var items = focusable(inDialog ? byId('dialog') : document.body);
+    var active = from || document.activeElement;
+    var index = items.indexOf(active);
+    if (index < 0) { if (items.length) items[0].focus(); return; }
+    var currentBox = active.getBoundingClientRect();
+    var x = currentBox.left + currentBox.width / 2;
+    var y = currentBox.top + currentBox.height / 2;
+    var vertical = key === 'ArrowUp' || key === 'ArrowDown';
+    var sign = key === 'ArrowUp' || key === 'ArrowLeft' ? -1 : 1;
+    var best = Infinity;
+    var target = null;
+    items.forEach(function (item) {
+      if (item === active) return;
+      var box = item.getBoundingClientRect();
+      var dx = box.left + box.width / 2 - x;
+      var dy = box.top + box.height / 2 - y;
+      var forward = sign * (vertical ? dy : dx);
+      var side = Math.abs(vertical ? dx : dy);
+      var weight = forward + side * 3;
+      if (forward > 4 && weight < best) { best = weight; target = item; }
+    });
+    if (target) target.focus();
+  }
+
+  function simulate(key) {
+    if (key === 'Back') { back(); return; }
+    var active = document.activeElement;
+    if (active === document.body && previewFocus && previewFocus.getClientRects().length > 0) {
+      active = previewFocus;
+    }
+    if (key === 'Enter') {
+      if (active.tagName === 'INPUT' && active.type !== 'checkbox' && active.form) {
+        var primary = active.form.querySelector('button[type="submit"]');
+        if (primary) primary.click();
+      } else if (active.click) active.click();
+      return;
+    }
+    if (key.indexOf('Arrow') === 0) {
+      if (active.tagName === 'SELECT' && (key === 'ArrowUp' || key === 'ArrowDown')) {
+        var index = active.selectedIndex + (key === 'ArrowUp' ? -1 : 1);
+        if (index >= 0 && index < active.options.length) {
+          active.selectedIndex = index;
+          var change = document.createEvent('Event');
+          change.initEvent('change', true, false);
+          active.dispatchEvent(change);
+        }
+      } else moveFocus(key, active);
+      return;
+    }
+    if (active.tagName !== 'INPUT' || active.type !== 'text') return;
+    var start = active.selectionStart;
+    var end = active.selectionEnd;
+    if (key === 'Backspace' && start === end) start = Math.max(0, start - 1);
+    var insert = key === 'Backspace' ? '' : key;
+    if (active.value.length - (end - start) + insert.length > active.maxLength) return;
+    active.value = active.value.slice(0, start) + insert + active.value.slice(end);
+    active.setSelectionRange(start + insert.length, start + insert.length);
+    var input = document.createEvent('Event');
+    input.initEvent('input', true, false);
+    active.dispatchEvent(input);
+  }
+
+  document.addEventListener('focus', function (event) {
+    var target = event.target;
+    if (!/^(?:BUTTON|INPUT|SELECT|A)$/.test(target.tagName)) return;
+    if (previewFocus) previewFocus.classList.remove('key-focus');
+    previewFocus = target;
+  }, true);
+  document.addEventListener('keydown', function (event) {
+    var active = document.activeElement;
+    var key = event.key || ({9: 'Tab', 27: 'Escape', 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown'})[event.keyCode];
+    if (key === 'Escape' && back()) event.preventDefault();
+    if (key === 'Tab' && !byId('dialog-backdrop').hidden) {
+      var dialogItems = focusable(byId('dialog'));
+      var index = dialogItems.indexOf(active);
+      if ((!event.shiftKey && index === dialogItems.length - 1) || (event.shiftKey && index === 0)) {
+        event.preventDefault();
+        dialogItems[event.shiftKey ? dialogItems.length - 1 : 0].focus();
+      }
+    }
+    if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].indexOf(key) >= 0 &&
+        active.tagName !== 'SELECT' && (active.tagName !== 'INPUT' || key === 'ArrowDown' || key === 'ArrowUp')) {
+      event.preventDefault();
+      moveFocus(key);
+    }
+  });
+  window.addEventListener('message', function (event) {
+    if (event.source !== window.parent || event.origin !== window.location.origin || !event.data) return;
+    var key = event.data.ribitKey;
+    if (/^(?:Arrow(?:Left|Right|Up|Down)|Enter|Back|Backspace|[0-9.\-])$/.test(key || '')) {
+      simulate(key);
+      if (previewFocus && previewFocus.getClientRects().length > 0) previewFocus.classList.add('key-focus');
+    }
+  });
+  window.addEventListener('resize', draw);
+  window.Ribit = { back: back };
+  form.addEventListener('submit', calculate);
+  form.addEventListener('change', updateConditionalFields);
+  fields.depositFee.addEventListener('input', updateConditionalFields);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (button) {
+    button.addEventListener('click', function () { view(button.getAttribute('data-view')); });
+  });
+  Array.prototype.forEach.call(byId('tracks').children, function (button, index) {
+    button.addEventListener('click', function () { stash(); state.active = index; fill(); clearError(); });
+  });
+  Array.prototype.forEach.call(byId('money-mode').children, function (button) {
+    button.addEventListener('click', function () { current().display = button.getAttribute('data-value'); showResults(); });
+  });
+  listen('menu', function () { setMenu(byId('menu-items').hidden); });
+  listen('theme', function () { setTheme(!state.dark, true); setMenu(false); byId('menu').focus(); });
+  listen('advanced', function () { setAdvanced(byId('advanced-fields').hidden, true); });
+  listen('help', explanations);
+  listen('about', about);
+  listen('dialog-close', closeDialog);
+  listen('edit', showEditor);
+  listen('new', function () {
+    state.sessions[state.comparing ? 'compare' : 'single'] = session(state.comparing ? 2 : 1);
+    state.active = 0;
+    showEditor();
+  });
+  listen('save', saveDialog);
+  listen('details', function () {
+    var open = byId('details-content').hidden;
+    if (open) fillDetails();
+    disclosure('details', 'details-content', open);
+  });
+  try { setTheme(localStorage.getItem('ribit-dark') === '1', false); } catch (error) { setTheme(false, false); }
+  showEditor();
+}());

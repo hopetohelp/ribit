@@ -1,0 +1,32 @@
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; min-height: 100%; }
+body { background: #fafbff; color: #152036; font: 16px/1.4 Arial, sans-serif; }
+button {
+  min-height: 44px; min-width: 44px; background: transparent; color: inherit; font: inherit;
+  border: 1px solid #c5cee0; border-radius: 10px; padding: 5px 10px; cursor: pointer;
+}
+button:focus { outline: 2px solid #2549d4; outline-offset: 2px; }
+button[aria-pressed="true"] { background: #edf2ff; color: #2445bb; border-color: #aabaf5; }
+.preview-toolbar {
+  display: flex; align-items: center; flex-wrap: wrap; justify-content: center;
+  padding: 5px 10px; border-bottom: 1px solid #dae2f0; min-height: 55px;
+}
+.preview-toolbar div { display: flex; flex-wrap: wrap; justify-content: center; }
+.preview-toolbar button { margin: 2px 3px; }
+.page { min-width: 0; }
+.device { margin: 0 auto; width: 100%; }
+iframe { display: block; width: 100%; height: calc(100vh - 57px); height: calc(100dvh - 57px); min-height: 220px; border: 0; background: #fafbff; }
+.mode { padding: 12px 8px 23px; background: #eef1f7; min-height: calc(100vh - 55px); }
+.mode .device { border: 7px solid #202634; border-radius: 19px; overflow: hidden; background: #202634; }
+.smartphone .device { max-width: 404px; }
+.smartphone iframe { height: 844px; }
+.touch .device { max-width: 374px; border-radius: 12px; }
+.touch iframe { height: 640px; }
+.keys .device { max-width: 334px; border-radius: 16px; }
+.keys iframe { height: 480px; }
+#keypad { padding: 8px 5px 2px; color: #f0f4ff; }
+.directions, .digits { display: grid; grid-template-columns: repeat(3, minmax(44px, 1fr)); gap: 4px; margin-bottom: 4px; }
+#keypad button { background: #303a50; border-color: #49556e; padding: 3px; }
+#keypad button:focus { outline-color: #d7f875; }
+#keypad .digits button:last-child { grid-column: 2; }

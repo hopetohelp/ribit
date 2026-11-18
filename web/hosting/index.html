@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#fafbff">
+  <title>ריבית</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/preview.css">
+</head>
+<body>
+  <header class="preview-toolbar">
+    <button id="display" type="button" aria-expanded="false" aria-controls="profiles">הצגה כאפליקציה</button>
+    <div id="profiles" role="group" aria-label="סוג מכשיר" hidden>
+      <button type="button" data-model="smartphone" aria-pressed="true">סמארטפון</button>
+      <button type="button" data-model="touch" aria-pressed="false">שיאומי טאצ׳</button>
+      <button type="button" data-model="keys" aria-pressed="false">שיאומי מקשים</button>
+    </div>
+  </header>
+  <main id="preview" class="page">
+    <div class="device">
+      <iframe id="app" src="/app.html" title="אפליקציית ריבית" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+      <div id="keypad" aria-label="מקשי המכשיר" hidden>
+        <div class="directions" role="group" aria-label="ניווט">
+          <button type="button" data-key="Back" aria-label="חזרה">↶</button>
+          <button type="button" data-key="ArrowUp" aria-label="למעלה">↑</button>
+          <button type="button" data-key="Backspace" aria-label="מחיקת תו">⌫</button>
+          <button type="button" data-key="ArrowRight" aria-label="ימינה">→</button>
+          <button type="button" data-key="Enter" aria-label="אישור">●</button>
+          <button type="button" data-key="ArrowLeft" aria-label="שמאלה">←</button>
+          <button type="button" data-key="-" aria-label="מינוס">−</button>
+          <button type="button" data-key="ArrowDown" aria-label="למטה">↓</button>
+          <button type="button" data-key="." aria-label="נקודה">.</button>
+        </div>
+        <div class="digits" role="group" aria-label="מספרים" dir="ltr">
+          <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+          <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+          <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+          <button type="button" data-key="0">0</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="/preview.js" defer></script>
+</body>
+</html>
