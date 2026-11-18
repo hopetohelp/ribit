@@ -57,7 +57,10 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin || !FILES.includes(url.pathname)) return;
-  event.respondWith(caches.open(CACHE).then(cache => cache.match(url.pathname)).then(hit => hit || fetch(event.request)));
+  const cached = () => caches.open(CACHE).then(cache => cache.match(url.pathname));
+  event.respondWith(event.request.mode === 'navigate'
+    ? fetch(event.request).catch(cached)
+    : cached().then(hit => hit || fetch(event.request)));
 });
 `;
 await writeFile(path.join(dist, 'sw.js'), serviceWorker);

@@ -65,19 +65,38 @@
   }
 
   function scroll(direction) {
-    if (!$('screen-off').hidden || !frame.contentDocument) return;
-    const content = frame.contentDocument.getElementById('main');
+    if (!$('screen-off').hidden) return;
+    const doc = frame.contentDocument;
+    const content = frame.hidden ? $('landing') :
+      doc && (doc.querySelector('#dialog-backdrop:not([hidden]) #dialog') || doc.getElementById('main'));
     if (content) content.scrollTop += direction * Math.max(35, Math.round(content.clientHeight * .65));
   }
 
+  function scrollDirection(key) {
+    if (key === 'PageUp' || (model === 'keys' && key === 'ArrowUp')) return -1;
+    if (key === 'PageDown' || (model === 'keys' && key === 'ArrowDown')) return 1;
+    return 0;
+  }
+
   function keyboard(event) {
-    const result = frame.contentDocument && frame.contentDocument.getElementById('result');
-    const arrow = model === 'keys' && result && !result.hidden && (event.key === 'ArrowUp' || event.key === 'ArrowDown');
-    if (arrow || event.key === 'PageUp' || event.key === 'PageDown') {
+    const direction = scrollDirection(event.key);
+    if (direction) {
       event.preventDefault();
       event.stopPropagation();
-      scroll(event.key === 'PageUp' || event.key === 'ArrowUp' ? -1 : 1);
+      scroll(direction);
     }
+  }
+
+  let lastControl;
+  function moveControl(direction) {
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    const scope = doc.querySelector('#dialog-backdrop:not([hidden]) #dialog') || doc;
+    const controls = Array.from(scope.querySelectorAll('button, input, select, a[href]'))
+      .filter(control => !control.disabled && control.getClientRects().length);
+    if (!controls.length) return;
+    const current = controls.indexOf(lastControl);
+    controls[current < 0 ? 0 : (current + direction + controls.length) % controls.length].focus();
   }
 
   function home() {
@@ -122,6 +141,7 @@
     const doc = frame.contentDocument;
     if (!doc) return;
     doc.addEventListener('keydown', keyboard, true);
+    doc.addEventListener('focusin', event => { lastControl = event.target; });
     const header = doc.querySelector('header.bar');
     if (!header) return;
     const button = doc.createElement('button');
@@ -140,10 +160,14 @@
   document.querySelectorAll('[data-key]').forEach(button => button.onclick = () => {
     if (!$('screen-off').hidden || frame.hidden) return;
     const key = button.dataset.key;
-    const result = frame.contentDocument && frame.contentDocument.getElementById('result');
-    if (result && !result.hidden && (key === 'ArrowUp' || key === 'ArrowDown')) {
-      scroll(key === 'ArrowUp' ? -1 : 1);
-    } else frame.contentWindow.postMessage({ ribitKey: key }, window.location.origin);
+    const direction = scrollDirection(key);
+    if (direction) scroll(direction);
+    else if (model === 'keys' && (key === 'ArrowRight' || key === 'ArrowLeft')) {
+      moveControl(key === 'ArrowLeft' ? 1 : -1);
+    } else {
+      const select = key === 'Enter' && lastControl && lastControl.tagName === 'SELECT' && lastControl.getClientRects().length;
+      frame.contentWindow.postMessage({ ribitKey: select ? 'ArrowDown' : key }, window.location.origin);
+    }
   });
   window.addEventListener('resize', resize);
   selectSize('fit');
