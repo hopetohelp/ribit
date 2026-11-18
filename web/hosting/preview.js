@@ -6,9 +6,14 @@
   const glass = document.querySelector('.glass');
   const footprint = document.querySelector('.footprint');
   const stage = document.querySelector('.stage');
-  // Representative screen sizes in millimetres and their CSS layout viewports.
-  const models = { smartphone: [65, 140, 390, 840], touch: [69, 153, 360, 798], keys: [43, 57, 320, 424] };
-  let model;
+  // Body dimensions, display diagonal and native panel proportions.
+  const models = {
+    smartphone: [71.6, 147.6, 6.1, 1179, 2556, 390, 846],
+    touch: [75.55, 162.24, 6.67, 1080, 2400, 360, 800],
+    keys: [53.5, 131, 2.8, 480, 640, 320, 427]
+  };
+  let model = 'smartphone';
+  let launchButton;
   let calibration = 100;
   let size = 'fit';
   try { calibration = Number(localStorage.getItem('ribit-scale')) || 100; } catch (_) {}
@@ -16,19 +21,27 @@
 
   function resize() {
     if (!model) return;
-    const [mmWidth, mmHeight, width, height] = models[model];
+    const [bodyWidth, bodyHeight, diagonal, panelWidth, panelHeight, width, height] = models[model];
     const pxPerMm = 96 / 25.4 * calibration / 100;
-    const screenWidth = mmWidth * pxPerMm;
-    const screenHeight = mmHeight * pxPerMm;
+    const pixelsToMm = diagonal * 25.4 / Math.hypot(panelWidth, panelHeight);
+    const screenWidth = panelWidth * pixelsToMm * pxPerMm;
+    const screenHeight = panelHeight * pixelsToMm * pxPerMm;
+    device.className = 'device ' + model;
+    device.style.width = bodyWidth * pxPerMm + 'px';
+    device.style.height = bodyHeight * pxPerMm + 'px';
+    device.style.setProperty('--button-span', (bodyWidth * pxPerMm - 10) + 'px');
     glass.style.width = screenWidth + 'px';
     glass.style.height = screenHeight + 'px';
-    frame.style.width = width + 'px';
-    frame.style.height = height + 'px';
-    frame.style.transform = 'scale(' + screenWidth / width + ',' + screenHeight / height + ')';
-    const w = device.offsetWidth + 44;
-    const h = device.offsetHeight;
+    glass.style.top = (model === 'keys' ? 6 * pxPerMm : (bodyHeight * pxPerMm - screenHeight) / 2) + 'px';
+    [frame, $('landing')].forEach(surface => {
+      surface.style.width = width + 'px';
+      surface.style.height = height + 'px';
+      surface.style.transform = 'scale(' + screenWidth / width + ',' + screenHeight / height + ')';
+    });
+    const w = bodyWidth * pxPerMm;
+    const h = bodyHeight * pxPerMm;
     const availableWidth = stage.clientWidth - 24;
-    const availableHeight = window.innerHeight - document.querySelector('.toolbar').offsetHeight - 24;
+    const availableHeight = window.innerHeight - 24;
     const scale = size === 'real' ? 1 : Math.max(.15, Math.min(availableWidth / w, availableHeight / h));
     device.style.transform = 'scale(' + scale + ')';
     footprint.style.width = w * scale + 'px';
@@ -59,23 +72,26 @@
     }
   }
 
+  function home() {
+    model = 'smartphone';
+    frame.hidden = true;
+    $('landing').hidden = false;
+    $('keypad').hidden = true;
+    resize();
+    if (launchButton) launchButton.focus();
+  }
+
   function open(value, button) {
+    launchButton = button;
     model = value;
     $('landing').hidden = true;
-    $('preview').hidden = false;
+    frame.hidden = false;
     $('keypad').hidden = value !== 'keys';
     $('screen-off').hidden = true;
     frame.style.visibility = 'visible';
     $('power').setAttribute('aria-pressed', 'false');
-    $('exit').onclick = () => {
-      $('preview').hidden = true;
-      $('landing').hidden = false;
-      model = null;
-      button.focus();
-    };
     if (!frame.hasAttribute('src')) frame.src = '/app.html';
     resize();
-    $('exit').focus();
   }
 
   document.querySelectorAll('[data-model]').forEach(button => button.onclick = () => open(button.dataset.model, button));
@@ -92,11 +108,23 @@
     $('power').setAttribute('aria-pressed', String(!$('screen-off').hidden));
   };
   frame.addEventListener('load', () => {
-    if (frame.contentDocument) frame.contentDocument.addEventListener('keydown', keyboard, true);
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    doc.addEventListener('keydown', keyboard, true);
+    const header = doc.querySelector('header.bar');
+    if (!header) return;
+    const button = doc.createElement('button');
+    button.type = 'button';
+    button.className = 'plain';
+    button.textContent = '⌂';
+    button.setAttribute('aria-label', 'בית');
+    button.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);min-width:44px;font-size:22px';
+    button.onclick = home;
+    header.appendChild(button);
   });
   document.addEventListener('keydown', event => { if (model) keyboard(event); });
   document.querySelectorAll('[data-key]').forEach(button => button.onclick = () => {
-    if (!$('screen-off').hidden) return;
+    if (!$('screen-off').hidden || frame.hidden) return;
     const key = button.dataset.key;
     const result = frame.contentDocument && frame.contentDocument.getElementById('result');
     if (result && !result.hidden && (key === 'ArrowUp' || key === 'ArrowDown')) {
@@ -104,6 +132,7 @@
     } else frame.contentWindow.postMessage({ ribitKey: key }, window.location.origin);
   });
   window.addEventListener('resize', resize);
+  selectSize('fit');
   fetch('/api/view', { method: 'POST' }).then(response => {
     if (response.ok) return response.json();
   }).then(stats => {

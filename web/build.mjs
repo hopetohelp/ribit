@@ -12,6 +12,10 @@ for (const source of ['app', 'hosting']) {
   await cp(path.join(web, source), dist, { recursive: true });
 }
 
+// Keep the standalone Android asset intact. The hosted copy opens only in the simulator.
+const hostedApp = path.join(dist, 'app.html');
+await writeFile(hostedApp, (await readFile(hostedApp, 'utf8')).replace('<head>', '<head><script src="/frame-only.js"></script>'));
+
 async function filesIn(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -73,6 +77,9 @@ const files = ${JSON.stringify(assets)};
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
+    if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document') {
+      return Response.redirect(new URL('/', request.url), 302);
+    }
     if (path === '/download' && request.method === 'GET') {
       if (request.headers.get('Sec-Purpose') !== 'prefetch') {
         await env.COUNTS.getByName('downloads').total(true).catch(() => {});

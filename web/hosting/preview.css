@@ -48,3 +48,28 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 .directions, .digits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-bottom: 3px; }
 #keypad button { min-height: 17px; min-width: 0; padding: 0; font-size: 11px; border-radius: 3px; }
 .digits button:last-child { grid-column: 2; }
+#landing {
+  position: absolute; inset: 0 auto auto 0; overflow-y: auto;
+  transform-origin: left top; margin: 0; padding: 22px 18px 30px;
+  background: radial-gradient(ellipse at 90% 10%, #2b4076, transparent 70%), #0e172a;
+}
+.glass { position: absolute; left: 50%; transform: translateX(-50%); }
+.device {
+  padding: 0; outline: 0; border: 1px solid #8791a5;
+  background: #111621; box-shadow: inset 0 0 0 2px #303747, 0 16px 42px #0009;
+}
+.device.smartphone { border-radius: 10% / 5%; }
+.device.smartphone .glass { border-radius: 9% / 4.5%; }
+.device.touch { border-radius: 6% / 3%; }
+.device.touch .glass { border-radius: 5% / 2.5%; }
+.device.keys { border-radius: 9% / 3.7%; }
+.device-top { position: absolute; top: 1%; left: 0; right: 0; height: 3px; z-index: 1; pointer-events: none; }
+.device-top i { background: #626978; height: 2px; width: 12%; }
+.side { left: auto; right: 0; top: 21%; z-index: 2; gap: 4px; }
+.side button { min-width: 0; min-height: 27px; width: 8px; font-size: 0; border-radius: 3px 0 0 3px; background: #778196; border: 0; }
+.side button:focus-visible { outline-offset: -1px; }
+.smartphone .side button:not(#power) { transform: translateX(calc(-1 * var(--button-span, 0px))); }
+#power { margin-top: 9px; background: #aab2c4; }
+#keypad { position: absolute; inset: 51% 5% 2%; display: grid; grid-template-rows: 38% 62%; padding: 0; }
+#keypad button { background: #202b40; border-color: #53627b; }
+.directions, .digits { margin: 0; }
