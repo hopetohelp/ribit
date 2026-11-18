@@ -73,3 +73,34 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 #keypad { position: absolute; inset: 51% 5% 2%; display: grid; grid-template-rows: 38% 62%; padding: 0; }
 #keypad button { background: #202b40; border-color: #53627b; }
 .directions, .digits { margin: 0; }
+
+#landing {
+  display: flex;
+  flex-direction: column;
+  padding: 24px 17px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 5%, #34457c 0%, transparent 56%),
+    radial-gradient(ellipse at 90% 95%, #1d3851 0%, transparent 55%), #0b1326;
+}
+.landing-content {
+  width: 100%;
+  max-width: 340px;
+  margin: auto;
+}
+#landing .intro { padding-bottom: 16px; border-color: #60739a70; }
+#landing .intro img { margin: 0 auto 10px; box-shadow: 0 0 45px #7399ff80; }
+#landing h1 { font-size: 47px; }
+#landing .intro p { color: #d8e3fc; font-size: 14px; }
+#landing .primary {
+  background: linear-gradient(115deg, #edf3ff, #a8c1ff);
+  border-color: #ccd9ff; box-shadow: 0 5px 23px #4d78db57;
+}
+#landing .launch, #landing .history { margin-top: 17px; }
+#landing #profiles { display: grid; gap: 5px; }
+#landing #profiles button { width: 100%; padding: 5px; background: #172743; border-color: #536b98; }
+#landing #profiles button:hover { background: #263c65; }
+#landing .sizes { justify-content: center; }
+#landing .sizes button { font-size: 14px; }
+#landing .statistics { justify-content: center; margin-top: 16px; padding: 9px 0; border-color: #60739a70; }
+#landing .history p { font-size: 13px; color: #d1ddf4; }
+#landing #ruler { margin-inline: auto; }

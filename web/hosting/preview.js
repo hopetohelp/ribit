@@ -16,8 +16,14 @@
   let launchButton;
   let calibration = 100;
   let size = 'fit';
-  try { calibration = Number(localStorage.getItem('ribit-scale')) || 100; } catch (_) {}
-  $('scale').value = calibration;
+  const scaleInput = $('scale');
+  const minimumScale = Number(scaleInput.min);
+  const maximumScale = Number(scaleInput.max);
+  try {
+    const savedScale = Number(localStorage.getItem('ribit-scale'));
+    if (savedScale) calibration = Math.max(minimumScale, Math.min(maximumScale, savedScale));
+  } catch (_) {}
+  scaleInput.value = calibration;
 
   function resize() {
     if (!model) return;
@@ -97,11 +103,14 @@
   document.querySelectorAll('[data-model]').forEach(button => button.onclick = () => open(button.dataset.model, button));
   document.querySelectorAll('[data-size]').forEach(button => button.onclick = () => selectSize(button.dataset.size));
   document.querySelectorAll('[data-scroll]').forEach(button => button.onclick = () => scroll(Number(button.dataset.scroll)));
-  $('scale').oninput = () => {
-    calibration = Number($('scale').value);
+  function setCalibration(value) {
+    calibration = value;
+    scaleInput.value = value;
     try { localStorage.setItem('ribit-scale', String(calibration)); } catch (_) {}
     selectSize('real');
-  };
+  }
+  scaleInput.oninput = () => setCalibration(Number(scaleInput.value));
+  $('reset-scale').onclick = () => setCalibration(Number(scaleInput.defaultValue));
   $('power').onclick = () => {
     $('screen-off').hidden = !$('screen-off').hidden;
     frame.style.visibility = $('screen-off').hidden ? 'visible' : 'hidden';
@@ -115,10 +124,13 @@
     if (!header) return;
     const button = doc.createElement('button');
     button.type = 'button';
-    button.className = 'plain';
-    button.textContent = '⌂';
-    button.setAttribute('aria-label', 'בית');
-    button.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);min-width:44px;font-size:22px';
+    button.className = 'plain ribit-home';
+    const icon = doc.createElement('span');
+    icon.className = 'ribit-home-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    const label = doc.createElement('span');
+    label.textContent = 'בית';
+    button.append(icon, label);
     button.onclick = home;
     header.appendChild(button);
   });

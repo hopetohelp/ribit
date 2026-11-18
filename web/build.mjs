@@ -14,7 +14,7 @@ for (const source of ['app', 'hosting']) {
 
 // Keep the standalone Android asset intact. The hosted copy opens only in the simulator.
 const hostedApp = path.join(dist, 'app.html');
-await writeFile(hostedApp, (await readFile(hostedApp, 'utf8')).replace('<head>', '<head><script src="/frame-only.js"></script>'));
+await writeFile(hostedApp, (await readFile(hostedApp, 'utf8')).replace('<head>', '<head><script src="/frame-only.js"></script><link rel="stylesheet" href="/frame-ui.css">'));
 
 async function filesIn(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
