@@ -39,3 +39,11 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 אפשר גם לפתוח את הריפו ב־Android Studio ולבנות או להריץ את מודול `app`.
+
+## צילומי מסך
+
+[מחשבון](docs/screenshots/calculator.png) ·
+[אפשרויות מתקדמות](docs/screenshots/advanced.png) ·
+[תוצאה וגרף צמיחה](docs/screenshots/result.png) ·
+[השוואת מסלולים](docs/screenshots/comparison.png) ·
+[חישובים שמורים](docs/screenshots/saved.png)
