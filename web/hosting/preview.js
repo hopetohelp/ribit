@@ -35,7 +35,7 @@
     device.className = 'device ' + model;
     device.style.width = bodyWidth * pxPerMm + 'px';
     device.style.height = bodyHeight * pxPerMm + 'px';
-    device.style.setProperty('--button-span', (bodyWidth * pxPerMm - 10) + 'px');
+    device.style.setProperty('--button-span', (bodyWidth * pxPerMm + 2) + 'px');
     glass.style.width = screenWidth + 'px';
     glass.style.height = screenHeight + 'px';
     glass.style.top = (model === 'keys' ? 6 * pxPerMm : (bodyHeight * pxPerMm - screenHeight) / 2) + 'px';
@@ -44,12 +44,14 @@
       surface.style.height = height + 'px';
       surface.style.transform = 'scale(' + screenWidth / width + ',' + screenHeight / height + ')';
     });
-    const w = bodyWidth * pxPerMm;
+    const sideClearance = 6;
+    const w = bodyWidth * pxPerMm + sideClearance * 2;
     const h = bodyHeight * pxPerMm;
     const availableWidth = stage.clientWidth - 24;
     const availableHeight = window.innerHeight - 24;
     const scale = size === 'real' ? 1 : Math.max(.15, Math.min(availableWidth / w, availableHeight / h));
     device.style.transform = 'scale(' + scale + ')';
+    footprint.style.setProperty('--side-clearance', sideClearance * scale + 'px');
     footprint.style.width = w * scale + 'px';
     footprint.style.height = h * scale + 'px';
   }

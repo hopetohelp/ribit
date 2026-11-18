@@ -33,7 +33,7 @@ details input { display: block; max-width: 100%; }
 .stage { overflow: auto; padding: 12px; min-height: 60vh; }
 .footprint { position: relative; margin: auto; }
 .device {
-  position: absolute; left: 0; top: 0; transform-origin: top left;
+  position: absolute; left: var(--side-clearance, 0px); top: 0; transform-origin: top left;
   background: #171e30; outline: 1px solid #64748f; border-radius: 14px;
   box-shadow: 0 16px 42px #0009; padding: 0 8px 8px;
 }
@@ -65,10 +65,10 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 .device.keys { border-radius: 9% / 3.7%; }
 .device-top { position: absolute; top: 1%; left: 0; right: 0; height: 3px; z-index: 1; pointer-events: none; }
 .device-top i { background: #626978; height: 2px; width: 12%; }
-.side { left: auto; right: 0; top: 21%; z-index: 2; gap: 4px; }
-.side button { min-width: 0; min-height: 27px; width: 8px; font-size: 0; border-radius: 3px 0 0 3px; background: #778196; border: 0; }
+.side { left: auto; right: -5px; top: 21%; z-index: 2; gap: 4px; }
+.side button { min-width: 0; min-height: 27px; width: 8px; font-size: 0; border-radius: 0 3px 3px 0; background: #778196; border: 0; }
 .side button:focus-visible { outline-offset: -1px; }
-.smartphone .side button:not(#power) { transform: translateX(calc(-1 * var(--button-span, 0px))); }
+.smartphone .side button:not(#power) { transform: translateX(calc(-1 * var(--button-span, 0px))); border-radius: 3px 0 0 3px; }
 #power { margin-top: 9px; background: #aab2c4; }
 #keypad { position: absolute; inset: 51% 5% 2%; display: grid; grid-template-rows: 38% 62%; padding: 0; }
 #keypad button { background: #202b40; border-color: #53627b; }
