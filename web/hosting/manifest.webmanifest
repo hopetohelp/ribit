@@ -4,7 +4,7 @@
   "short_name": "ריבית",
   "lang": "he",
   "dir": "rtl",
-  "start_url": "/app.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#fafbff",

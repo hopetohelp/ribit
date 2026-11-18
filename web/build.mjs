@@ -60,13 +60,38 @@ await writeFile(path.join(dist, 'sw.js'), serviceWorker);
 assets['/sw.js'] = [mime['.js'], gzipSync(serviceWorker).toString('base64')];
 
 if (process.argv[2]) {
-  const worker = `const files = ${JSON.stringify(assets)};
+  const worker = `import { DurableObject } from 'cloudflare:workers';
+export class SiteCounter extends DurableObject {
+  total(increment) {
+    const sql = this.ctx.storage.sql;
+    sql.exec('CREATE TABLE IF NOT EXISTS tally (id INTEGER PRIMARY KEY, total INTEGER NOT NULL)');
+    if (increment) sql.exec('INSERT INTO tally VALUES (1, 1) ON CONFLICT(id) DO UPDATE SET total = total + 1');
+    return sql.exec('SELECT total FROM tally WHERE id = 1').toArray()[0]?.total ?? 0;
+  }
+}
+const files = ${JSON.stringify(assets)};
 export default {
-  fetch(request) {
+  async fetch(request, env) {
+    const path = new URL(request.url).pathname;
+    if (path === '/download' && request.method === 'GET') {
+      if (request.headers.get('Sec-Purpose') !== 'prefetch') {
+        await env.COUNTS.getByName('downloads').total(true).catch(() => {});
+      }
+      return new Response(null, {status: 302, headers: {
+        Location: 'https://raw.githubusercontent.com/hopetohelp/ribit/apk-v2.0.0/ribit-2.0.0.apk',
+        'Cache-Control': 'no-store'
+      }});
+    }
+    if (path === '/api/view' && request.method === 'POST') {
+      const [views, downloads] = await Promise.all([
+        env.COUNTS.getByName('views').total(true),
+        env.COUNTS.getByName('downloads').total(false)
+      ]);
+      return Response.json({views, downloads}, {headers: {'Cache-Control': 'no-store'}});
+    }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(null, {status: 405, headers: {Allow: 'GET, HEAD'}});
     }
-    const path = new URL(request.url).pathname;
     if (!Object.prototype.hasOwnProperty.call(files, path)) return new Response('Not found', {status: 404});
     const [type, zipped] = files[path];
     const headers = {
