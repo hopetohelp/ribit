@@ -174,6 +174,16 @@
     }
   }
 
+  function shiftTab(direction) {
+    if (state.busy || !byId('dialog-backdrop').hidden) return;
+    var selected = document.querySelector('.tabs [aria-pressed="true"]');
+    var tab = direction > 0 ? selected.nextElementSibling : selected.previousElementSibling;
+    if (tab) {
+      chart.dismiss();
+      view(tab.getAttribute('data-view'));
+    }
+  }
+
   function showSection(id) {
     ['editor', 'result', 'saved'].forEach(function (section) { visibility(byId(section), section === id); });
     if (id !== 'result') chart.clear();
@@ -385,8 +395,9 @@
       heading.appendChild(make('span', equal ? 'זהה' : 'שונה', equal ? 'comparison-badge same' : 'comparison-badge different'));
       body.insertRow().appendChild(heading);
       var cells = body.insertRow();
-      values.forEach(function (value) {
+      (equal ? [values[0]] : values).forEach(function (value) {
         var cell = cells.insertCell();
+        if (equal) cell.colSpan = 2;
         cell.setAttribute('headers', heading.id);
         cell.appendChild(make('bdi', value));
       });
@@ -962,7 +973,10 @@
     }
   });
   window.addEventListener('resize', draw);
-  window.Ribit = { back: back, keypad: keypad, setKeypadMode: setKeypadMode, setKeypadOnly: setKeypadOnly, scroll: scroll };
+  window.Ribit = {
+    back: back, keypad: keypad, setKeypadMode: setKeypadMode, setKeypadOnly: setKeypadOnly,
+    scroll: scroll, shiftTab: shiftTab, dismissChart: chart.dismiss
+  };
   form.addEventListener('submit', calculate);
   form.addEventListener('change', updateConditionalFields);
   fields.depositFee.addEventListener('input', updateConditionalFields);

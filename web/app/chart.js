@@ -6,6 +6,8 @@
   var control = document.getElementById('chart-control');
   var canvas = document.getElementById('growth');
   var tip = document.getElementById('chart-tip');
+  var details = document.getElementById('chart-values');
+  var close = document.getElementById('chart-dismiss');
   var dateFormat = new Intl.DateTimeFormat('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
   var graph;
   var selected = null;
@@ -44,10 +46,10 @@
     if (selected === null) return;
     var date = dateAt(graph.calculation.startedOn || dateKey(new Date()), selected);
     var time = node('time', dateFormat.format(date), 'chart-date');
-    time.dateTime = dateKey(date);
+    time.setAttribute('datetime', dateKey(date));
     time.dir = 'ltr';
-    tip.textContent = '';
-    tip.appendChild(time);
+    details.textContent = '';
+    details.appendChild(time);
     var columns = node('div', null, 'track-columns');
     graph.series.forEach(function (points, index) {
       var column = node('div', null, 'chart-track');
@@ -68,7 +70,7 @@
       }
       columns.appendChild(column);
     });
-    tip.appendChild(columns);
+    details.appendChild(columns);
   }
 
   function paint() {
@@ -163,9 +165,9 @@
   }
 
   control.addEventListener('click', function (event) {
-    if (!graph) return;
+    if (!graph || dismiss()) return;
     if (!event.detail) {
-      if (!dismiss()) select(0);
+      select(0);
       return;
     }
     var box = canvas.getBoundingClientRect();
@@ -173,6 +175,15 @@
     var month = Math.round((position - 5) / (canvas.clientWidth - 10) * graph.months);
     select(Math.max(0, Math.min(graph.months, month)));
   });
+
+  close.addEventListener('click', function () {
+    dismiss();
+    control.focus();
+  });
+
+  document.addEventListener('click', function (event) {
+    if (!tip.contains(event.target) && !control.contains(event.target)) dismiss();
+  }, true);
 
   window.RibitChart = {
     draw: draw, dateKey: dateKey, dismiss: dismiss, step: step, control: control,

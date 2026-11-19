@@ -80,7 +80,10 @@
           </button>
           <span id="chart-hint" class="sr-only">לחצו לבחירת תאריך. במקלדת השתמשו בחצים ימינה ושמאלה.</span>
           <div class="axis" dir="ltr"><span dir="rtl">התחלה</span><span id="chart-period" dir="rtl"></span></div>
-          <div id="chart-tip" class="chart-tip" role="status" aria-live="polite" hidden></div>
+          <div id="chart-tip" class="chart-tip" hidden>
+            <button type="button" id="chart-dismiss" class="plain" aria-label="סגירת פרטי הגרף">×</button>
+            <div id="chart-values" role="status" aria-live="polite"></div>
+          </div>
         </figure>
       </div>
       <div class="actions">

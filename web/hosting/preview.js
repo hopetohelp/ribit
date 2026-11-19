@@ -192,11 +192,25 @@
     if (event.source === frame.contentWindow && event.origin === location.origin && event.data === 'ribit:exit') home();
   });
   document.addEventListener('keydown', deviceKeyboard);
+  document.addEventListener('pointerdown', event => {
+    if (!event.target.closest('[data-key], [data-scroll]')) activeApp()?.dismissChart?.();
+  });
   let touchKey;
   document.querySelectorAll('[data-key]').forEach(button => {
+    const tabStep = Number(button.dataset.tabStep);
+    let pressedAt = null;
+    function activate(pointerActivation) {
+      const longPress = pointerActivation && pressedAt !== null && performance.now() - pressedAt >= 500;
+      pressedAt = null;
+      if (tabStep && !longPress) activeApp()?.shiftTab?.(tabStep);
+      else press(button.dataset.key);
+    }
+    if (tabStep) button.addEventListener('contextmenu', event => event.preventDefault());
     // Keep the active editor control focused when a simulated key is pressed.
     button.addEventListener('pointerdown', event => {
       event.preventDefault();
+      if (event.button !== 0) return;
+      if (tabStep) pressedAt = performance.now();
       if (event.pointerType === 'touch') touchKey = { id: event.pointerId, x: event.clientX, y: event.clientY };
     });
     button.addEventListener('pointerup', event => {
@@ -205,13 +219,13 @@
       touchKey = null;
       if (Math.hypot(event.clientX - x, event.clientY - y) < 12 &&
           document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-key]') === button) {
-        press(button.dataset.key);
+        activate(true);
       }
     });
-    button.addEventListener('pointercancel', () => { touchKey = null; });
+    button.addEventListener('pointercancel', () => { touchKey = null; pressedAt = null; });
     button.addEventListener('click', event => {
       if (!window.PointerEvent || (event.pointerType !== 'touch' && !event.sourceCapabilities?.firesTouchEvents)) {
-        press(button.dataset.key);
+        activate(event.detail > 0);
       }
     });
   });
