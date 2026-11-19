@@ -71,10 +71,15 @@
   }
 
   function activeApp() {
-    return frame.hidden || !$('screen-off').hidden ? null : frame.contentWindow.Ribit;
+    return frame.hidden ? null : frame.contentWindow.Ribit;
+  }
+
+  function updateScreen() {
+    frame.style.visibility = activeApp() ? 'visible' : 'hidden';
   }
 
   function scroll(direction) {
+    if (model === 'keys') return;
     if (frame.hidden) {
       const landing = $('landing');
       landing.scrollTop += direction * Math.max(35, Math.round(landing.clientHeight * .65));
@@ -94,8 +99,6 @@
     if (key === 'Back') back();
     else {
       if (model === 'touch') setKeypadMode(true);
-      if (key === 'ArrowDown') key = 'Next';
-      if (key === 'ArrowUp') key = 'ArrowRight';
       activeApp()?.keypad(key, literal);
     }
   }
@@ -103,10 +106,19 @@
   function deviceKeyboard(event) {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const key = event.key;
-    if (!frame.hidden && (key === 'Escape' || key === 'BrowserBack')) back();
-    else if (key === 'PageUp' || key === 'PageDown') scroll(key === 'PageUp' ? -1 : 1);
-    else if ((model === 'keys' || (model === 'touch' && event.target.ownerDocument === document)) &&
+    if (!frame.hidden && (key === 'Escape' || key === 'BrowserBack')) {
+      if (!event.repeat) back();
+    } else if (key === 'PageUp' || key === 'PageDown') {
+      scroll(key === 'PageUp' ? -1 : 1);
+    } else if (model === 'keys' && (key === 'Home' || key === 'End')) {
+      event.preventDefault();
+      return;
+    } else if ((model === 'keys' || (model === 'touch' && event.target.ownerDocument === document)) &&
         /^(?:Arrow(?:Left|Right|Up|Down)|Enter|Backspace|[0-9א-תa-zA-Z#. −-])$/.test(key)) {
+      if (event.repeat && (key === 'Enter' || key === ' ')) {
+        event.preventDefault();
+        return;
+      }
       if (key === 'Enter' && event.target.closest('[data-key]')) return;
       if (key === ' ' && event.target.closest('[data-key]')) return;
       if (key === '#') press('.');
@@ -126,11 +138,11 @@
   function configureKeypad() {
     keypadMode = undefined;
     setKeypadMode(model !== 'smartphone');
+    activeApp()?.setKeypadOnly?.(model === 'keys');
   }
 
   function home() {
     model = 'smartphone';
-    $('screen-off').hidden = true;
     frame.hidden = true;
     $('landing').hidden = false;
     $('keypad').hidden = true;
@@ -144,9 +156,7 @@
     $('landing').hidden = true;
     frame.hidden = false;
     $('keypad').hidden = value === 'smartphone';
-    $('screen-off').hidden = true;
-    frame.style.visibility = 'visible';
-    $('power').setAttribute('aria-pressed', 'false');
+    updateScreen();
     if (!frame.hasAttribute('src')) frame.src = '/app.html';
     else configureKeypad();
     resize();
@@ -164,11 +174,6 @@
   }
   scaleInput.oninput = () => setCalibration(Number(scaleInput.value));
   $('reset-scale').onclick = () => setCalibration(Number(scaleInput.defaultValue));
-  $('power').onclick = () => {
-    $('screen-off').hidden = !$('screen-off').hidden;
-    frame.style.visibility = $('screen-off').hidden ? 'visible' : 'hidden';
-    $('power').setAttribute('aria-pressed', String(!$('screen-off').hidden));
-  };
   frame.addEventListener('load', () => {
     const doc = frame.contentDocument;
     if (!doc) return;
@@ -181,6 +186,7 @@
       setKeypadMode(!editable);
     }, true);
     configureKeypad();
+    updateScreen();
   });
   window.addEventListener('message', event => {
     if (event.source === frame.contentWindow && event.origin === location.origin && event.data === 'ribit:exit') home();
@@ -209,7 +215,7 @@
       }
     });
   });
-  glass.addEventListener('wheel', event => {
+  device.addEventListener('wheel', event => {
     if (model === 'keys') event.preventDefault();
   }, { passive: false });
   window.addEventListener('resize', resize);

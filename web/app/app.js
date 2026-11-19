@@ -548,7 +548,11 @@
         'אינפלציה קובעת כמה שווה הכסף במחירי היום.',
         'מס נומינלי מחושב על רווח מעל בסיס העלות. מס ריאלי מצמיד כל הפקדה למדד עד המימוש. ירידת מדד אינה מקטינה את בסיס המס.',
         'כל נקודה בגרף מראה שווי נטו אילו מומש המסלול באותו מועד.'
-      ].forEach(function (line) { list.appendChild(make('li', line)); });
+      ].forEach(function (line) {
+        var item = make('li', line);
+        if (document.body.classList.contains('keypad-only')) item.tabIndex = -1;
+        list.appendChild(item);
+      });
       content.appendChild(list);
     });
   }
@@ -603,30 +607,58 @@
     });
   }
 
-  function moveFocus(key, from) {
-    var inDialog = !byId('dialog-backdrop').hidden;
-    var items = focusable(inDialog ? byId('dialog') : document.body);
-    var active = from || document.activeElement;
-    var index = items.indexOf(active);
-    if (index < 0) { if (items.length) items[0].focus(); return; }
-    var currentBox = active.getBoundingClientRect();
-    var x = currentBox.left + currentBox.width / 2;
-    var y = currentBox.top + currentBox.height / 2;
-    var vertical = key === 'ArrowUp' || key === 'ArrowDown';
-    var sign = key === 'ArrowUp' || key === 'ArrowLeft' ? -1 : 1;
-    var best = Infinity;
-    var target = null;
-    items.forEach(function (item) {
-      if (item === active) return;
-      var box = item.getBoundingClientRect();
-      var dx = box.left + box.width / 2 - x;
-      var dy = box.top + box.height / 2 - y;
-      var forward = sign * (vertical ? dy : dx);
-      var side = Math.abs(vertical ? dx : dy);
-      var weight = forward + side * 3;
-      if (forward > 4 && weight < best) { best = weight; target = item; }
+  function navigationScope() {
+    if (!byId('dialog-backdrop').hidden) return byId('dialog');
+    if (!byId('menu-items').hidden) return byId('menu-items');
+    return document.body;
+  }
+
+  function navigationRows(items) {
+    var rows = [];
+    // Separate fixed controls from scrolling content so overlapping rectangles cannot share a row.
+    var sections = [[], [], []];
+    items.forEach(function (control) {
+      var box = control.getBoundingClientRect();
+      var section = bar.contains(control) ? 0 : control.closest('.tabs') ? 2 : 1;
+      sections[section].push({ control: control, x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2, height: box.height });
     });
-    if (target) target.focus();
+    sections.forEach(function (section) {
+      var row;
+      section.sort(function (a, b) { return a.y - b.y; }).forEach(function (item) {
+        if (!row || item.y - row[0].y >= Math.min(item.height, row[0].height) / 2) {
+          row = [];
+          rows.push(row);
+        }
+        row.push(item);
+      });
+    });
+    rows.forEach(function (row) { row.sort(function (a, b) { return a.x - b.x; }); });
+    return rows;
+  }
+
+  function moveFocus(key, active, items) {
+    var rows = navigationRows(items);
+    if (!rows.length) return null;
+    var rowIndex = 0;
+    var column = -1;
+    for (; rowIndex < rows.length; rowIndex++) {
+      column = rows[rowIndex].map(function (item) { return item.control; }).indexOf(active);
+      if (column >= 0) break;
+    }
+    if (rowIndex === rows.length) return rows[0][rows[0].length - 1].control;
+    var row = rows[rowIndex];
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
+      var adjacent = rows[rowIndex + (key === 'ArrowUp' ? -1 : 1)];
+      if (!adjacent) return null;
+      return adjacent.reduce(function (closest, item) {
+        return Math.abs(item.x - row[column].x) <= Math.abs(closest.x - row[column].x) + 0.5 ? item : closest;
+      }).control;
+    }
+    var left = key !== 'ArrowRight';
+    var neighbor = row[column + (left ? -1 : 1)];
+    if (neighbor) return neighbor.control;
+    var nextRow = rows[rowIndex + (left ? 1 : -1)];
+    return nextRow ? nextRow[left ? nextRow.length - 1 : 0].control : null;
   }
 
   function keypadFocus(control) {
@@ -655,6 +687,10 @@
     }
   }
 
+  function setKeypadOnly(enabled) {
+    document.body.classList.toggle('keypad-only', enabled);
+  }
+
   function renderKeypadHint(hint) {
     if (!hint) return;
     hint.textContent = titleNumbers ? 'מספרים · # לעברית · * לרווח' :
@@ -664,10 +700,12 @@
   function keypad(key, literal) {
     if (key === 'Back') { requestBack(); return; }
     var dialog = !byId('dialog-backdrop').hidden;
-    var scope = dialog ? byId('dialog') : document.body;
-    var items = focusable(scope);
-    var currentIndex = items.indexOf(previewFocus);
-    var active = items[currentIndex];
+    var scope = navigationScope();
+    var items = focusable(scope).filter(function (control) {
+      return !bar.contains(control) || byId('menu-items').contains(control);
+    });
+    if (dialog) items.push.apply(items, scope.querySelectorAll('li[tabindex="-1"]'));
+    var active = items.indexOf(previewFocus) < 0 ? null : previewFocus;
     if (key === 'Menu') {
       if (!dialog) {
         keypadFocus(byId('menu'));
@@ -675,14 +713,8 @@
       }
       return;
     }
-    if (key === 'ArrowUp' || key === 'ArrowDown') {
-      scroll(key === 'ArrowUp' ? -1 : 1);
-      return;
-    }
-    if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'Next') {
-      if (!items.length) return;
-      var direction = key === 'ArrowRight' ? -1 : 1;
-      keypadFocus(items[currentIndex < 0 ? 0 : (currentIndex + direction + items.length) % items.length]);
+    if (key.indexOf('Arrow') === 0 || key === 'Next') {
+      keypadFocus(moveFocus(key, active, items));
       return;
     }
     if (!active) {
@@ -769,7 +801,7 @@
   bar.addEventListener('focus', function () { revealBar(scrollPosition()); }, true);
   document.addEventListener('focus', function (event) {
     var target = event.target;
-    if (!/^(?:BUTTON|INPUT|SELECT|A)$/.test(target.tagName)) return;
+    if (!/^(?:BUTTON|INPUT|SELECT|A|LI)$/.test(target.tagName)) return;
     if (previewFocus) previewFocus.classList.remove('key-focus');
     if (target !== previewFocus) lastTap = null;
     previewFocus = target;
@@ -788,13 +820,13 @@
       }
     }
     if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].indexOf(key) >= 0 &&
-        active.tagName !== 'SELECT' && (active.tagName !== 'INPUT' || key === 'ArrowDown' || key === 'ArrowUp')) {
+        (active.tagName !== 'INPUT' && active.tagName !== 'SELECT' || key === 'ArrowDown' || key === 'ArrowUp')) {
       event.preventDefault();
-      moveFocus(key);
+      keypadFocus(moveFocus(key, active, focusable(navigationScope())));
     }
   });
   window.addEventListener('resize', draw);
-  window.Ribit = { back: back, keypad: keypad, setKeypadMode: setKeypadMode, scroll: scroll };
+  window.Ribit = { back: back, keypad: keypad, setKeypadMode: setKeypadMode, setKeypadOnly: setKeypadOnly, scroll: scroll };
   form.addEventListener('submit', calculate);
   form.addEventListener('change', updateConditionalFields);
   fields.depositFee.addEventListener('input', updateConditionalFields);

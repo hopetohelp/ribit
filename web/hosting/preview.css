@@ -41,7 +41,6 @@ details input { display: block; max-width: 100%; }
 .device-top i { width: 30px; height: 3px; background: #8495ad; border-radius: 3px; }
 .glass { position: relative; background: #080c15; overflow: hidden; border-radius: 5px; }
 iframe { display: block; border: 0; transform-origin: left top; position: absolute; left: 0; top: 0; background: #fafbff; }
-#screen-off { position: absolute; inset: 0; background: #080c15; }
 .side { position: absolute; left: 100%; top: 42px; display: grid; gap: 5px; }
 .side button { padding: 0; min-width: 44px; font-size: 16px; border-radius: 0 8px 8px 0; }
 #landing {
@@ -62,8 +61,13 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 .side { left: auto; right: -5px; top: 21%; z-index: 2; gap: 4px; }
 .side button { min-width: 0; min-height: 27px; width: 8px; font-size: 0; border-radius: 0 3px 3px 0; background: #778196; border: 0; }
 .side button:focus-visible { outline-offset: -1px; }
-.smartphone .side button:not(#power) { transform: translateX(calc(-1 * var(--button-span, 0px))); border-radius: 3px 0 0 3px; }
-#power { margin-top: 9px; background: #aab2c4; }
+.smartphone .side button:not(.device-back) { transform: translateX(calc(-1 * var(--button-span, 0px))); border-radius: 3px 0 0 3px; }
+.side .device-back {
+  margin-top: 9px; width: 9px; min-height: 37px;
+  background: linear-gradient(90deg, #526484, #b8c8e1);
+  border: 1px solid #d3ddf0; border-left-color: #2a3344;
+  box-shadow: inset -1px 0 #e2edff, 2px 1px 1px #050812;
+}
 
 #landing {
   display: flex;
@@ -158,7 +162,7 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 }
 .qin-call small { position: absolute; top: 52%; left: 0; right: 0; font-size: 7px; font-size: 3.8cqw; }
 #keypad [data-key="Back"] {
-  box-shadow: inset 0 0 0 2px #596376;
+  box-shadow: inset 0 0 0 1px #596376, inset 0 2px #fff, inset 0 -3px #a9abb1, 0 1px 2px #45474a55;
   border-radius: 3px; color: #303746;
 }
 #keypad .digits button {
@@ -243,7 +247,10 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 .device.touch #keypad .qin-navigation > .qin-soft { margin-top: .23cqw; }
 .device.touch #keypad button:focus-visible { outline-color: #c3d7ff; }
 .device.touch #keypad .qin-call .receiver { width: 8.2cqw; height: 2.2cqw; }
-.device.touch #keypad .qin-navigation [data-key="Back"] { border-color: #82818b; }
+.device.touch #keypad .qin-navigation [data-key="Back"] {
+  border-color: #82818b; border-bottom-color: #121218;
+  box-shadow: inset 0 2px #aaaaaf50, inset 0 -2px #0b0b10, 0 2px 2px #080809;
+}
 .device.touch .f21-mark { display: inline-block; }
 .device.touch .f21-return { font-family: Arial, sans-serif; font-size: 7cqw; }
 .f21-mascot { position: relative; width: 4.6cqw; height: 4.2cqw; border: 1px solid; border-radius: 45%; }
