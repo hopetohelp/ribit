@@ -27,7 +27,7 @@
     'depositFee', 'balanceFee', 'taxType', 'taxRate', 'includeDepositFeeInBasis'];
   var toastTimer;
   var previewFocus;
-  var lastScroll = 0;
+  var barScrollEdge = 0;
   var keypadEnabled = false;
   var titleNumbers = false;
   var lastTap;
@@ -136,8 +136,7 @@
 
   function pageTop() {
     main.scrollTop = 0;
-    lastScroll = 0;
-    bar.classList.remove('retracted');
+    revealBar(0);
   }
 
   function view(name) {
@@ -390,16 +389,18 @@
     toastTimer = setTimeout(function () { visibility(byId('status'), false); }, 3200);
   }
 
-  function openDialog(title, render) {
+  function openDialog(title, render, centered) {
     var focused = document.activeElement;
     state.dialogFocus = byId('menu-items').contains(focused) ? byId('menu') : focused;
     setMenu(false);
+    var dialog = byId('dialog');
+    dialog.classList.toggle('about-dialog', Boolean(centered));
     text('dialog-title', title);
     var content = byId('dialog-content');
     content.textContent = '';
     render(content);
     visibility(byId('dialog-backdrop'), true);
-    byId('dialog-close').focus();
+    (centered ? dialog : byId('dialog-close')).focus();
   }
 
   function closeDialog() {
@@ -554,6 +555,7 @@
 
   function about() {
     openDialog('אודות ריבית', function (content) {
+      content.appendChild(make('p', 'ריבית הוא מחשבון ריבית דריבית חינמי לחלוטין להשקעות. אפשר להשוות מסלולים ולשמור חישובים גם ללא אינטרנט.', 'about-copy'));
       var mail = make('a', 'hopetohelp.il@gmail.com');
       mail.href = 'mailto:hopetohelp.il@gmail.com';
       var site = make('a', 'ribit.hopetohelp.net');
@@ -566,7 +568,7 @@
         row.appendChild(link);
         content.appendChild(row);
       });
-    });
+    }, true);
   }
 
   function setTheme(dark, remember) {
@@ -739,14 +741,32 @@
     content.scrollTop += direction * Math.max(35, Math.round(content.clientHeight * .65));
   }
 
+  function scrollPosition() {
+    return Math.max(0, Math.min(main.scrollTop, main.scrollHeight - main.clientHeight));
+  }
+
+  function revealBar(position) {
+    bar.classList.remove('retracted');
+    barScrollEdge = position;
+  }
+
   main.addEventListener('scroll', function () {
-    var top = Math.max(0, main.scrollTop);
-    if (top !== lastScroll || top === 0) {
-      bar.classList.toggle('retracted', top > 0 && top > lastScroll);
-      lastScroll = top;
+    var top = scrollPosition();
+    if (top === 0) {
+      revealBar(0);
+    } else if (bar.classList.contains('retracted')) {
+      // Ignore the small reversal at the end of a touch scroll.
+      barScrollEdge = Math.max(barScrollEdge, top);
+      if (barScrollEdge - top >= 8) revealBar(top);
+    } else {
+      barScrollEdge = Math.min(barScrollEdge, top);
+      if (top > barScrollEdge) {
+        bar.classList.add('retracted');
+        barScrollEdge = top;
+      }
     }
   });
-  bar.addEventListener('focus', function () { bar.classList.remove('retracted'); }, true);
+  bar.addEventListener('focus', function () { revealBar(scrollPosition()); }, true);
   document.addEventListener('focus', function (event) {
     var target = event.target;
     if (!/^(?:BUTTON|INPUT|SELECT|A)$/.test(target.tagName)) return;
@@ -761,7 +781,8 @@
     if (key === 'Tab' && !byId('dialog-backdrop').hidden) {
       var dialogItems = focusable(byId('dialog'));
       var index = dialogItems.indexOf(active);
-      if ((!event.shiftKey && index === dialogItems.length - 1) || (event.shiftKey && index === 0)) {
+      if (dialogItems.length && (index < 0 ||
+          (!event.shiftKey && index === dialogItems.length - 1) || (event.shiftKey && index === 0))) {
         event.preventDefault();
         dialogItems[event.shiftKey ? dialogItems.length - 1 : 0].focus();
       }

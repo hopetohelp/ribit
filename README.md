@@ -3,7 +3,7 @@
 מחשבון ריבית דריבית בעברית עם הפקדות קבועות, השוואת שני מסלולים ושמירה מקומית.
 אותם מסכים ומנוע חישוב משמשים את Android ואת האתר.
 
-[פתיחת האתר והורדת בטא 0.1.0](https://ribit.hopetohelp.net)
+[פתיחת האתר והורדת בטא 0.1.1](https://ribit.hopetohelp.net)
 
 ## שימוש
 
@@ -56,4 +56,4 @@ python3 -m http.server 3265 --directory web/dist
 ליצירת מודול Worker שאפשר להעלות ל־Cloudflare, הפקודה `node web/build.mjs /path/to/worker.mjs`
 מארזת את אותם קבצים. לאחר פרסום ה־Worker, מחברים אליו את `ribit.hopetohelp.net`
 כ־Custom Domain בחשבון של האזור `hopetohelp.net`. מחברים את מרחב ה־KV של ההורדות בשם `DOWNLOADS`
-ומעלים אליו את קובץ ה־APK בשם `ribit-0.1.0.apk`.
+ומעלים אליו את קובץ ה־APK בשם `ribit-0.1.1.apk`.
