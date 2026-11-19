@@ -6,9 +6,27 @@ description: Builds and opens a live interactive preview of the Ribit app direct
 
 Ribit shares the same HTML/CSS/JS UI and calculation engine (`web/app/`) between the Android WebView and the web app, plus a device simulator (`web/hosting/` for iPhone 15, Qin F21 Pro, and Qin 1S+).
 
-## 1. Self-contained single-file preview (offline / zero server)
+## Core rule
 
-Generate a standalone HTML file directly from the current repo sources (no external dependencies, Node.js 22+):
+**Never hand-write, mock, or recreate the Ribit UI or calculation engine.** Always preview the real source files from `web/app/` and `web/hosting/` using either the live `web/dist` server or the `web/preview-bundle.mjs` bundler below.
+
+## 1. Live local server preview (100% real `web/dist` site — recommended)
+
+Build and serve the unmodified `web/dist` bundle (full device simulator for iPhone 15, Qin F21 Pro, Qin 1S+ + real `app.html`):
+
+```sh
+node web/build.mjs
+python3 -m http.server 3265 --bind 127.0.0.1 --directory web/dist
+```
+
+In cloud/agent environments:
+- Start the server with `IsDaemon: true` so it keeps running after the turn ends.
+- Verify `http://localhost:3265/` and `http://localhost:3265/app.html` return `200`.
+- Bookmark `http://localhost:3265` in a `UserFacing: true` `.url.json` artifact for the Preview pane, and do not tell the user to open `localhost` manually on their own machine.
+
+## 2. Self-contained single-file preview (offline / zero server)
+
+Generate a standalone HTML file directly from the real repo sources (no external dependencies, Node.js 22+):
 
 ```sh
 # Full device-frame preview (iPhone 15, Qin F21 Pro, Qin 1S+ + keypad) -> web/dist/preview.html
@@ -21,25 +39,9 @@ node web/preview-bundle.mjs --app-only
 node web/preview-bundle.mjs --app-only /path/to/ribit_preview.html
 ```
 
-The bundler (`web/preview-bundle.mjs`) inlines `app.css`, Arimo `.woff2` Hebrew/Latin fonts, `vendor/decimal.js`, `finance.js`, `storage.js` (with an automatic in-memory fallback if `IndexedDB` is blocked in an opaque/sandboxed origin), `chart.js`, and `app.js`.
+The bundler (`web/preview-bundle.mjs`) inlines the real `app.css`, Arimo `.woff2` Hebrew/Latin fonts, `vendor/decimal.js`, `finance.js`, `storage.js` (with an automatic in-memory fallback if `IndexedDB` is blocked in an opaque/sandboxed origin), `chart.js`, and `app.js`.
 
-## 2. Live local server preview (full `web/dist` site)
-
-When the user or environment explicitly needs a live HTTP server (for example, an IDE Preview pane pointing at `http://localhost:3265`):
-
-```sh
-node web/build.mjs
-python3 -m http.server 3265 --directory web/dist
-```
-
-In cloud/agent environments:
-- Start the server as a background daemon (`IsDaemon: true`) so it stays running after the turn ends.
-- Bookmark `http://localhost:3265` in a `UserFacing: true` `.url.json` artifact for the Preview pane, and do not tell the user to open `localhost` manually on their own machine.
-
-## 3. Presenting the preview in chat / artifact pane
-
-- If the agent environment supports HTML artifacts (`generative_ui`) and no live `localhost` server was explicitly requested, prefer delivering an interactive standalone `.html` artifact in the conversation artifact directory (`UserFacing: true`, `RequestFeedback: false`), or run the daemon server + `.url.json` bookmark when presenting the unmodified `web/dist` build.
-- Verify the bundler and finance engine with:
+## 3. Verification
 
 ```sh
 node --test web/finance.test.cjs web/preview-bundle.test.cjs
