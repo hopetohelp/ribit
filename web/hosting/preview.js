@@ -9,10 +9,13 @@
   // Body dimensions, display diagonal and native panel proportions.
   const models = {
     smartphone: [71.6, 147.6, 6.1, 1179, 2556, 390, 846],
-    touch: [75.55, 162.24, 6.67, 1080, 2400, 360, 800],
+    touch: [53, 132, 2.8, 480, 640, 240, 320],
     keys: [54, 132, 2.8, 240, 320, 240, 320]
   };
+  // The F21 panel bounds were measured on the front photograph (429 × 1053 body).
+  const f21Screen = { width: 352 / 429, height: 469 / 1053, top: 63 / 1053 };
   let model = 'smartphone';
+  let keypadMode;
   let launchButton;
   let calibration = 100;
   let size = 'fit';
@@ -30,16 +33,18 @@
     const [bodyWidth, bodyHeight, diagonal, panelWidth, panelHeight, width, height] = models[model];
     const pxPerMm = 96 / 25.4 * calibration / 100;
     const pixelsToMm = diagonal * 25.4 / Math.hypot(panelWidth, panelHeight);
-    const screenWidth = panelWidth * pixelsToMm * pxPerMm;
-    const screenHeight = panelHeight * pixelsToMm * pxPerMm;
+    const screenWidth = (model === 'touch' ? bodyWidth * f21Screen.width : panelWidth * pixelsToMm) * pxPerMm;
+    const screenHeight = (model === 'touch' ? bodyHeight * f21Screen.height : panelHeight * pixelsToMm) * pxPerMm;
+    const screenTop = model === 'touch' ? bodyHeight * f21Screen.top :
+      model === 'keys' ? bodyHeight * 94 / 1060 : (bodyHeight - screenHeight / pxPerMm) / 2;
     device.className = 'device ' + model;
     device.style.width = bodyWidth * pxPerMm + 'px';
     device.style.height = bodyHeight * pxPerMm + 'px';
     device.style.setProperty('--button-span', (bodyWidth * pxPerMm + 2) + 'px');
     glass.style.width = screenWidth + 'px';
     glass.style.height = screenHeight + 'px';
-    device.style.setProperty('--depth', 8.5 * pxPerMm + 'px');
-    glass.style.top = (model === 'keys' ? 94 / 1060 * bodyHeight * pxPerMm : (bodyHeight * pxPerMm - screenHeight) / 2) + 'px';
+    device.style.setProperty('--depth', (model === 'touch' ? 9.5 : 8.5) * pxPerMm + 'px');
+    glass.style.top = screenTop * pxPerMm + 'px';
     [frame, $('landing')].forEach(surface => {
       surface.style.width = width + 'px';
       surface.style.height = height + 'px';
@@ -88,6 +93,7 @@
   function press(key, literal) {
     if (key === 'Back') back();
     else {
+      if (model === 'touch') setKeypadMode(true);
       if (key === 'ArrowDown') key = 'Next';
       if (key === 'ArrowUp') key = 'ArrowRight';
       activeApp()?.keypad(key, literal);
@@ -99,7 +105,8 @@
     const key = event.key;
     if (!frame.hidden && (key === 'Escape' || key === 'BrowserBack')) back();
     else if (key === 'PageUp' || key === 'PageDown') scroll(key === 'PageUp' ? -1 : 1);
-    else if (model === 'keys' && /^(?:Arrow(?:Left|Right|Up|Down)|Enter|Backspace|[0-9א-תa-zA-Z#. −-])$/.test(key)) {
+    else if ((model === 'keys' || (model === 'touch' && event.target.ownerDocument === document)) &&
+        /^(?:Arrow(?:Left|Right|Up|Down)|Enter|Backspace|[0-9א-תa-zA-Z#. −-])$/.test(key)) {
       if (key === 'Enter' && event.target.closest('[data-key]')) return;
       if (key === ' ' && event.target.closest('[data-key]')) return;
       if (key === '#') press('.');
@@ -109,8 +116,16 @@
     event.stopPropagation();
   }
 
+  function setKeypadMode(enabled) {
+    const app = activeApp();
+    if (!app || keypadMode === enabled) return;
+    app.setKeypadMode(enabled);
+    keypadMode = enabled;
+  }
+
   function configureKeypad() {
-    activeApp()?.setKeypadMode(model === 'keys');
+    keypadMode = undefined;
+    setKeypadMode(model !== 'smartphone');
   }
 
   function home() {
@@ -128,7 +143,7 @@
     model = value;
     $('landing').hidden = true;
     frame.hidden = false;
-    $('keypad').hidden = value !== 'keys';
+    $('keypad').hidden = value === 'smartphone';
     $('screen-off').hidden = true;
     frame.style.visibility = 'visible';
     $('power').setAttribute('aria-pressed', 'false');
@@ -158,6 +173,13 @@
     const doc = frame.contentDocument;
     if (!doc) return;
     doc.addEventListener('keydown', deviceKeyboard, true);
+    doc.addEventListener('pointerdown', event => {
+      if (model !== 'touch') return;
+      // Give direct taps on editable fields their normal browser keyboard.
+      const editable = event.target.closest('input[type="text"], input:not([type])') ||
+        event.target.closest('label')?.querySelector('input[type="text"], input:not([type])');
+      setKeypadMode(!editable);
+    }, true);
     configureKeypad();
   });
   window.addEventListener('message', event => {

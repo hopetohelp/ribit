@@ -56,8 +56,6 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 }
 .device.smartphone { border-radius: 10% / 5%; }
 .device.smartphone .glass { border-radius: 9% / 4.5%; }
-.device.touch { border-radius: 6% / 3%; }
-.device.touch .glass { border-radius: 5% / 2.5%; }
 .device.keys { border-radius: 9% / 3.7%; }
 .device-top { position: absolute; top: 1%; left: 0; right: 0; height: 3px; z-index: 1; pointer-events: none; }
 .device-top i { background: #626978; height: 2px; width: 12%; }
@@ -106,17 +104,18 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 
 .hardware { position: absolute; inset: 0; border-radius: inherit; }
 .glass { z-index: 1; }
-.device.keys {
-  background: transparent; box-shadow: none; border: 0; touch-action: none;
+.device:is(.keys, .touch) {
+  background: transparent; box-shadow: none; border: 0;
   container-type: inline-size;
 }
+.device.keys { touch-action: none; }
 .device.keys .hardware {
   background: linear-gradient(145deg, #eee 8%, #f7f7f5 57%, #d9d9d6);
   border-radius: 9% / 3.7%;
   box-shadow: inset 0 0 0 1px #f9f9f9, inset 0 0 0 3px #d1d1d1,
     0 4px 0 #a5a5a3, 0 8px 0 #737575, 0 16px 25px #0008;
 }
-.device.keys .side { display: none; }
+.device:is(.keys, .touch) .side, .f21-mark, .f21-signature { display: none; }
 .device.keys #app { pointer-events: none; }
 .device.keys .device-top {
   inset: 1.42% 3.53% auto; height: 54.25%;
@@ -199,3 +198,86 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   inset: 10.5%; border: 1px solid #292929; background: linear-gradient(150deg, #fff, #e8eae6);
 }
 #keypad .qin-ring [data-key="Enter"]:hover { background: #d9ddd8; }
+
+/* F21 Pro front reference: body (6,6)–(435,1059), key assembly (46,610)–(395,997). */
+.device.touch .hardware {
+  border-radius: 16% / 5.9%;
+  background: linear-gradient(152deg, #333338, #242426 56%, #2b2b2c);
+  box-shadow: inset 0 0 0 1px #55545a, inset 0 0 0 2px #19191b,
+    inset 0 0 0 4px #343437, inset 0 0 0 5px #19191c,
+    calc(var(--depth) * .08) calc(var(--depth) * .1) 0 #101013, 0 16px 28px #0008;
+}
+.device.touch .glass { border-radius: 3% / 2%; }
+.device.touch .device-top { inset: 1.52% 8.5% auto; height: 3%; }
+.device.touch .device-top i {
+  align-self: start; width: 42%; height: 30%; border-radius: 0 0 35% 35%;
+  background: #101012;
+}
+.device.touch .device-top::after {
+  content: ""; position: absolute; left: 74.4%; top: 31%;
+  width: 10.2%; height: 54%; border-radius: 999px;
+  background: #080809; box-shadow: inset 0 -1px #303033;
+}
+.device.touch .f21-signature {
+  display: block; position: absolute; inset: 51.5% 0 auto; text-align: center;
+  color: #6c6b70; font-size: 15px; font-size: 6.7cqw; letter-spacing: .045em;
+}
+.device.touch #keypad {
+  position: absolute; inset: 57.36% 9.324% 5.888%;
+  display: grid; grid-template-rows: 115fr 251fr; row-gap: 5.426%;
+  touch-action: none;
+}
+.device.touch .qin-navigation, .device.touch .digits {
+  grid-template-columns: 98fr 99fr 99fr; column-gap: 7.65%; background: none;
+}
+.device.touch .qin-navigation { grid-template-rows: 49fr 48fr; row-gap: 15.65%; border: 0; }
+.device.touch .qin-navigation::before, .device.touch .qin1-mark { display: none; }
+.device.touch .digits { grid-template-rows: repeat(4, minmax(0, 1fr)); row-gap: 7.8%; }
+.device.touch #keypad :is(.qin-navigation, .digits) > button {
+  border: 1px solid #515155; border-bottom-color: #0e0e10; border-radius: 999px;
+  background: linear-gradient(#424246, #242427 54%, #323235);
+  color: #b1b0b6; box-shadow: inset 0 1px 1px #ffffff14, 0 1px 2px #08080aad;
+}
+.device.touch #keypad :is(.qin-navigation, .digits) > button:hover { filter: brightness(1.25); }
+.device.touch #keypad :is(.qin-navigation, .digits) > button:active { filter: brightness(.85); }
+.device.touch #keypad .qin-navigation > .qin-soft { margin-top: .23cqw; }
+.device.touch #keypad button:focus-visible { outline-color: #c3d7ff; }
+.device.touch #keypad .qin-call .receiver { width: 8.2cqw; height: 2.2cqw; }
+.device.touch #keypad .qin-navigation [data-key="Back"] { border-color: #82818b; }
+.device.touch .f21-mark { display: inline-block; }
+.device.touch .f21-return { font-family: Arial, sans-serif; font-size: 7cqw; }
+.f21-mascot { position: relative; width: 4.6cqw; height: 4.2cqw; border: 1px solid; border-radius: 45%; }
+.f21-mascot::before, .f21-mascot::after {
+  content: ""; position: absolute; width: 1.25cqw; height: 1.25cqw; border: 1px solid;
+  transform: rotate(45deg); background: #333336; border-radius: 2px;
+}
+.f21-mascot::before { top: -20%; left: -13%; }
+.f21-mascot::after { bottom: -15%; right: -12%; }
+.device.touch #keypad .qin-ring {
+  width: 116%; aspect-ratio: .983; left: .12cqw; border-color: #111114;
+  background: linear-gradient(140deg, #3d3d40, #242425 63%, #373739);
+  box-shadow: inset 0 0 0 1px #505054, 0 1px 2px #111;
+}
+.device.touch #keypad .qin-ring button:hover { background-color: #ffffff18; }
+.device.touch #keypad .qin-ring [data-key="Enter"] {
+  inset: 8%; border-color: #111114; background: radial-gradient(ellipse at 40% 25%, #313134, #272729);
+}
+.device.touch #keypad .qin-ring [data-key="Enter"]:hover { background: #404044; }
+.device.touch #keypad .digits button {
+  display: flex; align-items: baseline; justify-content: center; align-self: stretch;
+  line-height: 1; padding-top: .35cqw; gap: .6cqw;
+  color: #a09fa5; font-size: 9.2cqw; -webkit-text-stroke: .36px #2e2e32;
+}
+.device.touch .digits small { font-size: 2.8cqw; }
+.device.touch .digits [data-key="5"]::before, .device.touch .digits [data-key="5"]::after {
+  background: #18181a; width: .9cqw; height: .9cqw; top: 58%;
+}
+.device.touch .digits [data-key="5"]::before { left: 12%; }
+.device.touch .digits [data-key="5"]::after { right: 12%; }
+.device.touch #keypad .digits [data-key="."] { width: 49.5%; border-radius: 999px 0 0 999px; }
+.device.touch [data-key="."] .mic { display: none; }
+.device.touch [data-key="."]::after {
+  content: ""; pointer-events: none; position: absolute; left: 100%; top: -1px; bottom: -1px; width: calc(100% + 1px);
+  border: 1px solid #515155; border-radius: 0 999px 999px 0;
+  background: radial-gradient(circle, #6776a2 0 5%, #242743 6% 13%, #101122 14% 25%, #080809 26% 61%, #363639 64%, #151516 75%);
+}

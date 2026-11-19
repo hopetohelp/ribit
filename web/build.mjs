@@ -70,22 +70,23 @@ export class SiteCounter extends DurableObject {
     sql.exec('CREATE TABLE IF NOT EXISTS browsers (id TEXT PRIMARY KEY) WITHOUT ROWID');
   }
 
-  total(increment) {
+  total(increment, minimum = 0) {
     const sql = this.ctx.storage.sql;
-    if (increment) sql.exec('INSERT INTO tally VALUES (1, 1) ON CONFLICT(id) DO UPDATE SET total = total + 1');
-    return sql.exec('SELECT total FROM tally WHERE id = 1').toArray()[0]?.total ?? 0;
+    if (increment) sql.exec('INSERT INTO tally VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET total = MAX(total + 1, excluded.total)', minimum + 1);
+    return Math.max(minimum, sql.exec('SELECT total FROM tally WHERE id = 1').toArray()[0]?.total ?? 0);
   }
 
-  seeBrowser(browserId) {
+  seeBrowser(browserId, minimum) {
     const storage = this.ctx.storage;
     return storage.transactionSync(() => {
       const inserted = storage.sql.exec('INSERT OR IGNORE INTO browsers (id) VALUES (?)', browserId);
-      return this.total(inserted.rowsWritten > 0);
+      return this.total(inserted.rowsWritten > 0, minimum);
     });
   }
 }
 const files = ${JSON.stringify(assets)};
 const historicalDownloads = 15;
+const minimumViewers = 30;
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
@@ -114,7 +115,7 @@ export default {
       const browsers = env.COUNTS.getByName('unique-browsers');
       const validVisitor = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(browserId);
       const [visitors, downloadRequests] = await Promise.all([
-        validVisitor ? browsers.seeBrowser(browserId) : browsers.total(false),
+        validVisitor ? browsers.seeBrowser(browserId, minimumViewers) : browsers.total(false, minimumViewers),
         env.COUNTS.getByName('site-downloads').total(false)
       ]);
       return Response.json({visitors, downloads: historicalDownloads + downloadRequests}, {headers: {'Cache-Control': 'no-store'}});
