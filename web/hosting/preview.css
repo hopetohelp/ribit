@@ -19,7 +19,7 @@ h1 { font-size: 54px; margin: 8px 0 0; line-height: 1.1; }
 h2 { font-size: 20px; margin: 0 0 10px; }
 p { margin: 8px 0; }
 .primary { display: inline-flex; align-items: center; text-decoration: none; background: #c6d7ff; color: #142043; font-weight: bold; margin-top: 9px; }
-.launch, .history { margin-top: 24px; }
+.launch { margin-top: 24px; }
 #profiles, .sizes, .toolbar > div { display: flex; flex-wrap: wrap; gap: 7px; }
 .sizes, details { margin-top: 10px; }
 details label { display: block; }
@@ -88,14 +88,20 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   background: linear-gradient(115deg, #edf3ff, #a8c1ff);
   border-color: #ccd9ff; box-shadow: 0 5px 23px #4d78db57;
 }
-#landing .launch, #landing .history { margin-top: 17px; }
+#landing .launch { margin-top: 17px; }
 #landing #profiles { display: grid; gap: 5px; }
 #landing #profiles button { width: 100%; padding: 5px; background: #172743; border-color: #536b98; }
 #landing #profiles button:hover { background: #263c65; }
 #landing .sizes { justify-content: center; }
 #landing .sizes button { font-size: 14px; }
 #landing .statistics { justify-content: center; margin-top: 16px; padding: 9px 0; border-color: #60739a70; }
-#landing .history p { font-size: 13px; color: #d1ddf4; }
+.github {
+  display: inline-flex; min-height: 44px; align-items: center; justify-content: center;
+  margin-top: 17px; padding: 7px 12px; border: 1px solid #637394;
+  border-radius: 9px; background: #17243c; color: #eff3ff;
+  text-decoration: none; font-weight: 700;
+}
+.github:hover { background: #263c65; }
 #landing #ruler { margin-inline: auto; }
 
 .hardware { position: absolute; inset: 0; border-radius: inherit; }

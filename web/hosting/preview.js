@@ -87,7 +87,11 @@
 
   function press(key, literal) {
     if (key === 'Back') back();
-    else activeApp()?.keypad(key, literal);
+    else {
+      if (key === 'ArrowDown') key = 'Next';
+      if (key === 'ArrowUp') key = 'ArrowRight';
+      activeApp()?.keypad(key, literal);
+    }
   }
 
   function deviceKeyboard(event) {
@@ -188,11 +192,27 @@
   }, { passive: false });
   window.addEventListener('resize', resize);
   selectSize('fit');
-  fetch('/api/view', { method: 'POST' }).then(response => {
+  function browserId() {
+    try {
+      const stored = localStorage.getItem('ribit-visitor');
+      if (stored) return stored;
+      const id = crypto.randomUUID();
+      localStorage.setItem('ribit-visitor', id);
+      return id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  const visitor = navigator.locks ? navigator.locks.request('ribit-visitor', browserId) : Promise.resolve(browserId());
+  visitor.catch(() => null).then(id => fetch('/api/view', {
+    method: 'POST',
+    headers: id ? { 'X-Ribit-Visitor': id } : {}
+  })).then(response => {
     if (response.ok) return response.json();
   }).then(stats => {
     if (!stats) return;
-    $('views').textContent = stats.views.toLocaleString('he-IL');
+    $('visitors').textContent = stats.visitors.toLocaleString('he-IL');
     $('downloads').textContent = stats.downloads.toLocaleString('he-IL');
   }).catch(() => {});
   if (navigator.serviceWorker) navigator.serviceWorker.register('/sw.js').catch(() => {});

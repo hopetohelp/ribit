@@ -63,14 +63,29 @@ assets['/sw.js'] = [mime['.js'], gzipSync(serviceWorker).toString('base64')];
 if (process.argv[2]) {
   const worker = `import { DurableObject } from 'cloudflare:workers';
 export class SiteCounter extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    const sql = ctx.storage.sql;
+    sql.exec('CREATE TABLE IF NOT EXISTS tally (id INTEGER PRIMARY KEY, total INTEGER NOT NULL)');
+    sql.exec('CREATE TABLE IF NOT EXISTS browsers (id TEXT PRIMARY KEY) WITHOUT ROWID');
+  }
+
   total(increment) {
     const sql = this.ctx.storage.sql;
-    sql.exec('CREATE TABLE IF NOT EXISTS tally (id INTEGER PRIMARY KEY, total INTEGER NOT NULL)');
     if (increment) sql.exec('INSERT INTO tally VALUES (1, 1) ON CONFLICT(id) DO UPDATE SET total = total + 1');
     return sql.exec('SELECT total FROM tally WHERE id = 1').toArray()[0]?.total ?? 0;
   }
+
+  seeBrowser(browserId) {
+    const storage = this.ctx.storage;
+    return storage.transactionSync(() => {
+      const inserted = storage.sql.exec('INSERT OR IGNORE INTO browsers (id) VALUES (?)', browserId);
+      return this.total(inserted.rowsWritten > 0);
+    });
+  }
 }
 const files = ${JSON.stringify(assets)};
+const historicalDownloads = 15;
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
@@ -78,7 +93,6 @@ export default {
       return Response.redirect(new URL('/', request.url), 302);
     }
     const apk = 'ribit-0.1.0.apk';
-    const downloads = env.COUNTS.getByName('downloads-beta-0.1.0');
     if (path === '/download' && ['GET', 'HEAD'].includes(request.method)) {
       const file = await env.DOWNLOADS.getWithMetadata(apk, {type: 'stream'});
       if (!file.value) return new Response('Download unavailable', {status: 503});
@@ -92,15 +106,18 @@ export default {
       const prefetch = [request.headers.get('Sec-Purpose'), request.headers.get('Purpose')]
         .some(value => value?.toLowerCase().includes('prefetch'));
       if (request.method === 'HEAD') return new Response(null, {headers});
-      if (!prefetch) await downloads.total(true).catch(() => {});
+      if (!prefetch) await env.COUNTS.getByName('site-downloads').total(true).catch(() => {});
       return new Response(file.value, {headers});
     }
     if (path === '/api/view' && request.method === 'POST') {
-      const [views, downloadRequests] = await Promise.all([
-        env.COUNTS.getByName('views').total(true),
-        downloads.total(false)
+      const browserId = request.headers.get('X-Ribit-Visitor');
+      const browsers = env.COUNTS.getByName('unique-browsers');
+      const validVisitor = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(browserId);
+      const [visitors, downloadRequests] = await Promise.all([
+        validVisitor ? browsers.seeBrowser(browserId) : browsers.total(false),
+        env.COUNTS.getByName('site-downloads').total(false)
       ]);
-      return Response.json({views, downloads: downloadRequests}, {headers: {'Cache-Control': 'no-store'}});
+      return Response.json({visitors, downloads: historicalDownloads + downloadRequests}, {headers: {'Cache-Control': 'no-store'}});
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(null, {status: 405, headers: {Allow: 'GET, HEAD'}});
