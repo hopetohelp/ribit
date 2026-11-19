@@ -14,6 +14,8 @@
     <div class="stage">
       <div class="footprint">
         <div class="device">
+          <div id="hardware" class="hardware">
+            <div class="qin-sides" aria-hidden="true"><i></i><i></i></div>
           <div class="side">
             <button type="button" data-scroll="-1" aria-label="גלילה למעלה">+</button>
             <button type="button" data-scroll="1" aria-label="גלילה למטה">−</button>
@@ -34,7 +36,7 @@
       <div id="profiles" role="group" aria-label="סוג מכשיר">
         <button type="button" data-model="smartphone">סמארטפון · iPhone 15</button>
         <button type="button" data-model="touch">שיאומי טאצ׳ · Redmi Note 13</button>
-        <button type="button" data-model="keys">שיאומי מקשים · Qin F21 Pro</button>
+        <button type="button" data-model="keys">מקשים ללא מגע · Qin 1S+</button>
       </div>
       <div class="sizes" role="group" aria-label="גודל התצוגה">
         <button type="button" data-size="fit" aria-pressed="true">התאמה למסך</button>
@@ -63,24 +65,26 @@
             <div id="screen-off" hidden></div>
           </div>
       <div id="keypad" aria-label="מקשי המכשיר" hidden>
-        <div class="directions" role="group" aria-label="ניווט">
-          <button type="button" data-key="Back" aria-label="חזרה">↶</button>
+        <div class="directions qin-navigation" role="group" aria-label="ניווט">
+          <button type="button" data-key="Back" aria-label="חזרה או יציאה">⏼</button>
           <button type="button" data-key="ArrowUp" aria-label="למעלה">↑</button>
           <button type="button" data-key="Backspace" aria-label="מחיקת תו">⌫</button>
           <button type="button" data-key="ArrowRight" aria-label="ימינה">→</button>
           <button type="button" data-key="Enter" aria-label="אישור">●</button>
           <button type="button" data-key="ArrowLeft" aria-label="שמאלה">←</button>
-          <button type="button" data-key="-" aria-label="מינוס">−</button>
+          <span></span>
           <button type="button" data-key="ArrowDown" aria-label="למטה">↓</button>
-          <button type="button" data-key="." aria-label="נקודה">.</button>
+          <span></span>
         </div>
         <div class="digits" role="group" aria-label="מספרים" dir="ltr">
           <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
           <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
           <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
-          <button type="button" data-key="0">0</button>
+          <button type="button" data-key="-" aria-label="מינוס">*</button><button type="button" data-key="0">0</button><button type="button" data-key="." aria-label="נקודה">#</button>
         </div>
       </div>
+          <button id="bezel-back" class="bezel-back" type="button" aria-label="חזרה">↶</button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,39 +1,12 @@
-.bar .ribit-home {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  min-width: 66px;
+#advanced {
   min-height: 44px;
-  padding: 5px 11px;
+  padding: 8px 12px;
+  border: 1px solid #a9b6dc;
+  border-radius: 10px;
+  background: #f0f4ff;
   color: #2445bb;
-  font-size: 14px;
   font-weight: 700;
 }
-.bar .ribit-home:hover { background: #edf2ff; }
-.dark .bar .ribit-home { color: #d7f875; }
-.dark .bar .ribit-home:hover { background: #212d28; }
-.ribit-home-icon {
-  position: relative;
-  display: inline-block;
-  width: 11px;
-  height: 9px;
-  margin-top: 5px;
-  border: 1.5px solid currentColor;
-  border-top: 0;
-  border-radius: 0 0 2px 2px;
-}
-.ribit-home-icon::before {
-  content: "";
-  position: absolute;
-  left: -1px;
-  top: -5px;
-  width: 9px;
-  height: 9px;
-  border-left: 1.5px solid currentColor;
-  border-top: 1.5px solid currentColor;
-  transform: rotate(45deg);
-}
+#advanced:hover, #advanced[aria-expanded="true"] { background: #e4edff; }
+.dark #advanced { border-color: #61784a; background: #212d28; color: #d7f875; }
+.dark #advanced:hover, .dark #advanced[aria-expanded="true"] { background: #303d33; }

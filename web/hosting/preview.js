@@ -10,7 +10,7 @@
   const models = {
     smartphone: [71.6, 147.6, 6.1, 1179, 2556, 390, 846],
     touch: [75.55, 162.24, 6.67, 1080, 2400, 360, 800],
-    keys: [53.5, 131, 2.8, 480, 640, 320, 427]
+    keys: [54, 132, 2.8, 240, 320, 240, 320]
   };
   let model = 'smartphone';
   let launchButton;
@@ -38,7 +38,8 @@
     device.style.setProperty('--button-span', (bodyWidth * pxPerMm + 2) + 'px');
     glass.style.width = screenWidth + 'px';
     glass.style.height = screenHeight + 'px';
-    glass.style.top = (model === 'keys' ? 6 * pxPerMm : (bodyHeight * pxPerMm - screenHeight) / 2) + 'px';
+    device.style.setProperty('--depth', 8.5 * pxPerMm + 'px');
+    glass.style.top = (model === 'keys' ? 12 * pxPerMm : (bodyHeight * pxPerMm - screenHeight) / 2) + 'px';
     [frame, $('landing')].forEach(surface => {
       surface.style.width = width + 'px';
       surface.style.height = height + 'px';
@@ -99,8 +100,15 @@
     controls[current < 0 ? 0 : (current + direction + controls.length) % controls.length].focus();
   }
 
+  function back() {
+    if (frame.hidden) return;
+    const app = frame.contentWindow.Ribit;
+    if (app && !app.back()) home();
+  }
+
   function home() {
     model = 'smartphone';
+    $('screen-off').hidden = true;
     frame.hidden = true;
     $('landing').hidden = false;
     $('keypad').hidden = true;
@@ -119,6 +127,7 @@
     $('power').setAttribute('aria-pressed', 'false');
     if (!frame.hasAttribute('src')) frame.src = '/app.html';
     resize();
+    if (value === 'keys') document.querySelector('[data-key=Enter]').focus();
   }
 
   document.querySelectorAll('[data-model]').forEach(button => button.onclick = () => open(button.dataset.model, button));
@@ -132,6 +141,7 @@
   }
   scaleInput.oninput = () => setCalibration(Number(scaleInput.value));
   $('reset-scale').onclick = () => setCalibration(Number(scaleInput.defaultValue));
+  $('bezel-back').onclick = back;
   $('power').onclick = () => {
     $('screen-off').hidden = !$('screen-off').hidden;
     frame.style.visibility = $('screen-off').hidden ? 'visible' : 'hidden';
@@ -140,28 +150,24 @@
   frame.addEventListener('load', () => {
     const doc = frame.contentDocument;
     if (!doc) return;
-    doc.addEventListener('keydown', keyboard, true);
+    doc.addEventListener('keydown', deviceKeyboard, true);
     doc.addEventListener('focusin', event => { lastControl = event.target; });
-    const header = doc.querySelector('header.bar');
-    if (!header) return;
-    const button = doc.createElement('button');
-    button.type = 'button';
-    button.className = 'plain ribit-home';
-    const icon = doc.createElement('span');
-    icon.className = 'ribit-home-icon';
-    icon.setAttribute('aria-hidden', 'true');
-    const label = doc.createElement('span');
-    label.textContent = 'בית';
-    button.append(icon, label);
-    button.onclick = home;
-    header.appendChild(button);
   });
-  document.addEventListener('keydown', event => { if (model) keyboard(event); });
+  function deviceKeyboard(event) {
+    if (frame.hidden) return;
+    if (event.key === 'Escape' || event.key === 'BrowserBack') {
+      event.preventDefault();
+      event.stopPropagation();
+      back();
+    } else keyboard(event);
+  }
+  document.addEventListener('keydown', deviceKeyboard);
   document.querySelectorAll('[data-key]').forEach(button => button.onclick = () => {
     if (!$('screen-off').hidden || frame.hidden) return;
     const key = button.dataset.key;
     const direction = scrollDirection(key);
-    if (direction) scroll(direction);
+    if (key === 'Back') back();
+    else if (direction) scroll(direction);
     else if (model === 'keys' && (key === 'ArrowRight' || key === 'ArrowLeft')) {
       moveControl(key === 'ArrowLeft' ? 1 : -1);
     } else {
@@ -169,6 +175,14 @@
       frame.contentWindow.postMessage({ ribitKey: select ? 'ArrowDown' : key }, window.location.origin);
     }
   });
+  const hardware = $('hardware');
+  hardware.addEventListener('pointermove', event => {
+    if (model !== 'keys' || event.pointerType !== 'mouse') return;
+    const { left, width } = device.getBoundingClientRect();
+    const angle = ((event.clientX - left) / width - .5) * 34;
+    hardware.style.setProperty('--yaw', Math.max(-17, Math.min(17, angle)) + 'deg');
+  });
+  hardware.addEventListener('pointerleave', () => hardware.style.removeProperty('--yaw'));
   window.addEventListener('resize', resize);
   selectSize('fit');
   fetch('/api/view', { method: 'POST' }).then(response => {
