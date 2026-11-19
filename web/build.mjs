@@ -77,21 +77,30 @@ export default {
     if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document') {
       return Response.redirect(new URL('/', request.url), 302);
     }
-    if (path === '/download' && request.method === 'GET') {
-      if (request.headers.get('Sec-Purpose') !== 'prefetch') {
-        await env.COUNTS.getByName('downloads').total(true).catch(() => {});
-      }
-      return new Response(null, {status: 302, headers: {
-        Location: 'https://raw.githubusercontent.com/hopetohelp/ribit/downloads/ribit-2.0.1.apk',
-        'Cache-Control': 'no-store'
-      }});
+    const apk = 'ribit-0.1.0.apk';
+    const downloads = env.COUNTS.getByName('downloads-beta-0.1.0');
+    if (path === '/download' && ['GET', 'HEAD'].includes(request.method)) {
+      const file = await env.DOWNLOADS.getWithMetadata(apk, {type: 'stream'});
+      if (!file.value) return new Response('Download unavailable', {status: 503});
+      const headers = new Headers({
+        'Content-Type': 'application/vnd.android.package-archive',
+        'Content-Disposition': 'attachment; filename="' + apk + '"',
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff'
+      });
+      if (file.metadata?.size) headers.set('Content-Length', String(file.metadata.size));
+      const prefetch = [request.headers.get('Sec-Purpose'), request.headers.get('Purpose')]
+        .some(value => value?.toLowerCase().includes('prefetch'));
+      if (request.method === 'HEAD') return new Response(null, {headers});
+      if (!prefetch) await downloads.total(true).catch(() => {});
+      return new Response(file.value, {headers});
     }
     if (path === '/api/view' && request.method === 'POST') {
-      const [views, downloads] = await Promise.all([
+      const [views, downloadRequests] = await Promise.all([
         env.COUNTS.getByName('views').total(true),
-        env.COUNTS.getByName('downloads').total(false)
+        downloads.total(false)
       ]);
-      return Response.json({views, downloads}, {headers: {'Cache-Control': 'no-store'}});
+      return Response.json({views, downloads: downloadRequests}, {headers: {'Cache-Control': 'no-store'}});
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(null, {status: 405, headers: {Allow: 'GET, HEAD'}});

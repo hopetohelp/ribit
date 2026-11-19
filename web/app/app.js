@@ -28,6 +28,13 @@
   var toastTimer;
   var previewFocus;
   var lastScroll = 0;
+  var keypadEnabled = false;
+  var titleNumbers = false;
+  var lastTap;
+  var hebrewKeys = {
+    '0': ' 0', '1': '1.,-', '2': 'אבג2', '3': 'דהו3', '4': 'זחט4',
+    '5': 'יכלך5', '6': 'מנסםן6', '7': 'עפצףץ7', '8': 'קרש8', '9': 'ת9'
+  };
 
   function byId(id) { return document.getElementById(id); }
   function listen(id, action) { byId(id).addEventListener('click', action); }
@@ -409,11 +416,24 @@
       var label = make('label', null, 'field');
       label.appendChild(make('span', 'שם'));
       var input = make('input');
+      input.id = 'save-title';
+      input.dir = 'auto';
       input.value = selected.title || '';
       input.required = true;
       input.maxLength = 80;
+      if (keypadEnabled) input.setAttribute('inputmode', 'none');
       label.appendChild(input);
       form.appendChild(label);
+      if (keypadEnabled) {
+        titleNumbers = false;
+        lastTap = null;
+        var hint = make('p', '', 'keypad-hint');
+        hint.id = 'keypad-hint';
+        hint.setAttribute('aria-live', 'polite');
+        input.setAttribute('aria-describedby', hint.id);
+        form.appendChild(hint);
+        renderKeypadHint(hint);
+      }
       var actions = make('div', null, 'actions');
       var submit = make('button', 'שמירה', 'primary');
       submit.type = 'submit';
@@ -613,7 +633,33 @@
     control.classList.add('key-focus');
   }
 
-  function keypad(key) {
+  function setKeypadMode(enabled) {
+    keypadEnabled = enabled;
+    Array.prototype.forEach.call(document.querySelectorAll('#calculator input[inputmode]'), function (input) {
+      if (enabled) {
+        if (!input.hasAttribute('data-inputmode')) input.setAttribute('data-inputmode', input.getAttribute('inputmode'));
+        input.setAttribute('inputmode', 'none');
+      } else if (input.hasAttribute('data-inputmode')) {
+        input.setAttribute('inputmode', input.getAttribute('data-inputmode'));
+        input.removeAttribute('data-inputmode');
+      }
+    });
+    var title = byId('save-title');
+    if (title) {
+      if (enabled) title.setAttribute('inputmode', 'none');
+      else title.removeAttribute('inputmode');
+      var hint = byId('keypad-hint');
+      if (hint) visibility(hint, enabled);
+    }
+  }
+
+  function renderKeypadHint(hint) {
+    if (!hint) return;
+    hint.textContent = titleNumbers ? 'מספרים · # לעברית · * לרווח' :
+      'עברית · # למספרים · * לרווח · 2 אבג · 3 דהו · 4 זחט · 5 יכל · 6 מנס · 7 עפצ · 8 קרש · 9 ת';
+  }
+
+  function keypad(key, literal) {
     if (key === 'Back') { requestBack(); return; }
     var dialog = !byId('dialog-backdrop').hidden;
     var scope = dialog ? byId('dialog') : document.body;
@@ -652,11 +698,34 @@
       } else active.click();
       return;
     }
-    if (active.tagName !== 'INPUT' || active.type !== 'text' || !/^(?:Backspace|[0-9.\-])$/.test(key)) return;
+    if (active.tagName !== 'INPUT' || active.type !== 'text') return;
+    var title = active.id === 'save-title';
+    if (!title && !/^(?:Backspace|[0-9.\-])$/.test(key)) return;
     var start = active.selectionStart;
     var end = active.selectionEnd;
     if (key === 'Backspace' && start === end) start = Math.max(0, start - 1);
     var insert = key === 'Backspace' ? '' : key;
+    var previousTap = lastTap;
+    lastTap = null;
+    if (title && !literal) {
+      if (key === '.') {
+        titleNumbers = !titleNumbers;
+        renderKeypadHint(byId('keypad-hint'));
+        return;
+      }
+      if (key === '-') insert = ' ';
+      var choices = !titleNumbers && hebrewKeys[key];
+      if (choices) {
+        var now = Date.now();
+        var repeat = previousTap && previousTap.input === active && previousTap.key === key &&
+          now - previousTap.time < 850 && start === end && end === previousTap.end &&
+          active.value.charAt(start - 1) === choices.charAt(previousTap.index);
+        var index = repeat ? (previousTap.index + 1) % choices.length : 0;
+        if (repeat) start--;
+        insert = choices.charAt(index);
+        lastTap = { input: active, key: key, index: index, time: now, end: start + 1 };
+      }
+    }
     if (active.value.length - (end - start) + insert.length > active.maxLength) return;
     active.value = active.value.slice(0, start) + insert + active.value.slice(end);
     active.setSelectionRange(start + insert.length, start + insert.length);
@@ -682,6 +751,7 @@
     var target = event.target;
     if (!/^(?:BUTTON|INPUT|SELECT|A)$/.test(target.tagName)) return;
     if (previewFocus) previewFocus.classList.remove('key-focus');
+    if (target !== previewFocus) lastTap = null;
     previewFocus = target;
   }, true);
   document.addEventListener('keydown', function (event) {
@@ -703,7 +773,7 @@
     }
   });
   window.addEventListener('resize', draw);
-  window.Ribit = { back: back, keypad: keypad, scroll: scroll };
+  window.Ribit = { back: back, keypad: keypad, setKeypadMode: setKeypadMode, scroll: scroll };
   form.addEventListener('submit', calculate);
   form.addEventListener('change', updateConditionalFields);
   fields.depositFee.addEventListener('input', updateConditionalFields);

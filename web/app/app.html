@@ -37,7 +37,7 @@
           <label class="field"><span>שנים</span><input name="years" type="text" inputmode="numeric" dir="ltr" maxlength="3" placeholder="0"></label>
           <label class="field"><span>חודשים</span><input name="months" type="text" inputmode="numeric" dir="ltr" maxlength="2" placeholder="0"></label>
         </div>
-        <button type="button" id="advanced" class="plain disclosure" aria-expanded="false" aria-controls="advanced-fields"><span>מתקדם</span><span aria-hidden="true">⌄</span></button>
+        <button type="button" id="advanced" class="disclosure" aria-expanded="false" aria-controls="advanced-fields"><span>מתקדם</span><span class="chevron" aria-hidden="true"></span></button>
         <div id="advanced-fields" hidden>
           <label class="field"><span>מטבע</span>
             <select name="currency"><option value="ILS">₪ שקל</option><option value="USD">$ דולר</option><option value="EUR">€ אירו</option><option value="GBP">£ ליש״ט</option></select>
@@ -80,7 +80,7 @@
         <button type="button" id="save" class="primary">שמירה</button>
         <button type="button" id="edit" class="outline">עריכה</button>
       </div>
-      <button type="button" id="details" class="plain disclosure" aria-expanded="false" aria-controls="details-content">פירוט <span aria-hidden="true">⌄</span></button>
+      <button type="button" id="details" class="disclosure" aria-expanded="false" aria-controls="details-content"><span>פירוט</span><span class="chevron" aria-hidden="true"></span></button>
       <div id="details-content" hidden></div>
     </section>
     <section id="saved" class="screen" aria-labelledby="saved-title" hidden>

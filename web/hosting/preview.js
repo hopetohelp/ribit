@@ -85,9 +85,9 @@
     } else if (!frame.hidden) home();
   }
 
-  function press(key) {
+  function press(key, literal) {
     if (key === 'Back') back();
-    else activeApp()?.keypad(key);
+    else activeApp()?.keypad(key, literal);
   }
 
   function deviceKeyboard(event) {
@@ -95,26 +95,18 @@
     const key = event.key;
     if (!frame.hidden && (key === 'Escape' || key === 'BrowserBack')) back();
     else if (key === 'PageUp' || key === 'PageDown') scroll(key === 'PageUp' ? -1 : 1);
-    else if (model === 'keys' && /^(?:Arrow(?:Left|Right|Up|Down)|Enter|Backspace|[0-9.−-])$/.test(key)) {
+    else if (model === 'keys' && /^(?:Arrow(?:Left|Right|Up|Down)|Enter|Backspace|[0-9א-תa-zA-Z#. −-])$/.test(key)) {
       if (key === 'Enter' && event.target.closest('[data-key]')) return;
-      press(key === '−' ? '-' : key);
+      if (key === ' ' && event.target.closest('[data-key]')) return;
+      if (key === '#') press('.');
+      else press(key === '−' ? '-' : key, true);
     } else return;
     event.preventDefault();
     event.stopPropagation();
   }
 
   function configureKeypad() {
-    const doc = frame.contentDocument;
-    if (!doc) return;
-    doc.querySelectorAll('#calculator input[type="text"]').forEach(input => {
-      if (model === 'keys') {
-        if (!input.hasAttribute('data-touch-input')) input.dataset.touchInput = input.inputMode;
-        input.inputMode = 'none';
-      } else if (input.hasAttribute('data-touch-input')) {
-        input.inputMode = input.dataset.touchInput;
-        delete input.dataset.touchInput;
-      }
-    });
+    activeApp()?.setKeypadMode(model === 'keys');
   }
 
   function home() {
