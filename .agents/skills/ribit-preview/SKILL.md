@@ -29,17 +29,17 @@ In cloud/agent environments:
 Generate a standalone HTML file directly from the real repo sources (no external dependencies, Node.js 22+):
 
 ```sh
-# Full device-frame preview (iPhone 15, Qin F21 Pro, Qin 1S+ + keypad) -> web/dist/preview.html
+# Full device-frame preview (iPhone 15, Qin F21 Pro, Qin 1S+ + keypad) -> web/preview/preview.html
 node web/preview-bundle.mjs
 
-# Direct single-file app preview (no nested iframe, works in strict sandboxed viewers) -> web/dist/app-preview.html
+# Direct single-file app preview (no nested iframe, works in strict sandboxed viewers) -> web/preview/app-preview.html
 node web/preview-bundle.mjs --app-only
 
 # Optional custom output path:
 node web/preview-bundle.mjs --app-only /path/to/ribit_preview.html
 ```
 
-The bundler (`web/preview-bundle.mjs`) inlines the real `app.css`, Arimo `.woff2` Hebrew/Latin fonts, `vendor/decimal.js`, `finance.js`, `storage.js` (with an automatic in-memory fallback if `IndexedDB` is blocked in an opaque/sandboxed origin), `chart.js`, and `app.js`.
+The bundler (`web/preview-bundle.mjs`) inlines the real `app.css`, Arimo `.woff2` Hebrew/Latin fonts, `vendor/decimal.js`, `finance.js`, `storage.js` (with an automatic in-memory fallback if `IndexedDB` is blocked in an opaque/sandboxed origin), `chart.js`, and `app.js`. If storage falls back to memory, the preview shows a notice that saved calculations will disappear when it closes.
 
 ## 3. Verification
 

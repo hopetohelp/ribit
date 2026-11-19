@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const webDir = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.join(webDir, 'app');
 const hostingDir = path.join(webDir, 'hosting');
-const distDir = path.join(webDir, 'dist');
+const previewDir = path.join(webDir, 'preview');
 
 function escapeInlineScript(source) {
   return source.replace(/<\/script/gi, '<\\/script');
@@ -28,7 +28,7 @@ function replaceRequired(source, target, replacement, label) {
 }
 
 // In sandboxed iframes or opaque file:// origins, IndexedDB may throw.
-// Wrap RibitStorage.request so it transparently falls back to in-memory storage only on failure.
+// Keep storage usable in the preview and show when it is limited to the current session.
 const STORAGE_FALLBACK_SHIM = `(function (scope) {
   'use strict';
   var storage = scope.RibitStorage;
@@ -77,6 +77,9 @@ const STORAGE_FALLBACK_SHIM = `(function (scope) {
     original(method, data, function (error, result) {
       if (error) {
         useMemory = true;
+        var warning = scope.document.getElementById('preview-storage-notice');
+        warning.hidden = false;
+        warning.textContent = 'השמירה זמנית. חישובים שנשמרו כאן יימחקו בסגירת התצוגה.';
         return memoryRequest(method, data, callback);
       }
       callback(null, result);
@@ -87,6 +90,13 @@ const STORAGE_FALLBACK_SHIM = `(function (scope) {
 export async function buildAppHtml() {
   let html = await readFile(path.join(appDir, 'app.html'), 'utf8');
   let css = await readFile(path.join(appDir, 'app.css'), 'utf8');
+  css += '\n#preview-storage-notice { margin: 0; padding: 6px 12px; border-top: 1px solid; font-size: .875rem; }';
+  html = replaceRequired(
+    html,
+    '</main>',
+    '</main>\n  <p id="preview-storage-notice" role="status" hidden></p>',
+    'app main closing tag',
+  );
 
   const fontFiles = [
     'fonts/arimo-latin-400.woff2',
@@ -189,8 +199,8 @@ async function main() {
       appOnly = true;
     } else if (arg === '--help' || arg === '-h') {
       console.log('Usage: node web/preview-bundle.mjs [--app-only] [output.html]');
-      console.log('  Default: full device-frame preview written to web/dist/preview.html');
-      console.log('  --app-only: direct single-file app preview (no iframe) written to web/dist/app-preview.html');
+      console.log('  Default: full device-frame preview written to web/preview/preview.html');
+      console.log('  --app-only: direct single-file app preview (no iframe) written to web/preview/app-preview.html');
       return;
     } else if (!arg.startsWith('-') && !outputPath) {
       outputPath = arg;
@@ -201,12 +211,12 @@ async function main() {
 
   const target = outputPath
     ? path.resolve(outputPath)
-    : path.join(distDir, appOnly ? 'app-preview.html' : 'preview.html');
+    : path.join(previewDir, appOnly ? 'app-preview.html' : 'preview.html');
   const html = appOnly ? await buildAppHtml() : await buildFullPreviewHtml();
 
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, html, 'utf8');
-  console.log(`Built ${appOnly ? 'app-only' : 'full'} self-contained preview (${html.length} bytes) at ${target}`);
+  console.log(`Built ${appOnly ? 'app-only' : 'full'} self-contained preview (${Buffer.byteLength(html)} bytes) at ${target}`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

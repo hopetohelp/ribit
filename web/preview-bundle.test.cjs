@@ -23,6 +23,7 @@ test('builds a self-contained app-only preview with inlined assets and fallback 
     assert.ok(html.includes('RibitFinance'), 'expected finance engine in bundle');
     assert.ok(html.includes('RibitChart'), 'expected chart module in bundle');
     assert.ok(html.includes('memoryRequest'), 'expected in-memory storage fallback');
+    assert.ok(html.includes('<p id="preview-storage-notice" role="status" hidden>'));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

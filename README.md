@@ -51,17 +51,30 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 בניית האתר ובדיקות מנוע החישוב דורשות Node.js 22 ומעלה.
 
+בסביבת ענן נקייה על Linux x86_64, אפשר להכין את כלי הבנייה של ריבית ולהריץ פקודות עם הגדרות הסביבה שלהן:
+
+```sh
+bash .agents/setup-env.sh
+bash .agents/setup-env.sh ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+bash .agents/setup-env.sh node --test web/finance.test.cjs web/preview-bundle.test.cjs
+bash .agents/setup-env.sh node web/build.mjs
+```
+
+הסקריפט משתמש ב־JDK 21, ב־Node.js 22 ומעלה וב־Android SDK שמוגדרים כבר בסביבה.
+בסביבה נקייה, כלים שהסקריפט מוריד נשמרים ב־`.agents/.toolchain/`.
+את פקודות הבנייה אפשר להפעיל דרכו כדי להחיל על התהליך את נתיבי הכלים, הפרוקסי והתעודות.
+
 ```sh
 node --test web/finance.test.cjs web/preview-bundle.test.cjs
 node web/build.mjs
 python3 -m http.server 3265 --directory web/dist
 ```
 
-ליצירת קובץ תצוגה מקדימה עצמאי (ללא שרת) מתוך קובצי האפליקציה והדמיית המכשירים:
+התצוגות המקדימות מיועדות להדגמה ולבדיקה מקומית. אם הדפדפן חוסם אחסון קבוע, התצוגה מודיעה שהשמירה תקפה עד לסגירה.
 
 ```sh
-node web/preview-bundle.mjs            # יוצר את web/dist/preview.html (עם מסגרת מכשיר)
-node web/preview-bundle.mjs --app-only # יוצר את web/dist/app-preview.html (אפליקציה ישירה ללא iframe)
+node web/preview-bundle.mjs            # יוצר את web/preview/preview.html (עם מסגרת מכשיר)
+node web/preview-bundle.mjs --app-only # יוצר את web/preview/app-preview.html (אפליקציה ישירה ללא iframe)
 ```
 
 ליצירת מודול Worker שאפשר להעלות ל־Cloudflare, הפקודה `node web/build.mjs /path/to/worker.mjs`

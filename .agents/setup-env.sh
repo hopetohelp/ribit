@@ -1,157 +1,183 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-JDK_DIR="$HOME/.local/jdk-21"
-ANDROID_HOME="$HOME/Android/Sdk"
-CMDLINE_TOOLS_URL="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+toolchain="$repo/.agents/.toolchain"
+mkdir -p "$toolchain"
+staging="$(mktemp -d "$toolchain/setup.XXXXXXXX")"
+trap 'rm -rf -- "$staging"' EXIT
 
-mkdir -p "$HOME/.local" "$HOME/.local/share" "$HOME/.gradle/init.d"
-
-# 1. Install Temurin JDK 21 if not already present.
-if [ ! -x "$JDK_DIR/bin/java" ]; then
-  case "$(uname -m)" in
-    x86_64) ADOPT_ARCH="x64" ;;
-    aarch64|arm64) ADOPT_ARCH="aarch64" ;;
-    *)
-      echo "Unsupported architecture for JDK 21: $(uname -m)" >&2
-      exit 1
-      ;;
-  esac
-
-  TMP_JDK="$(mktemp -d)"
-  trap 'rm -rf "${TMP_JDK:-}" "${TMP_SDK:-}"' EXIT
-  curl -fsSL "https://api.adoptium.net/v3/binary/latest/21/ga/linux/${ADOPT_ARCH}/jdk/hotspot/normal/eclipse" \
-    -o "$TMP_JDK/jdk21.tar.gz"
-  tar -xzf "$TMP_JDK/jdk21.tar.gz" -C "$TMP_JDK"
-  EXTRACTED="$(find "$TMP_JDK" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
-  rm -rf "$JDK_DIR"
-  mv "$EXTRACTED" "$JDK_DIR"
-  rm -rf "$TMP_JDK"
-  TMP_JDK=""
-fi
-
-# 2. Import local/proxy CA certificates into JDK 21's truststore idempotently.
-import_ca_cert() {
-  local alias="$1"
-  local cert_file="$2"
-  "$JDK_DIR/bin/keytool" -delete -alias "$alias" \
-    -keystore "$JDK_DIR/lib/security/cacerts" -storepass changeit >/dev/null 2>&1 || true
-  "$JDK_DIR/bin/keytool" -importcert -noprompt -trustcacerts -alias "$alias" \
-    -file "$cert_file" -keystore "$JDK_DIR/lib/security/cacerts" -storepass changeit >/dev/null 2>&1
+fail() {
+  printf '%s\n' "$*" >&2
+  exit 1
 }
 
-if [ -d /usr/local/share/ca-certificates ]; then
-  for cert in /usr/local/share/ca-certificates/*.crt; do
-    [ -f "$cert" ] || continue
-    import_ca_cert "local-$(basename "$cert" .crt)" "$cert"
-  done
-fi
+require_linux_x64() {
+  [[ "$(uname -s)" == Linux && "$(uname -m)" == x86_64 ]] ||
+    fail "Automatic installation requires Linux x86_64. Configure the required tools before running this script."
+}
 
-CERT_FILE="${SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}"
-if [ -f "$CERT_FILE" ]; then
-  CERT_COUNT="$(grep -c 'BEGIN CERTIFICATE' "$CERT_FILE" || true)"
-  if [ "$CERT_COUNT" -ge 1 ] && [ "$CERT_COUNT" -le 10 ]; then
-    import_ca_cert "system-ssl-cert-file" "$CERT_FILE"
+download() {
+  local url="$1" filename="$2" checksum="$3" check="$4"
+  curl --fail --silent --show-error --location --retry 2 "$url" -o "$staging/$filename"
+  printf '%s  %s\n' "$checksum" "$staging/$filename" | "$check" --check --status ||
+    fail "Checksum verification failed for $filename."
+}
+
+java_21() {
+  [[ -x "$1/bin/java" && -x "$1/bin/javac" ]] &&
+    "$1/bin/java" -version 2>&1 | grep -E '^.*version "21([.+"-]|$)' >/dev/null
+}
+
+if [[ -n "${JAVA_HOME:-}" ]]; then
+  java_21 "$JAVA_HOME" || fail "JAVA_HOME must point to a JDK 21 installation."
+else
+  java_command="$(command -v javac || true)"
+  if [[ -n "$java_command" ]]; then
+    path_jdk="$(cd -- "$(dirname -- "$(realpath -- "$java_command")")/.." && pwd)"
   fi
-fi
-
-export JAVA_HOME="$JDK_DIR"
-export ANDROID_HOME
-export ANDROID_SDK_ROOT="$ANDROID_HOME"
-export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
-
-# 3. Install Android SDK Command-Line Tools if not already present.
-if [ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-  TMP_SDK="$(mktemp -d)"
-  trap 'rm -rf "${TMP_JDK:-}" "${TMP_SDK:-}"' EXIT
-  mkdir -p "$ANDROID_HOME/cmdline-tools"
-  curl -fsSL "$CMDLINE_TOOLS_URL" -o "$TMP_SDK/cmdline-tools.zip"
-  unzip -q "$TMP_SDK/cmdline-tools.zip" -d "$TMP_SDK"
-  rm -rf "$ANDROID_HOME/cmdline-tools/latest"
-  mv "$TMP_SDK/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
-  rm -rf "$TMP_SDK"
-  TMP_SDK=""
-fi
-
-# 4. Install required Android SDK packages (Platform 36, Build-Tools 35.0.0, Platform-Tools).
-if [ ! -x "$ANDROID_HOME/platform-tools/adb" ] \
-  || [ ! -f "$ANDROID_HOME/platforms/android-36/android.jar" ] \
-  || [ ! -x "$ANDROID_HOME/build-tools/35.0.0/aapt2" ] \
-  || [ ! -f "$ANDROID_HOME/licenses/android-sdk-license" ]; then
-  PROXY_ARGS=()
-  PROXY_VAL="${HTTPS_PROXY:-${https_proxy:-${HTTP_PROXY:-${http_proxy:-}}}}"
-  if [ -n "$PROXY_VAL" ]; then
-    P="${PROXY_VAL#http://}"
-    P="${P#https://}"
-    P="${P%/}"
-    P_HOST="${P%:*}"
-    P_PORT="${P##*:}"
-    if [ -n "$P_HOST" ] && [ -n "$P_PORT" ] && [ "$P_HOST" != "$P_PORT" ]; then
-      PROXY_ARGS=(--proxy=http --proxy_host="$P_HOST" --proxy_port="$P_PORT")
+  if [[ -n "${path_jdk:-}" ]] && java_21 "$path_jdk"; then
+    JAVA_HOME="$path_jdk"
+  else
+    JAVA_HOME="$toolchain/jdk-21"
+    if ! java_21 "$JAVA_HOME"; then
+      require_linux_x64
+      jdk_archive="OpenJDK21U-jdk_x64_linux_hotspot_21.0.13.1_2.tar.gz"
+      download "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13.1%2B2/$jdk_archive" \
+        "$jdk_archive" bb8a93f9ae6e7a693b2b721e85dbeff26ae1a77447985a8d7afcdd9c7cf6222e sha256sum
+      mkdir "$staging/jdk"
+      tar -xzf "$staging/$jdk_archive" --strip-components=1 -C "$staging/jdk"
+      mv -T -- "$staging/jdk" "$JAVA_HOME"
     fi
   fi
+fi
+export JAVA_HOME
+export PATH="$JAVA_HOME/bin:$PATH"
 
-  yes | sdkmanager --sdk_root="$ANDROID_HOME" "${PROXY_ARGS[@]}" --licenses >/dev/null 2>&1 || true
-  sdkmanager --sdk_root="$ANDROID_HOME" "${PROXY_ARGS[@]}" --install \
-    "platform-tools" "platforms;android-36" "build-tools;35.0.0"
+node_22_or_newer() {
+  "$1" -e 'process.exit(Number(process.versions.node.split(".")[0]) < 22 ? 1 : 0)' 2>/dev/null
+}
+
+if ! node_22_or_newer node; then
+  if ! node_22_or_newer "$toolchain/node-22/bin/node"; then
+    require_linux_x64
+    node_archive="node-v22.22.2-linux-x64.tar.xz"
+    download "https://nodejs.org/dist/v22.22.2/$node_archive" "$node_archive" \
+      88fd1ce767091fd8d4a99fdb2356e98c819f93f3b1f8663853a2dee9b438068a sha256sum
+    mkdir "$staging/node"
+    tar -xJf "$staging/$node_archive" --strip-components=1 -C "$staging/node"
+    mv -T -- "$staging/node" "$toolchain/node-22"
+  fi
+  export PATH="$toolchain/node-22/bin:$PATH"
 fi
 
-# 5. Forward HTTP(S)_PROXY to Gradle wrapper and Gradle daemon when a proxy is active.
-cat <<'EOF' > "$HOME/.gradle/init.d/env-proxy.gradle"
-def configureProxy = { String scheme, String envVal ->
-    if (!envVal) return
-    try {
-        def uri = new URI(envVal.contains("://") ? envVal : "http://" + envVal)
-        if (uri.host) {
-            System.setProperty("${scheme}.proxyHost", uri.host)
-            if (uri.port > 0) {
-                System.setProperty("${scheme}.proxyPort", String.valueOf(uri.port))
-            }
-        }
-    } catch (Exception ignored) {
-    }
-}
-configureProxy("http", System.getenv("HTTP_PROXY") ?: System.getenv("http_proxy"))
-configureProxy("https", System.getenv("HTTPS_PROXY") ?: System.getenv("https_proxy"))
-def noProxy = System.getenv("NO_PROXY") ?: System.getenv("no_proxy")
-if (noProxy) {
-    def hosts = noProxy.split(",").collect { it.trim() }.findAll { it }.join("|")
-    if (hosts) {
-        System.setProperty("http.nonProxyHosts", hosts)
-    }
-}
-EOF
-
-cat <<'EOF' > "$HOME/.local/share/gradle-proxy-env.sh"
-_configure_gradle_proxy() {
-  local p="${HTTPS_PROXY:-${https_proxy:-${HTTP_PROXY:-${http_proxy:-}}}}"
-  [ -n "$p" ] || return 0
-  p="${p#http://}"
-  p="${p#https://}"
-  p="${p%/}"
-  local host="${p%:*}"
-  local port="${p##*:}"
-  if [ -n "$host" ] && [ -n "$port" ] && [ "$host" != "$port" ]; then
-    case " ${GRADLE_OPTS:-} " in
-      *" -Dhttps.proxyHost="*) ;;
-      *) export GRADLE_OPTS="${GRADLE_OPTS:+${GRADLE_OPTS} }-Dhttp.proxyHost=${host} -Dhttp.proxyPort=${port} -Dhttps.proxyHost=${host} -Dhttps.proxyPort=${port} -Dhttp.nonProxyHosts=localhost|127.0.0.1" ;;
-    esac
+# Gradle gives sdk.dir priority over the environment. Honor an existing local.properties.
+configured_sdk=""
+if [[ -f "$repo/local.properties" ]]; then
+  configured_sdk="$(sed -n 's/^[[:space:]]*sdk\.dir[[:space:]]*=[[:space:]]*//p' "$repo/local.properties" | tail -n 1)"
+  if [[ -n "$configured_sdk" && "$configured_sdk" != /* ]]; then
+    configured_sdk="$repo/$configured_sdk"
   fi
+fi
+configured_sdk="${configured_sdk:-${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}}"
+export ANDROID_HOME="${configured_sdk:-$toolchain/android-sdk}"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export ANDROID_USER_HOME="${ANDROID_USER_HOME:-$toolchain/android-user}"
+export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$toolchain/gradle}"
+
+# Apply the inherited proxy and CA only to child processes in this invocation.
+proxy_settings="$(node - <<'JS'
+function proxy(scheme) {
+  const value = process.env[scheme + '_PROXY'] || process.env[scheme.toLowerCase() + '_proxy'];
+  if (!value) return new URL('http://localhost:80');
+  return new URL(value.includes('://') ? value : 'http://' + value);
 }
-_configure_gradle_proxy
-unset -f _configure_gradle_proxy
-EOF
-
-# 6. Persist environment variables in ~/.bashrc for interactive and non-interactive shells.
-touch "$HOME/.bashrc"
-sed -i '/case \$- in/,/esac/d' "$HOME/.bashrc" 2>/dev/null || true
-
-add_bashrc_line() {
-  grep -qxF "$1" "$HOME/.bashrc" || echo "$1" >> "$HOME/.bashrc"
+const http = proxy('HTTP');
+const https = proxy('HTTPS');
+for (const [scheme, url] of [['HTTP', http], ['HTTPS', https]]) {
+  const configured = process.env[scheme + '_PROXY'] || process.env[scheme.toLowerCase() + '_proxy'];
+  console.log(configured ? url.hostname : '');
+  console.log(url.port || (url.protocol === 'https:' ? '443' : '80'));
 }
+const bypass = (process.env.NO_PROXY || process.env.no_proxy || '').split(',')
+  .map(host => host.trim()).filter(host => host && !host.includes('/') && !host.includes(':'))
+  .map(host => host.startsWith('.') ? '*' + host : host);
+console.log([...new Set(['localhost', '127.0.0.1', ...bypass])].join('|'));
+JS
+)"
+mapfile -t proxy_parts <<< "$proxy_settings"
+sdk_proxy=()
+java_options=()
+if [[ -n "${proxy_parts[0]:-}" ]]; then
+  java_options+=("-Dhttp.proxyHost=${proxy_parts[0]}" "-Dhttp.proxyPort=${proxy_parts[1]}")
+fi
+if [[ -n "${proxy_parts[2]:-}" ]]; then
+  java_options+=("-Dhttps.proxyHost=${proxy_parts[2]}" "-Dhttps.proxyPort=${proxy_parts[3]}")
+fi
+if (( ${#java_options[@]} )); then
+  java_options+=("-Dhttp.nonProxyHosts=${proxy_parts[4]}")
+  if [[ -n "${proxy_parts[2]:-}" ]]; then
+    sdk_proxy=(--proxy=http "--proxy_host=${proxy_parts[2]}" "--proxy_port=${proxy_parts[3]}")
+  else
+    sdk_proxy=(--proxy=http "--proxy_host=${proxy_parts[0]}" "--proxy_port=${proxy_parts[1]}")
+  fi
+  if [[ "${JAVA_TOOL_OPTIONS:-}" != *-Djavax.net.ssl.trustStore=* ]]; then
+    trust_store="$JAVA_HOME/lib/security/cacerts"
+    if [[ -r /etc/ssl/certs/java/cacerts ]]; then
+      trust_store=/etc/ssl/certs/java/cacerts
+    fi
+    # Keep an explicitly configured CA bundle separate from the JDK's trust store.
+    if [[ -r "${SSL_CERT_FILE:-}" ]] &&
+       { [[ "$trust_store" != /etc/ssl/certs/java/cacerts ]] || ! cmp -s "$SSL_CERT_FILE" /etc/ssl/certs/ca-certificates.crt; }; then
+      fingerprints="$(sha256sum "$trust_store" "$SSL_CERT_FILE" | sha256sum)"
+      scoped_trust_store="$toolchain/cacerts-${fingerprints%% *}"
+      if [[ ! -r "$scoped_trust_store" ]]; then
+        cp -- "$trust_store" "$staging/cacerts"
+        awk -v directory="$staging" '
+          /-----BEGIN CERTIFICATE-----/ { output = directory "/ca-" ++number ".pem" }
+          output { print > output }
+          /-----END CERTIFICATE-----/ { close(output); output = "" }
+        ' "$SSL_CERT_FILE"
+        for cert in "$staging"/ca-*.pem; do
+          [[ -f "$cert" ]] || continue
+          "$JAVA_HOME/bin/keytool" -importcert -noprompt -alias "ribit-$(basename "$cert")" \
+            -file "$cert" -keystore "$staging/cacerts" -storepass changeit >/dev/null
+        done
+        mv -T -- "$staging/cacerts" "$scoped_trust_store"
+      fi
+      trust_store="$scoped_trust_store"
+    fi
+    java_options+=("-Djavax.net.ssl.trustStore=\"$trust_store\"")
+  fi
+  if [[ -r "${SSL_CERT_FILE:-}" && -z "${NODE_EXTRA_CA_CERTS:-}" ]]; then
+    export NODE_EXTRA_CA_CERTS="$SSL_CERT_FILE"
+  fi
+  export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:+$JAVA_TOOL_OPTIONS }${java_options[*]}"
+fi
 
-add_bashrc_line 'export JAVA_HOME="$HOME/.local/jdk-21"'
-add_bashrc_line 'export ANDROID_HOME="$HOME/Android/Sdk"'
-add_bashrc_line 'export ANDROID_SDK_ROOT="$HOME/Android/Sdk"'
-add_bashrc_line 'case ":$PATH:" in *":$JAVA_HOME/bin:"*) ;; *) export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH" ;; esac'
-add_bashrc_line '[ -f "$HOME/.local/share/gradle-proxy-env.sh" ] && . "$HOME/.local/share/gradle-proxy-env.sh"'
+if [[ ! -f "$ANDROID_HOME/platforms/android-36/android.jar" ||
+      ! -x "$ANDROID_HOME/build-tools/35.0.0/aapt2" ||
+      ! -x "$ANDROID_HOME/platform-tools/adb" ]]; then
+  [[ -z "$configured_sdk" ]] ||
+    fail "The configured Android SDK needs Platform 36, Build-Tools 35.0.0 and Platform-Tools. Install them with Android Studio or sdkmanager."
+  require_linux_x64
+  sdk_tools="$ANDROID_HOME/cmdline-tools/19.0"
+  if [[ ! -x "$sdk_tools/bin/sdkmanager" ]]; then
+    sdk_archive="commandlinetools-linux-13114758_latest.zip"
+    download "https://dl.google.com/android/repository/$sdk_archive" "$sdk_archive" \
+      5fdcc763663eefb86a5b8879697aa6088b041e70 sha1sum
+    unzip -q "$staging/$sdk_archive" -d "$staging/android"
+    mkdir -p "$ANDROID_HOME/cmdline-tools"
+    mv -T -- "$staging/android/cmdline-tools" "$sdk_tools"
+  fi
+  sdkmanager="$sdk_tools/bin/sdkmanager"
+  # sdkmanager closes its input after the final prompt, so yes can receive SIGPIPE.
+  (set +o pipefail; yes | "$sdkmanager" "--sdk_root=$ANDROID_HOME" "${sdk_proxy[@]}" --licenses)
+  "$sdkmanager" "--sdk_root=$ANDROID_HOME" "${sdk_proxy[@]}" --install \
+    "platform-tools" "platforms;android-36" "build-tools;35.0.0"
+fi
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/19.0/bin:$PATH"
+
+if (( $# )); then
+  "$@"
+fi
