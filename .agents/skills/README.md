@@ -17,6 +17,7 @@ Codex can select the first three skills when the task matches their scope. To in
 
 | Skill | Invocation | Scope |
 | --- | --- | --- |
+| [ribit-preview](ribit-preview/SKILL.md) | Automatic or explicit | Build and open an interactive preview of Ribit (`web/preview-bundle.mjs` or local `web/dist` server) |
 | [hebrew-i18n](hebrew-i18n/SKILL.md) | Automatic or explicit | Hebrew localization, RTL and bidirectional text |
 | [israeli-accessibility-compliance](israeli-accessibility-compliance/SKILL.md) | Automatic or explicit | Israeli accessibility requirements and technical checks |
 | [israeli-app-code-review](israeli-app-code-review/SKILL.md) | Automatic or explicit | Code review for Hebrew and Israeli conventions |

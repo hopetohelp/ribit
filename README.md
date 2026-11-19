@@ -52,9 +52,16 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 בניית האתר ובדיקות מנוע החישוב דורשות Node.js 22 ומעלה.
 
 ```sh
-node --test web/finance.test.cjs
+node --test web/finance.test.cjs web/preview-bundle.test.cjs
 node web/build.mjs
 python3 -m http.server 3265 --directory web/dist
+```
+
+ליצירת קובץ תצוגה מקדימה עצמאי (ללא שרת) מתוך קובצי האפליקציה והדמיית המכשירים:
+
+```sh
+node web/preview-bundle.mjs            # יוצר את web/dist/preview.html (עם מסגרת מכשיר)
+node web/preview-bundle.mjs --app-only # יוצר את web/dist/app-preview.html (אפליקציה ישירה ללא iframe)
 ```
 
 ליצירת מודול Worker שאפשר להעלות ל־Cloudflare, הפקודה `node web/build.mjs /path/to/worker.mjs`
