@@ -1,0 +1,685 @@
+{
+  "skill_slug": "israeli-hon-declaration-preparer",
+  "schemaVersion": "1.0",
+  "generated_at": "2026-10-01T12:00:00Z",
+  "claims": [
+    {
+      "id": "s135-1a-demand-power",
+      "claim": "Section 135(1)(a) empowers the assessing officer to demand in writing any report including a report on the capital and assets of the person, their spouse and their children. (Hebrew: סעיף 135)",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "רשאי פקיד השומה לדרוש ממנו בהודעה בכתב למסור לו כל דו\"ח שיצויין בהודעה, ובכלל זה דו\"ח על הונם ונכסיהם של אותו אדם, או של בן זוגו ושל ילדיהם שהם זכאים בעדם לנקודות זיכוי או לנקודות קצבה או על נכסים שהוא משמש לגביהם כנאמנו של אדם אחר",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s135-120-days-later-of",
+      "claim": "For a capital report no date may be set earlier than the end of 120 days from the date the declaration must relate to or from the date of demand, whichever is later.",
+      "claim_type": "threshold",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "כל דו\"ח לפי פסקה זו יימסר לפקיד השומה במועד שפורש בהודעה ובלבד שלגבי דו\"ח על הון לא ייקבע מועד שהוא לפני תום 120 יום מהמועד שהצהרת ההון צריכה להתייחס אליו או מיום הדרישה, לפי המאוחר",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "form-scope-children-under-18",
+      "claim": "The form itself states the declaration covers your assets, your spouse's, and your children who have not yet reached 18 in the tax year.",
+      "claim_type": "threshold",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "בטופס זה יש למלא את כל הרכוש וההתחייבויות )בארץ ובחו\"ל( ,שלך ,של בן/בת זוגך וילדיכם ,שבשנת המס עדיין לא מלאו להם 18שנה .יש לציין ליד כל נכס את הסכום ששולם עבורו וכן לצרף מסמכים לאימות הפרטים המוצהרים.",
+      "confidence": "high"
+    },
+    {
+      "id": "form-instructions-scope-18",
+      "claim": "The form's general instructions repeat that the report covers the taxpayer, spouse and children up to age 18 as at a given date, and that it is filled only on the assessing officer's demand under s.135(1).",
+      "claim_type": "threshold",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "טופס הצהרת הון נועד לדיווח על כלל הרכוש וההתחייבויות של הנישום ,בן/בת זוגו ושל ילדיהם עד גיל ,18ליום מסוים. הצהרת הון יש למלא רק לפי דרישת פקיד השומה מתוקף סמכותו עפ\"י סעיף (1) 135לפקודת מס הכנסה. יש להגיש את הצהרת ההון למשרד השומה תוך 120ימים ממועד הדרישה או מהמועד שהצהרת ההון צריכה להתייחס אליו.",
+      "confidence": "high"
+    },
+    {
+      "id": "s135-statutory-scope-credit-points",
+      "claim": "The statute defines the children in scope as those for whom credit points or allowance points are claimed, not by a flat age.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "ובכלל זה דו\"ח על הונם ונכסיהם של אותו אדם, או של בן זוגו ושל ילדיהם שהם זכאים בעדם לנקודות זיכוי או לנקודות קצבה",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s135-spouse-opt-out",
+      "claim": "A filer may exclude the spouse's capital and assets if a declaration signed by that spouse is attached stating they will file a separate report, and then the report is due when the spouse's report is due.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "ואולם רשאי אותו אדם לא לכלול בדו\"ח את הונו ונכסיו של בן זוגו, אם צירף הצהרה חתומה בידי אותו בן זוג כי יגיש דו\"ח נפרד על הונו ונכסיו",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s135-trustee-assets",
+      "claim": "The demand power reaches assets in respect of which the person acts as trustee for another person.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "או על נכסים שהוא משמש לגביהם כנאמנו של אדם אחר",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s135-1b-ten-year-exemption",
+      "claim": "Section 135(1)(b) (text as it stood before Amendment 272) gave a first-time resident or veteran returning resident a ten-year exemption from reporting capital and assets outside Israel. Still applies only to those who became such residents before 1 January 2026. Carve-out tied to an asset received under s.97(a)(5) (Hebrew: סעיף 97(א)(5)) from 1 January 2007.",
+      "claim_type": "date",
+      "source_url": "https://www.gov.il/BlobFolder/legalinfo/law_pkudat_mas_hachnasa/he/LegalInformation_kesher_%D7%A4%D7%A7%D7%95%D7%93%D7%AA%20%D7%9E%D7%A1%20%D7%94%D7%9B%D7%A0%D7%A1%D7%94%20%5B%D7%A0%D7%95%D7%A1%D7%97%20%D7%97%D7%93%D7%A9%5D%20-%20%D7%9C%D7%90%20%D7%9E%D7%A8%D7%95%D7%91%D7%93.pdf",
+      "raw_snippet": "(ב) על אף הוראות פסקת משנה (א) ,יחיד שהיה לתושב ישראל לראשונה או לתושב חוזר ותיק ,כאמור בסעיף (14א) ,לא יהא חייב בהגשת דוח על הונו ונכסיו שמחוץ לישראל ,במשך עשר שנים מהמועד שהיה לתושב ישראל כאמור; הוראות פסקת משנה זו לא יחולו על הון ונכסים שלגבי הכנסות שנבעו מהם ,כולן או חלקן ,ביקש היחיד ,לפי הוראות סעיף קטן (א) של סעיף ,14כי לא יחולו הוראות הסעיף הקטן האמור ,ועל נכס שהגיע לידי היחיד בפטור ממס לפי סעיף (97א)( – )5החל ביום י\"א בטבת התשס\"ז (1 בינואר ;)2007",
+      "confidence": "high",
+      "verified_via": "pdf",
+      "verified_at": "2026-09-09",
+      "verification_note": "PDF downloaded from this exact URL (HTTP 200, 10.8 MB) and the snippet confirmed present in its pdftotext text layer. The gate fetcher intermittently returns HTTP 000 on this file because of its size. 2026-10-01: this is the pre-Amendment-272 text, kept on the 2023 PDF deliberately because that is the text still governing pre-2026 residents. The current consolidation shows (ב) (נמחקה)."
+    },
+    {
+      "id": "gen-rule-3-cost-not-value",
+      "claim": "General rule 3: state the amount the asset actually cost you, do not state the asset's value.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".3ציין ליד כל נכס את הסכום שעלה לך הנכס בפועל ,אין לציין את שווי הנכס.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-4-ancillary-costs",
+      "claim": "General rule 4: add to the declared cost every further investment connected with the asset, such as legal fees, brokerage, transport costs and purchase tax.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".4בנוסף למחיר העלות המוצהר יש להוסיף כל השקעה נוספת בקשר לנכס ,כגון שכר טרחת עו\"ד ,תיווך ,הוצאות הובלה, מס רכישה וכדומה.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-5-improvements",
+      "claim": "General rule 5: improvements or betterments made to an asset are added to its cost.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".5אם נעשו שיפורים או השבחות בנכס יש להוסיפם לעלות הנכס.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-2-inherited-one-shekel",
+      "claim": "General rule 2: an asset received by inheritance or as a gift is entered in the amount/cost field as 1 shekel.",
+      "claim_type": "currency",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".2אם קיים נכס בבעלותך שהתקבל בידך בירושה או במתנה עליך לציין בשדה סכום/עלות .₪ 1",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-8-under-one-shekel",
+      "claim": "General rule 8: if an asset's acquisition cost is less than 1 shekel, enter 1 shekel.",
+      "claim_type": "currency",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".8אם עלות הרכישה של נכס קטנה מ ₪ 1-יש לרשום .₪ 1",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-6-instalments",
+      "claim": "General rule 6: the cost of an asset bought in instalments is the total of payments made, including linkage and interest.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".6עלות נכס שנרכש בתשלומים הינה סך התשלומים ששולמו ,כולל הצמדה וריבית.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-7-unpaid-balance",
+      "claim": "General rule 7: where the consideration has not been paid in full the asset is entered at its full price including interest and linkage, and the unpaid debt is entered separately as a liability.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".7עלות נכס שנרכש בתשלומים ושהתמורה בגינו טרם שולמה במלואה תירשם במחיר הכולל של הנכס ,כולל ריבית והצמדה .חוב שטרם שולם יירשם בנפרד כהתחייבות.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-13-no-offsetting",
+      "claim": "General rule 13: do not offset debtors against creditors even where you are simultaneously debtor and creditor to the same person or institution; record each balance separately.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".13אין לקזז חייבים כנגד זכאים ,גם אם הנך חייב וזכאי בעת ובעונה אחת כלפי אותו אדם/מוסד ,רשום בסעיפים נפרדים את היתרה בכל חשבון בנפרד ,בסעיף המתאים של הרכוש או ההתחייבות.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-12-fx-rate-date",
+      "claim": "General rule 12: amounts paid or received in foreign currency are converted to shekels at the representative rate on the day of payment or receipt.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".12נכסים/התחייבויות אשר שולמו או התקבלו במט\"ח יש לציין את הסכום במט\"ח במקום המיועד לכך ובשדה סכום /עלות יש לתרגם לשקלים חדשים לפי השער היציג ליום התשלום או הקבלה.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-9-one-line-each",
+      "claim": "General rule 9: every asset or liability is recorded on a separate line.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".9כל נכס או התחייבות ירשמו בשורה נפרדת.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-10-share-private",
+      "claim": "General rule 10: for private assets and liabilities with several co-owners, enter the amount/cost according to your share in the asset or liability.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".10לגבי נכסים והתחייבויות פרטיים )נספח א'( בהם קיימים מספר שותפים ,עליך למלא את סכום/עלות בהתאם לחלקך בנכס או בהתחייבות.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-11-whole-shekels",
+      "claim": "General rule 11: amounts are filled in new shekels, no agorot, rounded to the nearest shekel.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".11יש למלא את הסכומים בשקלים חדשים )אין לרשום אגורות יש לעגל לשקל הקרוב( .",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-1-zero-if-empty",
+      "claim": "General rule 1: complete the sections in order, and where you have no assets or liabilities in a section enter 0 in the amount/cost field.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".1יש למלא את הפרטים המבוקשים בטופס לפי סדר הסעיפים .מקום אשר אין לך נכסים או התחייבויות בסעיף עליך למלא \" \"0בשדה סכום/עלות.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-14-annex-mechanics",
+      "claim": "General rule 14: where the form's space is insufficient, attach further sheets certified by your signature, write attached annex on the matching line, and mark on the annex which line it relates to.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".14אם המקום בטופס אינו מספיק לרישום הפרטים ,או אם יש צורך בהמצאת פרטים ופירוטים נוספים ,צרף גיליונות נוספים ואשרם בחתימתך .רשום בשורה המתאימה בטופס ההצהרה \"מצורף נספח\" וציין על גבי הנספח לאיזו שורה בטופס ההצהרה הוא מתייחס.",
+      "confidence": "high"
+    },
+    {
+      "id": "gen-rule-15-annex-per-business",
+      "claim": "General rule 15: if you have more than one business for which no balance sheet was prepared, attach a further annex per business and sum your share of their net capital in field 760.",
+      "claim_type": "form-number",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".15אם יש לך יותר מעסק אחד בו לא נערך מאזן צרף נספח נוסף לכל עסק וסכום את חלקך בהון הנקי של עסקים אלו בשדה .760",
+      "confidence": "high"
+    },
+    {
+      "id": "supporting-documents-instruction",
+      "claim": "Verifying documents must be attached; a photocopy or copy may be attached and the original produced on the assessing officer's demand.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".1צרף מסמכים והוכחות לאימות הפרטים המוצהרים .הנך רשאי לצרף צילום או העתק של המסמכים ולהציג את המקור על פי דרישת פקיד השומה.",
+      "confidence": "high"
+    },
+    {
+      "id": "s6-deposits-not-yield",
+      "claim": "Section 6 valuation: the shekel amount is the sum of all deposits in the plans, without taking into account interest, linkage or other gains. (Hebrew: סעיף 6)",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "הסכום בש\"ח הוא סכום כל ההפקדות בתכניות מבלי להתחשב בסכומי ריבית ,הצמדה או רווחים אחרים.",
+      "confidence": "high"
+    },
+    {
+      "id": "s7-securities-actual-investment",
+      "claim": "Section 7 valuation: securities and mutual funds in Israel and abroad are recorded according to the amount actually invested, and cost data is entered per the statements of the institution holding the portfolio. (Hebrew: סעיף 7)",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "נתוני העלות יוזנו בהתאם לתדפיסי המוסד בו מתנהל תיק ני\"ע.",
+      "confidence": "high"
+    },
+    {
+      "id": "s3-owned-or-controlled",
+      "claim": "Section 3: also record bank accounts that are in your ownership or under your control and are not registered in your name. (Hebrew: סעיף 3)",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "רשום גם את חשבונות הבנק שנמצאים בבעלותך או בשליטתך ואינם רשומים על שמך.",
+      "confidence": "high"
+    },
+    {
+      "id": "s3-paypal-digital-accounts",
+      "claim": "Section 3 covers internet accounts such as PayPal and accounts at digital banks, with balances per the bank statement as at the date the declaration was drawn up.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "רשום חשבונות בנק ,הן ביתרות זכות והן ביתרות חובה )משיכות יתר( ,כפי שמופיע בתדפיס הבנק נכון ליום שלגביו נערכה הצהרת ההון.",
+      "confidence": "high"
+    },
+    {
+      "id": "s4-digital-assets-fields-annex",
+      "claim": "Section 4 digital assets: state the asset type such as Bitcoin, Ethereum, Litecoin or NFT, the quantity, purchase date, wallet address and cost in shekels; if held through a service provider such as an exchange, attach the account number and files containing balances of all digital assets held as at the declaration date. (Hebrew: סעיף 4)",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "פרט את הכמות ,תאריך רכישה ,כתובת הארנק והעלות בש\"ח. - אם הנך מחזיק בנכס דיגיטלי ומבצע פעולות בו באמצעות נותן שירות כמו בורסה ,צרף מספר - חשבון וקבצים המכילים יתרות בכל הנכסים הדיגיטליים שבבעלותך ליום הצהרת ההון.",
+      "confidence": "high"
+    },
+    {
+      "id": "s13-mortgages-here",
+      "claim": "Section 13 liabilities to banks and other financial institutions expressly gives loans and mortgages as the examples, and the debt is recorded in cost terms only. (Hebrew: סעיף 13)",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "-יש לרשום את החוב במונחי עלות בלבד. -סכם את סכום ההתחייבויות לבנקים ולמוסדות פיננסיים אחרים בשדה \".\"130",
+      "confidence": "medium"
+    },
+    {
+      "id": "s14-private-loans-fields",
+      "claim": "Section 14 requires, for a loan taken from another person, the lender's name, the relationship (family member, friend, other), their identity or company number, the year the debt arose, the currency, and the amounts in foreign currency and in shekels.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "הפרטים שיש למלא :שם הגורם ממנו נלקחה ההלוואה ,הקרבה )בן משפחה ,חבר ,אחר(, מספר זהות או ח.פ של נותן ההלוואה ,שנת היווצרות החוב ,סוג המטבע בו נלקחה ההתחייבות ,סכום במט\"ח וסכום בש\"ח.",
+      "confidence": "high"
+    },
+    {
+      "id": "part-b-shares-at-par",
+      "claim": "In part B, the company vehicle (field 400) asks for the investment and shares at par value; the business and partnership vehicles ask for capital and current account balances.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "-רשום את השקעתך ואת המניות שלך בערך הנקוב.",
+      "confidence": "high"
+    },
+    {
+      "id": "part-b-negative-cuz",
+      "claim": "Part B: record your current-account balance with the company in field 410, and if you owe the company record the balance as a negative number.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "רשום את יתרת חשבון החו\"ז שלך בחברה בשדה \" .\"410אם אתה חייב לחברה רשום אתהיתרה כמספר שלילי.",
+      "confidence": "high"
+    },
+    {
+      "id": "part-b-unallotted-shares",
+      "claim": "Part B: amounts paid on account of shares not yet allotted are added to the loans-to-company amount.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "-אם שילמת סכומים על חשבון מניות שטרם הוקצו ,צרף גם סכום זה לסכום ההלוואות.",
+      "confidence": "high"
+    },
+    {
+      "id": "part-c-750-share",
+      "claim": "Part C field 750 is field 740 multiplied by your percentage share of the net capital of the business or partnership.",
+      "claim_type": "form-number",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "750 * 740חלקי ב%- חלקי מההון הנקי של העסק או השותפות",
+      "confidence": "high"
+    },
+    {
+      "id": "part-c-partnership-whole",
+      "claim": "Part C: if you are a partner, record in this part the details relating to the partnership as a whole and state your share in the amount on line 750; if a balance sheet was prepared for the partnership, complete part B and attach a signed balance sheet.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "אם הינך שותף בעסק ,עליך לרשום בחלק זה את הפרטים המתייחסים לשותפות בכללה .את חלקך בשותפות עליך לציין בסכום בשורה .750 אם נערך מאזן לשותפות ,עליך למלא חלק ב’ של טופס זה ולצרף מאזן חתום.",
+      "confidence": "high"
+    },
+    {
+      "id": "part-d4-previous-net-capital",
+      "claim": "Part D section 4 requires the total net property, business and private, from the previous capital declaration as at a stated date.",
+      "claim_type": "form-number",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": ".4הון נטו )עסקי ופרטי( שהוצהר בהצהרת הון קודמת סה”כ רכוש נטו )עסקי ופרטי( מהצהרת הון קודמת ליום _______________",
+      "confidence": "high"
+    },
+    {
+      "id": "part-d4-first-declaration",
+      "claim": "Part D section 4 instruction: if this is the first capital declaration you are filing there is no need to complete this section.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "אם הגשת הצהרת הון קודמת בעבר עליך לפרט את ההון נטו )רכוש נטו עסקי ופרטי( שדווח בהצהרה הקודמת. אם זו הצהרת ההון הראשונה שאתה מגיש ,אין צורך למלא סעיף זה.",
+      "confidence": "medium"
+    },
+    {
+      "id": "field-800-grand-total",
+      "claim": "Field 800 is the total net property, business and private, being the sum of fields 220, 460 and 770.",
+      "claim_type": "form-number",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "800 220+460+770 סה\"כ רכוש נטו )עסקי ופרטי(",
+      "confidence": "high"
+    },
+    {
+      "id": "field-800-instruction",
+      "claim": "The instruction for field 800 directs summing the values in fields 220, 460 and 770.",
+      "claim_type": "form-number",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "סכום את סה\"כ הרכוש הפרטי נטו בשדה \".\"800 עליך לסכום את הערכים משדות . 220,460,770",
+      "confidence": "high"
+    },
+    {
+      "id": "signature-declaration",
+      "claim": "The filer's declaration asserts that apart from the property and liabilities detailed in the form, they, their spouse and their children who had not yet reached 18 had no other liability or property on the stated date.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "אני הח’’מ ,מצהיר/ה כי הפרטים עליהם דיווחתי וכי בטופס זה מלאים ונכונים ליום מלבד הרכוש וההתחייבות המפורטים בטופס זה, לא היו לי ,לבן/בת זוגי ולילדינו ,שטרם מלאו כל התחייבות להם 18שנה ביום",
+      "confidence": "medium"
+    },
+    {
+      "id": "preparer-s143-s224-on-form",
+      "claim": "The paid-preparer block on the form itself invokes s.143 for the declaration of assistance and s.224 for the preparer's responsibility.",
+      "claim_type": "law",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "עפ\"י סעיף 143לפקודת מס הכנסה ,אני מצהיר/ה בזה כי סייעתי ,תמורת תשלום, למגיש/ת הדו”ח בעריכת הדין וחשבון על הרכוש וההתחייבויות שלו. הנני מודע/ת לאחריות המוטלת עלי בהקשר זה עפ\"י סעיף 224לפקודת מס הכנסה.",
+      "confidence": "high"
+    },
+    {
+      "id": "s143-preparer-declaration",
+      "claim": "Section 143: a person who assists another for payment in preparing a report, notice, form or other document for the purposes of the Ordinance must declare on that document that they assisted in preparing it.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "אדם המסייע לאחר, תמורת תשלום, לערוך דו\"ח, הודעה, טופס או מסמך אחר לצורך פקודה זו, חייב להצהיר על אותה תעודה כי הוא סייע בעריכתה",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s224-assistant-liability",
+      "claim": "Section 224: a person who assisted another to prepare a report, notice or other document knowing it contains incorrect information is treated as having committed the offences under ss.215 to 217 and 220.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "מי שסייע לאחר לערוך דו\"ח, הודעה או מסמך אחר לצורך פקודה זו, כשהוא יודע שאותו דו\"ח, הודעה או מסמך כולל ידיעה לא נכונה",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s155-burden-of-proof",
+      "claim": "Section 155: the burden of proving that the assessment is excessive lies on the appellant, unless the appellant kept acceptable books, in which case the assessing officer or the Director must justify their decision. (Hebrew: סעיף 155)",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "חובת הראיה כי השומה היא מופרזת תהיה על המערער; אולם אם המערער ניהל פנקסים קבילים",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s188z-fine",
+      "claim": "Section 188(z): failure to file a report under s.135(1) on time attracts a fine of 200 shekels for each month of delay, rising to 400 shekels per month from a later date granted at the taxpayer's own request where the report was filed after that later date.",
+      "claim_type": "currency",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "לא הגיש אדם במועד דו\"ח על סעיף 135(1), יוטל עליו, בעד כל חודש של פיגור, קנס של 200 שקלים חדשים",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s188e-full-month",
+      "claim": "Section 188(e): in that section, month means a full month.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "חודש מלא. (ו) אדם החייב לנכות מס במקור",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s188h-annual-indexation",
+      "claim": "Section 188(h): on 1 January of each tax year the amounts stated in the section as they stood on 1 January of the preceding tax year are adjusted by the rate of the index increase in the preceding tax year.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "(ח) ב-1 בינואר של כל שנת מס יתואמו הסכומים הנקובים בסעיף זה",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s189b-fine-vs-prosecution",
+      "claim": "Section 189(b): if a criminal charge is brought for failing to file a report, no fine under s.188 is payable for that offence, and a fine already paid is refunded.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "הוגשה נגד אדם תביעה פלילית על אי הגשת דו\"ח, לא יחוייב בתשלום קנס לפי סעיף 188 על אותה עבירה",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "form-warning-box-penalties",
+      "claim": "The form's warning box states that failing to file on time with all required documents attracts a fine per month of delay under s.188(z) and is a criminal offence under s.215, and that false particulars, omitting assets you own, and late filing are criminal offences under ss.216 and 220.",
+      "claim_type": "law",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "אי הגשת הצהרה זו במועד ,בצירוף כל המסמכים הנדרשים תגרום להטלת קנס בגין כל חודש פיגור לפי סעיף 188 )ז( לפקודת מס הכנסה ,וכן מהווה הדבר עבירה פלילית על פי סעיף 215לפקודה. רישום פרטים כוזבים בהצהרה ,השמטת נכסים בבעלותך וכן אי הגשת הצהרת הון במועד ,מהווים עבירה פלילית על פי הוראות סעיפים 216ו – 220לפקודת מס הכנסה.",
+      "confidence": "high"
+    },
+    {
+      "id": "s215-residual-offence",
+      "claim": "Section 215: a person who contravenes the Ordinance or a regulation under it, where no other express penalty is prescribed, is liable to one year's imprisonment or a fine under s.61(a)(2) of the Penal Law.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "אדם שעבר על פקודה זו או על תקנה שהותקנה לפיה, ולא נקבע לאותה עבירה עונש מפורש אחר, דינו – מאסר שנה",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s216-1-non-compliance",
+      "claim": "Section 216(1): a person who without sufficient reason fails to comply with a requirement contained in a notice given to them under the Ordinance is liable to one year's imprisonment or a fine under s.61(a)(2).",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "לא קיים דרישה הכלולה בהודעה שניתנה לו לפי פקודה זו",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "s220-wilful-evasion",
+      "claim": "Section 220: a person who wilfully, intending to evade tax, omits income from a report or makes a false statement or record in a report is liable to seven years' imprisonment or a fine under s.61(a)(4) plus twice the concealed income. (Hebrew: סעיף 220)",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "אדם אשר במזיד, בכוונה להתחמק ממס או לעזור לאדם אחר להתחמק ממס, עבר אחת העבירות המנויות להלן, דינו – מאסר שבע שנים",
+      "confidence": "high",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Re-anchored 2026-10-01 from the 2023 gov.il Ordinance PDF (predates Amendment 272) to the Nevo consolidation headed \"נוסח עדכני נכון ליום: 27-09-2026\"; page fetched with curl, decoded, snippet confirmed in the text."
+    },
+    {
+      "id": "circular-digital-optional",
+      "claim": "Circular 2025-000538 states that at this stage use of the digital capital-declaration filing system is permissive and not mandatory.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "יודגש ,כי בשלב זה ,השימוש במערכת להגשת הצהרת הון דיגיטלית הינו בגדר רשות ולא חובה .עם זאת ,הגשת הצהרת ההון במסלול זה תביא לטיפול מהיר יותר ותאפשר להעניק שירות טוב יותר.",
+      "confidence": "high"
+    },
+    {
+      "id": "circular-what-changed",
+      "claim": "Circular 2025-000538 lists the changes in the new form 1219: dedicated reporting sections for digital assets and foreign real estate, reporting of securities in cost terms only, detail of property not owned by the taxpayer but held by them, and the net capital declared in a previous capital declaration.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "השינויים כוללים הוספת סעיפי דיווח ייעודיים לנכסים דיגיטליים ונכסי נדל\"ן בחו\"ל ,דיווח על ניירות ערך במונחי עלות בלבד ,פירוט רכוש שלא בבעלות הנישום ומוחזק אצלו והון נטו שהוצהר בהצהרת הון קודמת.",
+      "confidence": "high"
+    },
+    {
+      "id": "circular-dropped-fields",
+      "claim": "Circular 2025-000538 states the new form does not request data already held by the Tax Authority, giving the vehicle's make and model as an example.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "בנוסף ,אי דרישת נתונים הקיימים בידי רשות המיסים ,כגון :תוצרת ודגם של הרכב",
+      "confidence": "high"
+    },
+    {
+      "id": "circular-old-version-until-30-06-2025",
+      "claim": "Circular 2025-000538 permits filing on the previous wording of form 1219 only until 30 June 2025, with filing from 5 May 2025 done in the online system or on the new version of the manual form.",
+      "claim_type": "date",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "החל מהיום הגשת הצהרת הון תתבצע במערכת המקוונת ,או על גבי טופס 1219ידני בגרסתו החדשה באמצעות הגשה למשרדי השומה או במערכת הפניות .על מנת להקל בהטמעת הטופס החדש בקרב הנישומים והמייצגים תתאפשר הגשת הצהרת הון על גבי טופס 1219בנוסחו הקודם עד ליום .30/6/2025",
+      "confidence": "high"
+    },
+    {
+      "id": "circular-attachment-file-types",
+      "claim": "Circular 2025-000538 states the file types that may be attached in the system are Pdf, Jpg, Excel and Word, and that documents may be attached per section, as one consolidated file, as general documents, or as documents explaining a capital increase.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "במסך זה רשאי המשתמש לצרף מסמכים בקובץ אחד מרוכז ,מסמכים ספציפיים לכל סעיף ,מסמכים כלליים ומסמכים המכילים הסברים לגידול הון .סוגי המסמכים שניתן לצרף הם .Word ,Pdf, Jpg ,Excel",
+      "confidence": "high"
+    },
+    {
+      "id": "circular-submission-complete-on-notice",
+      "claim": "Circular 2025-000538 states that a capital declaration is regarded as filed only after a submission notice is received in the system, and that where remote signature applies the declaration is regarded as filed only after the signature process is completed.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "יראו הצהרת הון כהצהרה שהוגשה רק לאחר השלמת תהליך החתימה.",
+      "confidence": "high"
+    },
+    {
+      "id": "circular-system-url",
+      "claim": "Circular 2025-000538 gives the entry link to the online capital-declaration system.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "מצ\"ב קישור כניסה למערכת http://secapp.taxes.gov.il/sh-haz-hon",
+      "confidence": "high"
+    },
+    {
+      "id": "form-online-link",
+      "claim": "The form's instruction page recommends completing the form digitally and gives the system link.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "מומלץ למלא את הטופס באופן דיגיטלי בלינקhttps://secapp.taxes.gov.il/sh-haz-hon:",
+      "confidence": "high"
+    },
+    {
+      "id": "part-a-field-200-sum",
+      "claim": "Part A field 200 is the total of private property, summing fields 10 through 120.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "200 10+20+30+40+50+60+70+80+90+100+110+120 סה\"כ רכוש פרטי",
+      "confidence": "high"
+    },
+    {
+      "id": "part-a-field-210-sum",
+      "claim": "Part A field 210 is the total of private liabilities, being fields 130 plus 140.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "210 130+140 סה’’כ",
+      "confidence": "high"
+    },
+    {
+      "id": "form-number-1219",
+      "claim": "Form 1219 is the Israeli capital declaration form; the circular refers to it as tofes 1219.",
+      "claim_type": "form-number",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "החל מהיום הגשת הצהרת הון תתבצע במערכת המקוונת ,או על גבי טופס 1219ידני בגרסתו החדשה באמצעות הגשה למשרדי השומה או במערכת הפניות .על מנת להקל בהטמעת הטופס החדש בקרב הנישומים והמייצגים תתאפשר הגשת הצהרת הון על גבי טופס 1219בנוסחו הקודם עד ליום .30/6/2025",
+      "confidence": "high"
+    },
+    {
+      "id": "ita-support-channel",
+      "claim": "Circular 2025-000538 names the Tax Authority information and online services centre as the contact for transmission problems.",
+      "claim_type": "feature",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "מרכז המידע והשירותים המקוונים של רשות המיסים בטלפונים 02-5656400 :או . *4954 לסיום ,אנו עושים בימים אלה צעד משמעותי ביותר במימוש יעדי רשות המיסים .נמשיך לפעול לשיפור וייעול",
+      "confidence": "high"
+    },
+    {
+      "id": "amend272-s135-1b-deleted-from-2026",
+      "claim": "Amendment 272 to the Income Tax Ordinance repealed s.134ב and deleted s.135(1)(b), applying to whoever became a first-time resident or veteran returning resident from 1 January 2026 onward. Section 135א1 was added by the same amendment. The application rule is in the amendment's own section 12(a) (Hebrew: סעיף 12(א) לחוק התיקון).",
+      "claim_type": "law",
+      "source_url": "https://fs.knesset.gov.il/25/law/25_lsr_4303082.pdf",
+      "raw_snippet": "החל מיום י\"ב בטבת התשפ\"ו",
+      "verified_via": "pdf",
+      "verified_at": "2026-10-01",
+      "verification_note": "Sefer HaChukim 3205 (7.4.2024) p.786. pdftotext of the two-column PDF: \"ביטול סעיף 134ב ... 134ב לפקודה - בטל\"; \"פסקת משנה (ב) - תימחק\" under \"תיקון סעיף 135\"; s.12(א) תחולה: \"יחולו על מי שהיה לתושב ישראל לראשונה או שהיה לתושב חוזר ותיק, כאמור בסעיף 14(א), החל מיום י\"ב בטבת התשפ\"ו (1 בינואר 2026) ואילך\". Cross-checked: Nevo current consolidation shows \"(ב) (נמחקה)\" and \"134ב. (בוטל)\"."
+    },
+    {
+      "id": "nevo-s135-1b-deleted",
+      "claim": "The current consolidation shows s.135(1)(b) deleted.",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "לפי המאוחר; וכן רשאי פקיד השומה",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Nevo, current to 27-09-2026: s.135(1)(a) ends and is followed directly by \"(ב) (נמחקה) (2) רשאי פקיד השומה\". Also s.135א1 present: \"135א1. (א) בלי לגרוע מהוראות פרק זה, פקיד השומה רשאי לדרוש בהודעה בכתב מחבר בני אדם\"."
+    },
+    {
+      "id": "nevo-s135a1-foreign-company",
+      "claim": "Section 135א1 lets the assessing officer demand a report from a body of persons not treated as resident because its control and management in Israel are exercised by a first-time resident or veteran returning resident. (Hebrew: סעיף 135א1)",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "פקיד השומה רשאי לדרוש בהודעה בכתב מחבר בני אדם",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Nevo consolidation current to 27-09-2026."
+    },
+    {
+      "id": "nevo-s131g-vav-not-filed",
+      "claim": "Section 131ג(ו): a report that had to be filed online and was not filed that way is treated as not filed. (Hebrew: סעיף 131ג)",
+      "claim_type": "law",
+      "source_url": "https://www.nevo.co.il/law_html/law01/255_001.htm",
+      "raw_snippet": "דוח, מסמך או טופס שהיתה חובה להגישם באופן מקוון ולא הוגשו בדרך זו, יראו אותם כאילו לא הוגשו",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Nevo consolidation current to 27-09-2026. s.131ג(ב) there already lists 135(1)(א1)."
+    },
+    {
+      "id": "order-135-1-a1-from-2027",
+      "claim": "Order of 3 September 2026 (Kovetz HaTakanot 12523, 6.9.2026, p.2616) brings s.135(1)(a1) into force for an individual's capital report on 1 January 2027. (What (a1) requires is evidenced separately by wikisource-s135-1-a1-text.)",
+      "claim_type": "law",
+      "source_url": "https://olaw.org.il/takanot/takanot-12523.pdf",
+      "raw_snippet": "ונכסיו של יחיד ,ביום כ\"ב בטבת התשפ\"ז",
+      "verified_via": "pdf",
+      "verified_at": "2026-10-01",
+      "verification_note": "pdftotext of the Reshumot print (mirror of Kovetz HaTakanot 12523): \"תחילתו של סעיף 135(1)(א1) לפקודה, כנוסחו בסעיף 15(5) לחוק, לעניין דוח על הונו ונכסיו של יחיד, ביום כ\"ב בטבת התשפ\"ז (1 בינואר 2027)\". Signed \"כ\"א באלול התשפ\"ו (3 בספטמבר 2026)\", בצלאל סמוטריץ' שר האוצר. No transitional provision in the order."
+    },
+    {
+      "id": "rules-2026-online-capital-declaration",
+      "claim": "Income Tax Rules (Online Reporting of a Capital Declaration Report) 5786-2026: filer identified in the system; representative identifies with an approved electronic certificate and attaches a scan of the output signed by the taxpayer; filing complete only once a receipt is displayed; an infected file is treated as never transmitted.",
+      "claim_type": "law",
+      "source_url": "https://olaw.org.il/takanot/takanot-12479.pdf",
+      "raw_snippet": "באמצעות תעודה אלקטרונית מאושרת",
+      "verified_via": "pdf",
+      "verified_at": "2026-10-01",
+      "verification_note": "Kovetz HaTakanot 12479 (19.7.2026) pp.2440-2441, signed 13.7.2026 by the ITA Director. Text layer: s.2(ב) \"זיהוי המדווח יתבצע באמצעות תעודה אלקטרונית מאושרת\"; s.4 \"הוא לא ייקלט, ויראו אותו כאילו לא שודר\"; s.5(ב) scan \"חתומה בחתימה ידנית או בחתימה אלקטרונית מאובטחת, של החייב בהגשה\"; s.6 \"הגשת הדוח באופן מקוון תושלם רק לאחר שיוצג אישור כאמור\"."
+    },
+    {
+      "id": "part-c-s5-one-line-per-portfolio",
+      "claim": "The per-portfolio-per-institution separate-line instruction appears in part C section 5, not part A section 7.",
+      "claim_type": "form",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "-כל תיק ני\"ע המתנהל במוסד שונה יופיע בשורה נפרדת.",
+      "verified_via": "pdf",
+      "verified_at": "2026-10-01",
+      "verification_note": "pdftotext -layout of the form; appears once, in the part C section 5 instruction block."
+    },
+    {
+      "id": "s11-household-contents-cost",
+      "claim": "Section 11 asks for the cost of the household contents.",
+      "claim_type": "form",
+      "source_url": "https://www.gov.il/BlobFolder/service/itc1219/he/Service_Pages_Income_tax_itc1219.pdf",
+      "raw_snippet": "רשום את עלות תכולת הבית הכוללת מוצרים בני קיימא בבית ,ריהוט ,מוצרי חשמל",
+      "verified_via": "pdf",
+      "verified_at": "2026-10-01",
+      "verification_note": "pdftotext -layout of the form."
+    },
+    {
+      "id": "circular-view-submitted",
+      "claim": "The online system lets the filer view digital capital declarations already submitted.",
+      "claim_type": "regulator",
+      "source_url": "https://www.gov.il/BlobFolder/dynamiccollectorresultitem/represent-info-050525-1/he/IncomeTax_represent-info-050525-1.pdf",
+      "raw_snippet": "צפייה בהצהרות הון דיגיטליות שהוגשו",
+      "verified_via": "pdf",
+      "verified_at": "2026-10-01",
+      "verification_note": "pdftotext of circular 2025-000538."
+    },
+    {
+      "id": "wikisource-s135-1-a1-text",
+      "claim": "Section 135(1)(a1), in force from 1.1.2027: a capital report under (a) is filed by its due date ONLINE, under the Director's s.131ג(ד) rules, and s.131ג applies. Taken from the Wikisource consolidation because the official consolidation (Nevo) does not print a provision before it is in force; corroborated by s.131ג(ב) in Nevo, which already lists 135(1)(א1).",
+      "claim_type": "law",
+      "source_url": "https://he.wikisource.org/wiki/%D7%A4%D7%A7%D7%95%D7%93%D7%AA_%D7%9E%D7%A1_%D7%94%D7%9B%D7%A0%D7%A1%D7%94",
+      "raw_snippet": "דוח כאמור בפסקת משנה (א) יוגש במועד שנקבע באותה פסקת משנה, באופן מקוון",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Wikisource raw wikitext fetched 2026-10-01: \"(א1) (החל מיום 1.1.2027): דוח כאמור בפסקת משנה (א) יוגש במועד שנקבע באותה פסקת משנה, באופן מקוון, בהתאם להוראות שקבע המנהל לפי סעיף 131ג(ד), והוראות סעיף 131ג יחולו;\". Origin: s.15(5) of the Economic Efficiency Law 2015-2016 (ס\"ח התשע\"ו p.219), as the KT 12523 order cites. Secondary consolidation, flagged as such in references/penalties-and-offences.md."
+    },
+    {
+      "id": "wikisource-s135-1b-temporal-note",
+      "claim": "The Wikisource consolidation annotates s.135(1)(b) as deleted only for those who became first-time or veteran returning residents from 2026.",
+      "claim_type": "law",
+      "source_url": "https://he.wikisource.org/wiki/%D7%A4%D7%A7%D7%95%D7%93%D7%AA_%D7%9E%D7%A1_%D7%94%D7%9B%D7%A0%D7%A1%D7%94",
+      "raw_snippet": "נמחקה לעניין מי שהיה לתושב ישראל לראשונה או שהיה לתושב חוזר ותיק",
+      "verified_via": "browser",
+      "verified_at": "2026-10-01",
+      "verification_note": "Wikisource raw wikitext fetched 2026-10-01: \"(ב) (נמחקה לעניין מי שהיה לתושב ישראל לראשונה או שהיה לתושב חוזר ותיק החל משנת 2026)\". Primary basis: Amendment 272 s.12(א)."
+    }
+  ]
+}
