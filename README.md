@@ -3,7 +3,7 @@
 מחשבון ריבית דריבית בעברית עם הפקדות קבועות, השוואת שני מסלולים ושמירה מקומית.
 אותם מסכים ומנוע חישוב משמשים את Android ואת האתר.
 
-[פתיחת האתר והורדת בטא 0.1.2](https://ribit.hopetohelp.net)
+[פתיחת האתר והורדת בטא 0.1.3](https://ribit.hopetohelp.net)
 
 ## שימוש
 
@@ -37,6 +37,8 @@
 
 ## בנייה
 
+סקילי Kotlin, בדיקות Android ו־Compose זמינים ב־[.agents/skills](.agents/skills/README.md).
+
 Android דורש JDK 21 ו־SDK Platform 36. גרסת Android מינימלית היא 6.0‏ (API 23).
 האפליקציה כוללת את קובצי הממשק והגופנים ופועלת באופליין.
 
@@ -56,4 +58,4 @@ python3 -m http.server 3265 --directory web/dist
 ליצירת מודול Worker שאפשר להעלות ל־Cloudflare, הפקודה `node web/build.mjs /path/to/worker.mjs`
 מארזת את אותם קבצים. לאחר פרסום ה־Worker, מחברים אליו את `ribit.hopetohelp.net`
 כ־Custom Domain בחשבון של האזור `hopetohelp.net`. מחברים את מרחב ה־KV של ההורדות בשם `DOWNLOADS`
-ומעלים אליו את קובץ ה־APK בשם `ribit-0.1.2.apk`.
+ומעלים אליו את קובץ ה־APK בשם `ribit-0.1.3.apk`.

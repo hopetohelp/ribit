@@ -560,15 +560,24 @@
   function about() {
     openDialog('אודות ריבית', function (content) {
       content.appendChild(make('p', 'ריבית הוא מחשבון ריבית דריבית חינמי לחלוטין להשקעות. אפשר להשוות מסלולים ולשמור חישובים גם ללא אינטרנט.', 'about-copy'));
-      var mail = make('a', 'hopetohelp.il@gmail.com');
+      var mail = make('a', 'hopetohelp.il@gmail.com', 'about-email');
       mail.href = 'mailto:hopetohelp.il@gmail.com';
-      var site = make('a', 'ribit.hopetohelp.net');
-      site.href = 'https://ribit.hopetohelp.net';
-      site.target = '_blank';
-      site.rel = 'noopener';
+      mail.dir = 'ltr';
+      var site;
+      if (window !== window.parent) {
+        site = action('למסך הפתיחה', function () {
+          closeDialog();
+          window.parent.postMessage('ribit:exit', window.location.origin);
+        }, 'plain text-action');
+      } else {
+        site = make('a', 'ribit.hopetohelp.net');
+        site.href = 'https://ribit.hopetohelp.net';
+        site.target = '_blank';
+        site.rel = 'noopener';
+        site.dir = 'ltr';
+      }
       [mail, site].forEach(function (link) {
         var row = make('p');
-        link.dir = 'ltr';
         row.appendChild(link);
         content.appendChild(row);
       });
