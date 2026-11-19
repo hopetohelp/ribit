@@ -82,7 +82,7 @@ export default {
         await env.COUNTS.getByName('downloads').total(true).catch(() => {});
       }
       return new Response(null, {status: 302, headers: {
-        Location: 'https://github.com/hopetohelp/ribit/releases/download/v2.0.1/ribit-2.0.1.apk',
+        Location: 'https://raw.githubusercontent.com/hopetohelp/ribit/downloads/ribit-2.0.1.apk',
         'Cache-Control': 'no-store'
       }});
     }
