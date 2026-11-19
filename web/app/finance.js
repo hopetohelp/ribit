@@ -50,6 +50,7 @@
     var recurring = decimal(plan.deposit);
     var balance = zero;
     var contribution = zero;
+    var realContribution = zero;
     var depositFees = zero;
     var balanceFees = zero;
     var basis = zero;
@@ -62,6 +63,7 @@
       var invested = amount.minus(fee);
       var taxCost = options.includeDepositFeeInBasis ? amount : invested;
       contribution = contribution.plus(amount);
+      realContribution = realContribution.plus(amount.div(priceIndex));
       depositFees = depositFees.plus(fee);
       balance = balance.plus(invested);
       basis = basis.plus(taxCost);
@@ -76,6 +78,7 @@
       return {
         month: month,
         contributed: contribution.toString(),
+        realContributed: realContribution.toString(),
         balance: balance.toString(),
         depositFees: depositFees.toString(),
         balanceFees: balanceFees.toString(),

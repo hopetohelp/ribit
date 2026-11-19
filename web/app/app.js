@@ -7,6 +7,7 @@
   }
 
   var finance = window.RibitFinance;
+  var chart = window.RibitChart;
   var store = window.RibitStorage;
   var Money = finance.Money;
   var form = document.getElementById('calculator');
@@ -24,7 +25,7 @@
     dark: false
   };
   var keys = ['initial', 'deposit', 'annualRate', 'years', 'months', 'frequency', 'timing',
-    'depositFee', 'balanceFee', 'taxType', 'taxRate', 'includeDepositFeeInBasis'];
+    'depositFee', 'balanceFee', 'inflation', 'taxType', 'taxRate', 'includeDepositFeeInBasis'];
   var toastTimer;
   var previewFocus;
   var barScrollEdge = 0;
@@ -56,15 +57,15 @@
   function draft() {
     return {
       initial: '', deposit: '', annualRate: '', years: '', months: '', frequency: 'NONE',
-      timing: 'END', depositFee: '', balanceFee: '', taxType: 'NONE', taxRate: '',
+      timing: 'END', depositFee: '', balanceFee: '', inflation: '', taxType: 'NONE', taxRate: '',
       includeDepositFeeInBasis: false
     };
   }
 
   function session(count) {
     return {
-      drafts: count === 1 ? [draft()] : [draft(), draft()],
-      inflation: '', currency: 'ILS', calculation: null, id: null, title: null,
+      drafts: count === 1 ? [draft()] : [draft(), draft()], followsA: count === 2,
+      labels: [], currency: 'ILS', calculation: null, id: null, title: null,
       result: false, display: 'net'
     };
   }
@@ -98,9 +99,20 @@
   function stash() {
     if (state.view === 'saved' || current().result) return;
     var currentSession = current();
-    currentSession.drafts[state.active] = readDraft();
-    currentSession.inflation = fields.inflation.value;
+    var edited = readDraft();
+    if (state.active === 1 && !sameDraft(currentSession.drafts[1], edited)) currentSession.followsA = false;
+    currentSession.drafts[state.active] = edited;
+    if (currentSession.followsA) currentSession.drafts[1] = currentSession.drafts[0];
     currentSession.currency = fields.currency.value;
+  }
+
+  function sameDraft(first, second) {
+    return keys.every(function (key) { return first[key] === second[key]; });
+  }
+
+  function trackLabel(index) {
+    var label = current().labels[index];
+    return trackNames[index] + (label ? ' · ' + label : '');
   }
 
   function updateConditionalFields() {
@@ -120,7 +132,9 @@
       else fields[key].value = currentDraft[key];
     });
     fields.currency.value = currentSession.currency;
-    fields.inflation.value = currentSession.inflation;
+    var source = currentSession.labels[state.active];
+    text('picked-source', source || '');
+    visibility(byId('picked-source'), state.comparing && !!source);
     updateConditionalFields();
     Array.prototype.forEach.call(byId('tracks').children, function (button, index) {
       button.setAttribute('aria-pressed', String(index === state.active));
@@ -162,6 +176,7 @@
 
   function showSection(id) {
     ['editor', 'result', 'saved'].forEach(function (section) { visibility(byId(section), section === id); });
+    if (id !== 'result') chart.clear();
     pageTop();
   }
 
@@ -170,6 +185,7 @@
     fill();
     clearError();
     visibility(byId('tracks'), state.comparing);
+    visibility(byId('pick-saved'), state.comparing);
     text('editor-title', state.comparing ? 'השוואת מסלולים' : 'חישוב השקעה');
     text('compute', state.comparing ? 'השוואה' : 'חישוב');
     setAdvanced(false);
@@ -192,7 +208,7 @@
     return number.toString();
   }
 
-  function planFrom(input, inflation) {
+  function planFrom(input) {
     var initial = parse(input.initial, 'initial', 0, '999999999999.99', 2, '0', true);
     var deposit = input.frequency === 'NONE' ? '0' : parse(input.deposit, 'deposit', 0, '999999999999.99', 2, '0', true);
     var annualRate = parse(input.annualRate, 'annualRate', '-99.9999', 1000, 4, null);
@@ -202,6 +218,7 @@
     if (duration < 1 || duration > 1200) throw { field: 'years', message: 'מחודש אחד עד 100 שנים' };
     var depositFee = parse(input.depositFee, 'depositFee', 0, 100, 4, '0');
     var balanceFee = parse(input.balanceFee, 'balanceFee', 0, '99.9999', 4, '0');
+    var inflation = parse(input.inflation, 'inflation', '-99.9999', 1000, 4, '0');
     var taxRate = input.taxType === 'NONE' ? '0' : parse(input.taxRate, 'taxRate', 0, 100, 4, null);
     return {
       initial: initial, deposit: deposit, annualRate: annualRate, months: duration,
@@ -218,12 +235,14 @@
     var currentSession = current();
     var index = state.active;
     try {
-      var inflation = parse(currentSession.inflation, 'inflation', '-99.9999', 1000, 4, '0');
       var plans = currentSession.drafts.map(function (input, position) {
         index = position;
-        return planFrom(input, inflation);
+        return planFrom(input);
       });
-      currentSession.calculation = finance.calculate(currentSession.currency, plans);
+      var calculation = finance.calculate(currentSession.currency, plans);
+      calculation.startedOn = currentSession.calculation && currentSession.calculation.startedOn || chart.dateKey(new Date());
+      if (state.comparing) calculation.trackLabels = currentSession.labels.slice();
+      currentSession.calculation = calculation;
       currentSession.result = true;
       showResults();
     } catch (error) {
@@ -280,15 +299,15 @@
     list.textContent = '';
     visibility(list, compare);
     if (compare) final.forEach(function (point, index) {
-      var row = make('div', null, 'track-row');
+      var row = make('div', null, 'track-overview');
       var name = make('span', null, 'track-name');
       name.appendChild(make('span', null, 'swatch' + (index ? ' second' : '')));
-      name.appendChild(document.createTextNode(trackNames[index]));
+      name.appendChild(document.createTextNode(trackLabel(index)));
       row.appendChild(name);
       var value = make('strong', money(finance.value(point, mode)));
       value.dir = 'ltr';
       row.appendChild(value);
-      if (final[0].month !== final[1].month) name.appendChild(document.createTextNode(' · ' + duration(point.month)));
+      if (final[0].month !== final[1].month) row.appendChild(make('small', duration(point.month), 'dim'));
       list.appendChild(row);
     });
     disclosure('details', 'details-content', false);
@@ -298,52 +317,10 @@
 
   function draw() {
     if (state.view === 'saved' || !current().result || byId('result').hidden) return;
-    var canvas = byId('growth');
-    var width = canvas.clientWidth;
-    var height = canvas.clientHeight;
-    if (!width || !height) return;
-    var dpi = window.devicePixelRatio || 1;
-    canvas.width = Math.round(width * dpi);
-    canvas.height = Math.round(height * dpi);
-    var context = canvas.getContext('2d');
-    context.scale(dpi, dpi);
-    var series = current().calculation.projections;
-    var mode = current().display;
-    var maximum = new Money(1);
-    var months = 1;
-    series.forEach(function (projection) {
-      var points = projection.points;
-      months = Math.max(months, last(points).month);
-      for (var j = 0; j < points.length; j++) {
-        var value = new Money(finance.value(points[j], mode));
-        if (value.gt(maximum)) maximum = value;
-      }
-    });
+    var calculation = current().calculation;
+    var months = Math.max.apply(null, calculation.plans.map(function (plan) { return plan.months; }));
     text('chart-period', duration(months));
-    canvas.setAttribute('aria-label', 'גרף יתרה נטו לאורך ' + duration(months) + (mode === 'realNet' ? ', בכסף של היום' : ''));
-    context.strokeStyle = state.dark ? '#384744' : '#dae2f0';
-    context.lineWidth = 1;
-    for (var row = 0; row <= 4; row++) {
-      var line = 5 + (height - 10) * row / 4;
-      context.beginPath(); context.moveTo(3, line); context.lineTo(width - 3, line); context.stroke();
-    }
-    series.forEach(function (projection, index) {
-      var points = projection.points;
-      context.strokeStyle = index ? (state.dark ? '#a1adb7' : '#63718b') : (state.dark ? '#d7f875' : '#2549d4');
-      context.lineWidth = index ? 1.8 : 2.7;
-      if (context.setLineDash) context.setLineDash(index ? [5, 4] : []);
-      context.beginPath();
-      var stride = Math.max(1, Math.floor(points.length / 160));
-      function lineTo(point, first) {
-        var x = 3 + (width - 6) * point.month / months;
-        var y = height - 5 - (height - 10) * Number(new Money(finance.value(point, mode)).div(maximum));
-        if (first) context.moveTo(x, y);
-        else context.lineTo(x, y);
-      }
-      for (var i = 0; i < points.length; i += stride) lineTo(points[i], i === 0);
-      lineTo(last(points), false);
-      context.stroke();
-    });
+    chart.draw(calculation, current().display, [trackLabel(0), trackLabel(1)], state.dark);
   }
 
   function metric(parent, label, amount) {
@@ -359,10 +336,13 @@
     var panel = byId('details-content');
     panel.textContent = '';
     var projections = current().calculation.projections;
+    if (projections.length === 2) {
+      comparisonDetails(panel, current().calculation);
+      return;
+    }
     projections.forEach(function (projection, index) {
       var final = last(projection.points);
       var part = make('div', null, 'summary');
-      if (projections.length === 2) part.appendChild(make('h3', trackNames[index]));
       metric(part, 'סך הפקדות', final.contributed);
       if (Number(final.depositFees)) metric(part, 'דמי הפקדה', final.depositFees);
       if (Number(final.balanceFees)) metric(part, 'דמי צבירה', final.balanceFees);
@@ -380,6 +360,87 @@
       });
       panel.appendChild(part);
     });
+  }
+
+  function comparisonDetails(panel, calculation) {
+    var table = make('table', null, 'comparison-table');
+    table.setAttribute('aria-label', 'פירוט השוואת מסלולים');
+    var header = table.createTHead().insertRow();
+    trackNames.forEach(function (name, index) {
+      var cell = make('th', name);
+      cell.scope = 'col';
+      if (current().labels[index]) cell.appendChild(make('small', current().labels[index]));
+      header.appendChild(cell);
+    });
+    var body = table.createTBody();
+    var plans = calculation.plans;
+    var points = calculation.projections.map(function (track) { return track.points; });
+    var options = plans.map(finance.financialOptions);
+    var rowNumber = 0;
+    function row(label, values) {
+      var heading = make('th', label);
+      heading.colSpan = 2;
+      heading.id = 'comparison-field-' + (++rowNumber);
+      var equal = values[0] === values[1];
+      heading.appendChild(make('span', equal ? 'זהה' : 'שונה', equal ? 'comparison-badge same' : 'comparison-badge different'));
+      body.insertRow().appendChild(heading);
+      var cells = body.insertRow();
+      values.forEach(function (value) {
+        var cell = cells.insertCell();
+        cell.setAttribute('headers', heading.id);
+        cell.appendChild(make('bdi', value));
+      });
+    }
+
+    var frequency = { NONE: 'ללא', MONTHLY: 'חודשית', YEARLY: 'שנתית' };
+    var tax = { NONE: 'ללא מס', NOMINAL: 'נומינלי', REAL: 'ריאלי' };
+    var dash = '—';
+    function percent(value) { return new Money(value).toFixed() + '%'; }
+    function enteredAmount(value) { return finance.amount(value, calculation.currency, false); }
+    row('סכום התחלתי', plans.map(function (plan) { return enteredAmount(plan.initial); }));
+    row('תדירות הפקדה', plans.map(function (plan) { return frequency[plan.frequency]; }));
+    row('סכום להפקדה', plans.map(function (plan) { return plan.frequency === 'NONE' ? dash : enteredAmount(plan.deposit); }));
+    row('מועד ההפקדה', plans.map(function (plan) {
+      return plan.frequency === 'NONE' ? dash : plan.timing === 'START' ? 'בתחילת התקופה' : 'בסוף התקופה';
+    }));
+    row('תשואה שנתית', plans.map(function (plan) { return percent(plan.annualRate); }));
+    row('תקופה', plans.map(function (plan) { return duration(plan.months); }));
+    row('מטבע', plans.map(function () { return calculation.currency; }));
+    row('דמי הפקדה', options.map(function (plan) { return percent(plan.depositFee); }));
+    row('דמי צבירה לשנה', options.map(function (plan) { return percent(plan.balanceFee); }));
+    row('אינפלציה לשנה', options.map(function (plan) { return percent(plan.inflation); }));
+    row('מס במימוש', options.map(function (plan) { return tax[plan.taxType]; }));
+    row('שיעור מס', options.map(function (plan) { return plan.taxType === 'NONE' ? dash : percent(plan.taxRate); }));
+    if (options.some(function (plan) { return plan.taxType !== 'NONE' && Number(plan.depositFee); })) {
+      row('דמי הפקדה בבסיס המס', options.map(function (plan) {
+        return plan.taxType === 'NONE' || !Number(plan.depositFee) ? dash : plan.includeDepositFeeInBasis ? 'כלולים' : 'לא כלולים';
+      }));
+    }
+
+    var final = points.map(last);
+    row('סך הפקדות', final.map(function (point) { return money(point.contributed); }));
+    if (final.some(function (point) { return Number(point.depositFees); })) {
+      row('דמי הפקדה שנוכו', final.map(function (point) { return money(point.depositFees); }));
+    }
+    if (final.some(function (point) { return Number(point.balanceFees); })) {
+      row('דמי צבירה שנוכו', final.map(function (point) { return money(point.balanceFees); }));
+    }
+    row('יתרה לפני מס', final.map(function (point) { return money(point.balance); }));
+    if (options.some(function (plan) { return plan.taxType !== 'NONE'; })) {
+      row('מס משוער', final.map(function (point) { return money(point.tax); }));
+    }
+    row('נטו במימוש', final.map(function (point) { return money(finance.value(point, 'net')); }));
+    if (options.some(function (plan) { return Number(plan.inflation); })) {
+      row('נטו בכסף של היום', final.map(function (point) { return money(finance.value(point, 'realNet')); }));
+    }
+    var months = Math.max(final[0].month, final[1].month);
+    for (var month = 1; month <= months; month++) {
+      if (month % 12 !== 0 && month !== final[0].month && month !== final[1].month) continue;
+      row('אחרי ' + duration(month), points.map(function (track) {
+        return track[month] ? money(finance.value(track[month], current().display)) : dash;
+      }));
+    }
+    panel.appendChild(table);
   }
 
   function notify(message) {
@@ -470,23 +531,83 @@
       initial: plan.initial, deposit: plan.deposit, annualRate: plan.annualRate,
       years: String(Math.floor(plan.months / 12)), months: String(plan.months % 12),
       frequency: plan.frequency, timing: plan.timing, depositFee: options.depositFee,
-      balanceFee: options.balanceFee, taxType: options.taxType, taxRate: options.taxRate,
+      balanceFee: options.balanceFee, inflation: options.inflation, taxType: options.taxType, taxRate: options.taxRate,
       includeDepositFeeInBasis: options.includeDepositFeeInBasis
     };
   }
 
-  function openSaved(id) {
-    store.request('load', { id: id }, function (error, entry) {
+  function openSaved(summary) {
+    store.request('load', { id: summary.id }, function (error, entry) {
       if (state.view !== 'saved') return;
       if (error || !entry || !entry.calculation) return notify('הפתיחה נכשלה');
       var calculation = entry.calculation;
+      if (!calculation.startedOn) calculation.startedOn = chart.dateKey(new Date(summary.updatedAt || Date.now()));
       var target = calculation.plans.length === 2 ? 'compare' : 'single';
       state.sessions[target] = {
         drafts: calculation.plans.map(draftFrom), currency: calculation.currency,
-        inflation: calculation.plans[0].inflation || '',
-        calculation: calculation, id: id, title: entry.title, result: true, display: 'net'
+        followsA: false, labels: calculation.trackLabels || [],
+        calculation: calculation, id: summary.id, title: entry.title, result: true, display: 'net'
       };
       view(target);
+    });
+  }
+
+  function pickSaved() {
+    stash();
+    var target = current();
+    var index = state.active;
+    openDialog('בחירה ל' + trackNames[index], function (content) {
+      var status = make('p', 'טוען חישובים…', 'dim');
+      status.setAttribute('role', 'status');
+      content.appendChild(status);
+      var choices = make('div', null, 'saved-choices');
+      content.appendChild(choices);
+      function stillOpen() {
+        return !byId('dialog-backdrop').hidden && choices.parentNode === content &&
+          state.view === 'compare' && current() === target;
+      }
+      function choose(summary, position, label) {
+        if (state.busy) return;
+        state.busy = true;
+        store.request('load', { id: summary.id }, function (error, entry) {
+          state.busy = false;
+          if (!stillOpen()) return;
+          var calculation = entry && entry.calculation;
+          var plan = calculation && calculation.plans[position];
+          if (error || !plan) {
+            status.textContent = 'פתיחת החישוב נכשלה';
+            return;
+          }
+          var other = target.drafts[1 - index];
+          if (calculation.currency !== target.currency && !(index === 0 && target.followsA) && !sameDraft(other, draft())) {
+            status.textContent = 'בחרו חישוב במטבע ' + target.currency + ' כדי להשוות באותו מטבע.';
+            return;
+          }
+          target.currency = calculation.currency;
+          target.drafts[index] = draftFrom(plan);
+          target.labels[index] = label;
+          if (index === 1) target.followsA = false;
+          if (target.followsA) target.drafts[1] = target.drafts[0];
+          closeDialog();
+          fill();
+          clearError();
+        });
+      }
+      store.request('list', {}, function (error, entries) {
+        if (!stillOpen()) return;
+        if (error) {
+          status.textContent = 'טעינת שמורים נכשלה';
+          return;
+        }
+        status.textContent = entries.length ? '' : 'אין חישובים שמורים';
+        entries.forEach(function (summary) {
+          for (var index = 0; index < summary.planCount; index++) addChoice(summary, index);
+        });
+      });
+      function addChoice(summary, position) {
+        var label = summary.title + (summary.planCount === 2 ? ' · ' + trackNames[position] : '');
+        choices.appendChild(action(label, function () { choose(summary, position, label); }, 'outline'));
+      }
     });
   }
 
@@ -527,7 +648,7 @@
         var date = new Date(entry.updatedAt).toLocaleDateString('he-IL');
         record.appendChild(make('p', (entry.planCount === 1 ? 'חישוב' : 'השוואה') + ' · ' + date, 'dim'));
         var actions = make('div', null, 'actions');
-        var open = action('פתיחה', function () { openSaved(entry.id); });
+        var open = action('פתיחה', function () { openSaved(entry); });
         open.setAttribute('aria-label', 'פתיחה, ' + entry.title);
         var remove = action('מחיקה', function () { removeSaved(entry); });
         remove.setAttribute('aria-label', 'מחיקה, ' + entry.title);
@@ -598,6 +719,7 @@
   function back() {
     if (!byId('dialog-backdrop').hidden) { closeDialog(); return true; }
     if (!byId('menu-items').hidden) { setMenu(false); return true; }
+    if (chart.dismiss()) return true;
     if (state.view !== 'saved' && current().result) { showEditor(); return true; }
     if (!byId('advanced-fields').hidden) { setAdvanced(false, false); return true; }
     if (state.view !== 'single') { view('single'); return true; }
@@ -723,6 +845,7 @@
       return;
     }
     if (key.indexOf('Arrow') === 0 || key === 'Next') {
+      if (active === chart.control && chart.step(key)) return;
       keypadFocus(moveFocus(key, active, items));
       return;
     }
@@ -819,6 +942,10 @@
     var active = document.activeElement;
     var key = event.key || ({9: 'Tab', 27: 'Escape', 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown'})[event.keyCode];
     if (key === 'Escape' && back()) event.preventDefault();
+    if (active === chart.control && chart.step(key)) {
+      event.preventDefault();
+      return;
+    }
     if (key === 'Tab' && !byId('dialog-backdrop').hidden) {
       var dialogItems = focusable(byId('dialog'));
       var index = dialogItems.indexOf(active);
@@ -852,6 +979,7 @@
   listen('back', requestBack);
   listen('theme', function () { setTheme(!state.dark, true); setMenu(false); byId('menu').focus(); });
   listen('advanced', function () { setAdvanced(byId('advanced-fields').hidden, true); });
+  listen('pick-saved', pickSaved);
   listen('help', explanations);
   listen('about', about);
   listen('dialog-close', closeDialog);

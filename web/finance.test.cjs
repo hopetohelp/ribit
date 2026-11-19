@@ -57,6 +57,16 @@ test('does not index a deposit made at the realization date', () => {
   assert.equal(dollars(withDeposit.tax), dollars(result(base).tax));
 });
 
+test('reports cumulative principal in today’s money using the deposit date', () => {
+  const fields = { inflation: '10', deposit: '1100', frequency: 'YEARLY', annualRate: '0' };
+  const start = result({ ...fields, timing: 'START' });
+  const end = result(fields);
+  assert.equal(dollars(start.contributed), '11100.00');
+  assert.equal(dollars(end.contributed), '11100.00');
+  assert.equal(dollars(start.realContributed), '11100.00');
+  assert.equal(dollars(end.realContributed), '11000.00');
+});
+
 test('floors real cost basis during deflation and does not tax losses', () => {
   const deflation = result({ inflation: '-3', taxType: 'REAL', taxRate: '25' });
   assert.equal(dollars(deflation.tax), '250.00');

@@ -93,7 +93,7 @@ export default {
     if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document') {
       return Response.redirect(new URL('/', request.url), 302);
     }
-    const apk = 'ribit-0.1.3.apk';
+    const apk = 'ribit-0.2.0.apk';
     if (path === '/download' && ['GET', 'HEAD'].includes(request.method)) {
       const file = await env.DOWNLOADS.getWithMetadata(apk, {type: 'stream'});
       if (!file.value) return new Response('Download unavailable', {status: 503});

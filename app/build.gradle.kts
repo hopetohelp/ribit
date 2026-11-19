@@ -13,8 +13,8 @@ android {
         applicationId = "com.hopetohelp.ribit"
         minSdk = 23
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.1.3"
+        versionCode = 8
+        versionName = "0.2.0"
     }
 
     sourceSets["main"].assets.srcDir(rootProject.file("web/app"))

@@ -26,6 +26,8 @@
         <button type="button" data-track="0" aria-pressed="true">מסלול א׳</button>
         <button type="button" data-track="1" aria-pressed="false">מסלול ב׳</button>
       </div>
+      <button type="button" id="pick-saved" class="outline" hidden>בחירה משמורים</button>
+      <p id="picked-source" class="dim" hidden></p>
       <form id="calculator" novalidate>
         <label class="field"><span>סכום התחלתי</span><input name="initial" type="text" inputmode="decimal" dir="ltr" maxlength="24" placeholder="0"></label>
         <label class="field"><span>הפקדה חוזרת</span>
@@ -72,8 +74,13 @@
         <div id="result-tracks" class="track-list" hidden></div>
         <figure id="chart">
           <figcaption>יתרה נטו במימוש</figcaption>
-          <canvas id="growth" role="img" aria-label="גרף היתרה לאורך זמן"></canvas>
+          <button type="button" id="chart-control" class="chart-control plain" aria-expanded="false" aria-controls="chart-tip"
+            aria-label="בחירת נקודה בגרף היתרה" aria-describedby="chart-hint">
+            <canvas id="growth" aria-hidden="true"></canvas>
+          </button>
+          <span id="chart-hint" class="sr-only">לחצו לבחירת תאריך. במקלדת השתמשו בחצים ימינה ושמאלה.</span>
           <div class="axis" dir="ltr"><span dir="rtl">התחלה</span><span id="chart-period" dir="rtl"></span></div>
+          <div id="chart-tip" class="chart-tip" role="status" aria-live="polite" hidden></div>
         </figure>
       </div>
       <div class="actions">
@@ -103,6 +110,7 @@
   <script src="vendor/decimal.js" defer></script>
   <script src="finance.js" defer></script>
   <script src="storage.js" defer></script>
+  <script src="chart.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>
