@@ -14,8 +14,7 @@
     <div class="stage">
       <div class="footprint">
         <div class="device">
-          <div id="hardware" class="hardware">
-            <div class="qin-sides" aria-hidden="true"><i></i><i></i></div>
+          <div class="hardware">
           <div class="side">
             <button type="button" data-scroll="-1" aria-label="גלילה למעלה">+</button>
             <button type="button" data-scroll="1" aria-label="גלילה למטה">−</button>
@@ -55,6 +54,7 @@
     </section>
     <section class="history">
       <h2>היסטוריית גרסאות</h2>
+      <p><a href="https://github.com/hopetohelp/ribit/releases/tag/v2.0.1">2.0.1</a> · ניווט מקשים ופסי תצוגה קומפקטיים</p>
       <p><a href="https://github.com/hopetohelp/ribit/releases/tag/v2.0.0">2.0.0</a> · דמי ניהול, אינפלציה, מס ומראה כהה</p>
       <p><a href="https://github.com/hopetohelp/ribit/releases/tag/v1.0.0">1.0.0</a> · מחשבון, השוואה ושמירה באופליין</p>
     </section>
@@ -64,26 +64,35 @@
             <iframe id="app" hidden title="אפליקציית ריבית" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
             <div id="screen-off" hidden></div>
           </div>
-      <div id="keypad" aria-label="מקשי המכשיר" hidden>
-        <div class="directions qin-navigation" role="group" aria-label="ניווט">
-          <button type="button" data-key="Back" aria-label="חזרה או יציאה">⏼</button>
-          <button type="button" data-key="ArrowUp" aria-label="למעלה">↑</button>
-          <button type="button" data-key="Backspace" aria-label="מחיקת תו">⌫</button>
-          <button type="button" data-key="ArrowRight" aria-label="ימינה">→</button>
-          <button type="button" data-key="Enter" aria-label="אישור">●</button>
-          <button type="button" data-key="ArrowLeft" aria-label="שמאלה">←</button>
-          <span></span>
-          <button type="button" data-key="ArrowDown" aria-label="למטה">↓</button>
-          <span></span>
-        </div>
-        <div class="digits" role="group" aria-label="מספרים" dir="ltr">
-          <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
-          <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
-          <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
-          <button type="button" data-key="-" aria-label="מינוס">*</button><button type="button" data-key="0">0</button><button type="button" data-key="." aria-label="נקודה">#</button>
-        </div>
-      </div>
-          <button id="bezel-back" class="bezel-back" type="button" aria-label="חזרה">↶</button>
+            <div id="keypad" aria-label="מקשי המכשיר" dir="ltr" hidden>
+              <div class="qin-navigation" role="group" aria-label="ניווט">
+                <button type="button" class="qin-soft" data-key="Menu" aria-label="תפריט">−</button>
+                <div class="qin-ring">
+                  <button type="button" data-key="ArrowUp" aria-label="גלילה למעלה"></button>
+                  <button type="button" data-key="ArrowRight" aria-label="ימינה"></button>
+                  <button type="button" data-key="ArrowDown" aria-label="גלילה למטה"></button>
+                  <button type="button" data-key="ArrowLeft" aria-label="שמאלה"></button>
+                  <button type="button" data-key="Enter" aria-label="אישור"></button>
+                </div>
+                <button type="button" class="qin-soft" data-key="Backspace" aria-label="מחיקת תו">−</button>
+                <button type="button" class="qin-call" data-key="Next" aria-label="הפריט הבא"><span class="receiver" aria-hidden="true"></span></button>
+                <button type="button" class="qin-call" data-key="Back" aria-label="חזרה"><span class="receiver" aria-hidden="true"></span><small aria-hidden="true">⏻</small></button>
+              </div>
+              <div class="digits" role="group" aria-label="מספרים">
+                <button type="button" data-key="1">1<small>−</small></button>
+                <button type="button" data-key="2">2<small><b aria-hidden="true">│</b>ABC</small></button>
+                <button type="button" data-key="3">3<small><b aria-hidden="true">╱</b>DEF</small></button>
+                <button type="button" data-key="4">4<small><b aria-hidden="true">╲</b>GHI</small></button>
+                <button type="button" data-key="5">5<small><b aria-hidden="true">⌝</b>JKL</small></button>
+                <button type="button" data-key="6">6<small>MNO</small></button>
+                <button type="button" data-key="7">7<small>PQRS</small></button>
+                <button type="button" data-key="8">8<small>TUV</small></button>
+                <button type="button" data-key="9">9<small>WXYZ</small></button>
+                <button type="button" data-key="-" aria-label="כוכבית, מינוס">*<small aria-hidden="true">♫</small></button>
+                <button type="button" data-key="0">0<small>␣</small></button>
+                <button type="button" data-key="." aria-label="סולמית, נקודה">#<small class="mic" aria-hidden="true"></small></button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

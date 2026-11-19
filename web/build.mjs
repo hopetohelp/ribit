@@ -12,10 +12,6 @@ for (const source of ['app', 'hosting']) {
   await cp(path.join(web, source), dist, { recursive: true });
 }
 
-// Keep the standalone Android asset intact. The hosted copy opens only in the simulator.
-const hostedApp = path.join(dist, 'app.html');
-await writeFile(hostedApp, (await readFile(hostedApp, 'utf8')).replace('<head>', '<head><script src="/frame-only.js"></script><link rel="stylesheet" href="/frame-ui.css">'));
-
 async function filesIn(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -58,9 +54,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin || !FILES.includes(url.pathname)) return;
   const cached = () => caches.open(CACHE).then(cache => cache.match(url.pathname));
-  event.respondWith(event.request.mode === 'navigate'
-    ? fetch(event.request).catch(cached)
-    : cached().then(hit => hit || fetch(event.request)));
+  event.respondWith(fetch(event.request).catch(cached));
 });
 `;
 await writeFile(path.join(dist, 'sw.js'), serviceWorker);
@@ -88,7 +82,7 @@ export default {
         await env.COUNTS.getByName('downloads').total(true).catch(() => {});
       }
       return new Response(null, {status: 302, headers: {
-        Location: 'https://raw.githubusercontent.com/hopetohelp/ribit/apk-v2.0.0/ribit-2.0.0.apk',
+        Location: 'https://github.com/hopetohelp/ribit/releases/download/v2.0.1/ribit-2.0.1.apk',
         'Cache-Control': 'no-store'
       }});
     }

@@ -1,11 +1,18 @@
 (function () {
   'use strict';
 
+  if (window === window.top && window.location.hostname === 'ribit.hopetohelp.net') {
+    window.location.replace('/');
+    return;
+  }
+
   var finance = window.RibitFinance;
   var store = window.RibitStorage;
   var Money = finance.Money;
   var form = document.getElementById('calculator');
   var fields = form.elements;
+  var main = document.getElementById('main');
+  var bar = document.getElementById('bar');
   var trackNames = ['מסלול א׳', 'מסלול ב׳'];
   var state = {
     view: 'single',
@@ -20,6 +27,7 @@
     'depositFee', 'balanceFee', 'taxType', 'taxRate', 'includeDepositFeeInBasis'];
   var toastTimer;
   var previewFocus;
+  var lastScroll = 0;
 
   function byId(id) { return document.getElementById(id); }
   function listen(id, action) { byId(id).addEventListener('click', action); }
@@ -119,7 +127,11 @@
     });
   }
 
-  function pageTop() { byId('main').scrollTop = 0; }
+  function pageTop() {
+    main.scrollTop = 0;
+    lastScroll = 0;
+    bar.classList.remove('retracted');
+  }
 
   function view(name) {
     stash();
@@ -557,6 +569,12 @@
     return false;
   }
 
+  function requestBack() {
+    if (back()) return;
+    if (window.RibitDevice && window.RibitDevice.exit) window.RibitDevice.exit();
+    else if (window !== window.parent) window.parent.postMessage('ribit:exit', window.location.origin);
+  }
+
   function focusable(scope) {
     return Array.prototype.filter.call(scope.querySelectorAll('button, input, select, a[href]'), function (element) {
       return !element.disabled && element.getClientRects().length > 0;
@@ -589,32 +607,52 @@
     if (target) target.focus();
   }
 
-  function simulate(key) {
-    if (key === 'Back') { back(); return; }
-    var active = document.activeElement;
-    if (active === document.body && previewFocus && previewFocus.getClientRects().length > 0) {
-      active = previewFocus;
+  function keypadFocus(control) {
+    if (!control) return;
+    control.focus();
+    control.classList.add('key-focus');
+  }
+
+  function keypad(key) {
+    if (key === 'Back') { requestBack(); return; }
+    var dialog = !byId('dialog-backdrop').hidden;
+    var scope = dialog ? byId('dialog') : document.body;
+    var items = focusable(scope);
+    var currentIndex = items.indexOf(previewFocus);
+    var active = items[currentIndex];
+    if (key === 'Menu') {
+      if (!dialog) {
+        keypadFocus(byId('menu'));
+        byId('menu').click();
+      }
+      return;
     }
+    if (key === 'ArrowUp' || key === 'ArrowDown') {
+      scroll(key === 'ArrowUp' ? -1 : 1);
+      return;
+    }
+    if (key === 'ArrowLeft' || key === 'ArrowRight' || key === 'Next') {
+      if (!items.length) return;
+      var direction = key === 'ArrowRight' ? -1 : 1;
+      keypadFocus(items[currentIndex < 0 ? 0 : (currentIndex + direction + items.length) % items.length]);
+      return;
+    }
+    if (!active) {
+      active = dialog ? items[0] : (fields.initial.getClientRects().length ? fields.initial : items[0]);
+      keypadFocus(active);
+    }
+    if (!active) return;
     if (key === 'Enter') {
-      if (active.tagName === 'INPUT' && active.type !== 'checkbox' && active.form) {
+      if (active.tagName === 'SELECT') {
+        active.selectedIndex = (active.selectedIndex + 1) % active.options.length;
+        active.dispatchEvent(new Event('change', { bubbles: true }));
+      } else if (active.tagName === 'INPUT' && active.type === 'text' && active.form) {
         var primary = active.form.querySelector('button[type="submit"]');
         if (primary) primary.click();
-      } else if (active.click) active.click();
+      } else active.click();
       return;
     }
-    if (key.indexOf('Arrow') === 0) {
-      if (active.tagName === 'SELECT' && (key === 'ArrowUp' || key === 'ArrowDown')) {
-        var index = active.selectedIndex + (key === 'ArrowUp' ? -1 : 1);
-        if (index >= 0 && index < active.options.length) {
-          active.selectedIndex = index;
-          var change = document.createEvent('Event');
-          change.initEvent('change', true, false);
-          active.dispatchEvent(change);
-        }
-      } else moveFocus(key, active);
-      return;
-    }
-    if (active.tagName !== 'INPUT' || active.type !== 'text') return;
+    if (active.tagName !== 'INPUT' || active.type !== 'text' || !/^(?:Backspace|[0-9.\-])$/.test(key)) return;
     var start = active.selectionStart;
     var end = active.selectionEnd;
     if (key === 'Backspace' && start === end) start = Math.max(0, start - 1);
@@ -627,6 +665,19 @@
     active.dispatchEvent(input);
   }
 
+  function scroll(direction) {
+    var content = byId('dialog-backdrop').hidden ? main : byId('dialog');
+    content.scrollTop += direction * Math.max(35, Math.round(content.clientHeight * .65));
+  }
+
+  main.addEventListener('scroll', function () {
+    var top = Math.max(0, main.scrollTop);
+    if (top !== lastScroll || top === 0) {
+      bar.classList.toggle('retracted', top > 0 && top > lastScroll);
+      lastScroll = top;
+    }
+  });
+  bar.addEventListener('focus', function () { bar.classList.remove('retracted'); }, true);
   document.addEventListener('focus', function (event) {
     var target = event.target;
     if (!/^(?:BUTTON|INPUT|SELECT|A)$/.test(target.tagName)) return;
@@ -651,16 +702,8 @@
       moveFocus(key);
     }
   });
-  window.addEventListener('message', function (event) {
-    if (event.source !== window.parent || event.origin !== window.location.origin || !event.data) return;
-    var key = event.data.ribitKey;
-    if (/^(?:Arrow(?:Left|Right|Up|Down)|Enter|Back|Backspace|[0-9.\-])$/.test(key || '')) {
-      simulate(key);
-      if (previewFocus && previewFocus.getClientRects().length > 0) previewFocus.classList.add('key-focus');
-    }
-  });
   window.addEventListener('resize', draw);
-  window.Ribit = { back: back };
+  window.Ribit = { back: back, keypad: keypad, scroll: scroll };
   form.addEventListener('submit', calculate);
   form.addEventListener('change', updateConditionalFields);
   fields.depositFee.addEventListener('input', updateConditionalFields);
@@ -674,6 +717,7 @@
     button.addEventListener('click', function () { current().display = button.getAttribute('data-value'); showResults(); });
   });
   listen('menu', function () { setMenu(byId('menu-items').hidden); });
+  listen('back', requestBack);
   listen('theme', function () { setTheme(!state.dark, true); setMenu(false); byId('menu').focus(); });
   listen('advanced', function () { setAdvanced(byId('advanced-fields').hidden, true); });
   listen('help', explanations);

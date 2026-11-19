@@ -39,7 +39,7 @@
     glass.style.width = screenWidth + 'px';
     glass.style.height = screenHeight + 'px';
     device.style.setProperty('--depth', 8.5 * pxPerMm + 'px');
-    glass.style.top = (model === 'keys' ? 12 * pxPerMm : (bodyHeight * pxPerMm - screenHeight) / 2) + 'px';
+    glass.style.top = (model === 'keys' ? 94 / 1060 * bodyHeight * pxPerMm : (bodyHeight * pxPerMm - screenHeight) / 2) + 'px';
     [frame, $('landing')].forEach(surface => {
       surface.style.width = width + 'px';
       surface.style.height = height + 'px';
@@ -65,45 +65,56 @@
     resize();
   }
 
+  function activeApp() {
+    return frame.hidden || !$('screen-off').hidden ? null : frame.contentWindow.Ribit;
+  }
+
   function scroll(direction) {
-    if (!$('screen-off').hidden) return;
-    const doc = frame.contentDocument;
-    const content = frame.hidden ? $('landing') :
-      doc && (doc.querySelector('#dialog-backdrop:not([hidden]) #dialog') || doc.getElementById('main'));
-    if (content) content.scrollTop += direction * Math.max(35, Math.round(content.clientHeight * .65));
-  }
-
-  function scrollDirection(key) {
-    if (key === 'PageUp' || (model === 'keys' && key === 'ArrowUp')) return -1;
-    if (key === 'PageDown' || (model === 'keys' && key === 'ArrowDown')) return 1;
-    return 0;
-  }
-
-  function keyboard(event) {
-    const direction = scrollDirection(event.key);
-    if (direction) {
-      event.preventDefault();
-      event.stopPropagation();
-      scroll(direction);
+    if (frame.hidden) {
+      const landing = $('landing');
+      landing.scrollTop += direction * Math.max(35, Math.round(landing.clientHeight * .65));
+      return;
     }
-  }
-
-  let lastControl;
-  function moveControl(direction) {
-    const doc = frame.contentDocument;
-    if (!doc) return;
-    const scope = doc.querySelector('#dialog-backdrop:not([hidden]) #dialog') || doc;
-    const controls = Array.from(scope.querySelectorAll('button, input, select, a[href]'))
-      .filter(control => !control.disabled && control.getClientRects().length);
-    if (!controls.length) return;
-    const current = controls.indexOf(lastControl);
-    controls[current < 0 ? 0 : (current + direction + controls.length) % controls.length].focus();
+    activeApp()?.scroll(direction);
   }
 
   function back() {
-    if (frame.hidden) return;
-    const app = frame.contentWindow.Ribit;
-    if (app && !app.back()) home();
+    const app = activeApp();
+    if (app) {
+      if (!app.back()) home();
+    } else if (!frame.hidden) home();
+  }
+
+  function press(key) {
+    if (key === 'Back') back();
+    else activeApp()?.keypad(key);
+  }
+
+  function deviceKeyboard(event) {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const key = event.key;
+    if (!frame.hidden && (key === 'Escape' || key === 'BrowserBack')) back();
+    else if (key === 'PageUp' || key === 'PageDown') scroll(key === 'PageUp' ? -1 : 1);
+    else if (model === 'keys' && /^(?:Arrow(?:Left|Right|Up|Down)|Enter|Backspace|[0-9.−-])$/.test(key)) {
+      if (key === 'Enter' && event.target.closest('[data-key]')) return;
+      press(key === '−' ? '-' : key);
+    } else return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function configureKeypad() {
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    doc.querySelectorAll('#calculator input[type="text"]').forEach(input => {
+      if (model === 'keys') {
+        if (!input.hasAttribute('data-touch-input')) input.dataset.touchInput = input.inputMode;
+        input.inputMode = 'none';
+      } else if (input.hasAttribute('data-touch-input')) {
+        input.inputMode = input.dataset.touchInput;
+        delete input.dataset.touchInput;
+      }
+    });
   }
 
   function home() {
@@ -126,6 +137,7 @@
     frame.style.visibility = 'visible';
     $('power').setAttribute('aria-pressed', 'false');
     if (!frame.hasAttribute('src')) frame.src = '/app.html';
+    else configureKeypad();
     resize();
     if (value === 'keys') document.querySelector('[data-key=Enter]').focus();
   }
@@ -141,7 +153,6 @@
   }
   scaleInput.oninput = () => setCalibration(Number(scaleInput.value));
   $('reset-scale').onclick = () => setCalibration(Number(scaleInput.defaultValue));
-  $('bezel-back').onclick = back;
   $('power').onclick = () => {
     $('screen-off').hidden = !$('screen-off').hidden;
     frame.style.visibility = $('screen-off').hidden ? 'visible' : 'hidden';
@@ -151,38 +162,38 @@
     const doc = frame.contentDocument;
     if (!doc) return;
     doc.addEventListener('keydown', deviceKeyboard, true);
-    doc.addEventListener('focusin', event => { lastControl = event.target; });
+    configureKeypad();
   });
-  function deviceKeyboard(event) {
-    if (frame.hidden) return;
-    if (event.key === 'Escape' || event.key === 'BrowserBack') {
-      event.preventDefault();
-      event.stopPropagation();
-      back();
-    } else keyboard(event);
-  }
+  window.addEventListener('message', event => {
+    if (event.source === frame.contentWindow && event.origin === location.origin && event.data === 'ribit:exit') home();
+  });
   document.addEventListener('keydown', deviceKeyboard);
-  document.querySelectorAll('[data-key]').forEach(button => button.onclick = () => {
-    if (!$('screen-off').hidden || frame.hidden) return;
-    const key = button.dataset.key;
-    const direction = scrollDirection(key);
-    if (key === 'Back') back();
-    else if (direction) scroll(direction);
-    else if (model === 'keys' && (key === 'ArrowRight' || key === 'ArrowLeft')) {
-      moveControl(key === 'ArrowLeft' ? 1 : -1);
-    } else {
-      const select = key === 'Enter' && lastControl && lastControl.tagName === 'SELECT' && lastControl.getClientRects().length;
-      frame.contentWindow.postMessage({ ribitKey: select ? 'ArrowDown' : key }, window.location.origin);
-    }
+  let touchKey;
+  document.querySelectorAll('[data-key]').forEach(button => {
+    // Keep the active editor control focused when a simulated key is pressed.
+    button.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      if (event.pointerType === 'touch') touchKey = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    });
+    button.addEventListener('pointerup', event => {
+      if (!touchKey || touchKey.id !== event.pointerId) return;
+      const { x, y } = touchKey;
+      touchKey = null;
+      if (Math.hypot(event.clientX - x, event.clientY - y) < 12 &&
+          document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-key]') === button) {
+        press(button.dataset.key);
+      }
+    });
+    button.addEventListener('pointercancel', () => { touchKey = null; });
+    button.addEventListener('click', event => {
+      if (!window.PointerEvent || (event.pointerType !== 'touch' && !event.sourceCapabilities?.firesTouchEvents)) {
+        press(button.dataset.key);
+      }
+    });
   });
-  const hardware = $('hardware');
-  hardware.addEventListener('pointermove', event => {
-    if (model !== 'keys' || event.pointerType !== 'mouse') return;
-    const { left, width } = device.getBoundingClientRect();
-    const angle = ((event.clientX - left) / width - .5) * 34;
-    hardware.style.setProperty('--yaw', Math.max(-17, Math.min(17, angle)) + 'deg');
-  });
-  hardware.addEventListener('pointerleave', () => hardware.style.removeProperty('--yaw'));
+  glass.addEventListener('wheel', event => {
+    if (model === 'keys') event.preventDefault();
+  }, { passive: false });
   window.addEventListener('resize', resize);
   selectSize('fit');
   fetch('/api/view', { method: 'POST' }).then(response => {

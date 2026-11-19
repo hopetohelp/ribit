@@ -136,6 +136,11 @@ class MainActivity : ComponentActivity() {
 
     private inner class LocalDevice {
         @JavascriptInterface
+        fun exit() {
+            runOnUiThread { if (!isFinishing) finish() }
+        }
+
+        @JavascriptInterface
         fun theme(dark: Boolean) {
             runOnUiThread { if (!isDestroyed) applyTheme(dark) }
         }
