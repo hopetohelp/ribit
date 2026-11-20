@@ -74,6 +74,8 @@ npm run build:windows
 תהליך GitHub Actions בונה מתקין חתום, בודק התקנה והפעלה, מפרסם את המתקין עם `latest.yml` וקובץ ה־blockmap, ומעדכן את רשומת `windows-latest` במרחב `DOWNLOADS`.
 בתצורה הראשונית מגדירים את הסודות `WINDOWS_CSC_LINK`, `WINDOWS_CSC_KEY_PASSWORD` ו־`CLOUDFLARE_KV_API_TOKEN`, ואת המשתנים `CLOUDFLARE_ACCOUNT_ID` ו־`RIBIT_DOWNLOADS_NAMESPACE_ID`. משתמשים בתעודת חתימת קוד שהמחשבים נותנים בה אמון ושומרים על אותה זהות מפרסם גם בעדכונים הבאים.
 
+אפשר להריץ את תהליך ההפצה ידנית מ־GitHub Actions עם תג קיים ולהשאיר את `activate_catalog` כבוי. לאחר אימות שהמתקין החתום, `latest.yml` וה־blockmap זמינים בגרסה הציבורית, מפעילים אותה ב־Cloudflare על ידי כתיבת מספר הגרסה ל־`windows-latest` במרחב `DOWNLOADS`.
+
 מספר הגרסה של האתר נקבע ב־`web/version.txt` ומוצג בתחתית חלון הפתיחה ובחלון ״אודות״ של המחשבון באתר.
 
 ## בנייה
