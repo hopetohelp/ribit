@@ -7,17 +7,79 @@
   if (setup) history.replaceState(null, '', location.pathname);
   let thread = '';
   let token = '';
-  let ready = !admin;
+  let visitorName = '';
+  let ready = false;
   let lastMessage = '';
   let lastInbox = '';
   let visit = 0;
 
-  if (!admin) {
-    try { token = localStorage.getItem('ribit-chat') || ''; } catch (_) {}
-    if (!/^[a-f0-9]{64}$/.test(token)) {
-      token = Array.from(crypto.getRandomValues(new Uint8Array(32)), value => value.toString(16).padStart(2, '0')).join('');
-      try { localStorage.setItem('ribit-chat', token); } catch (_) {}
+  function useConversation(name, privateToken, messages) {
+    visitorName = name;
+    token = privateToken;
+    try { localStorage.setItem('ribit-named-chat', JSON.stringify({ name, token })); } catch (_) {}
+    ready = true;
+    $('visitor-login').hidden = true;
+    $('chat').hidden = false;
+    $('return-code').hidden = false;
+    $('private-code').value = token;
+    $('intro').textContent = 'שיחה עם מנהל האתר · ' + visitorName;
+    if (messages) paintMessages(messages);
+    else refresh();
+  }
+
+  function showVisitorLogin() {
+    ready = false;
+    visit++;
+    lastMessage = '';
+    $('messages').textContent = '';
+    $('message').value = '';
+    $('chat').hidden = true;
+    $('visitor-login').hidden = false;
+    $('return-code').open = false;
+    $('visitor-name').focus();
+  }
+
+  function visitorStart() {
+    $('resume').addEventListener('toggle', function () {
+      $('resume-code').required = this.open;
+      $('visitor-button').textContent = this.open ? 'חזרה לשיחה' : 'פתיחת שיחה';
+    });
+    $('visitor-login').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const name = $('visitor-name').value.trim().normalize('NFC');
+      if (!name) return report({ status: 400 });
+      if (!$('resume').open) {
+        const privateToken = Array.from(crypto.getRandomValues(new Uint8Array(32)), value => value.toString(16).padStart(2, '0')).join('');
+        useConversation(name, privateToken);
+        $('message').focus();
+        return;
+      }
+      token = $('resume-code').value.trim().toLowerCase();
+      if (!/^[a-f0-9]{64}$/.test(token)) return report({ status: 404 });
+      const button = $('visitor-button');
+      button.disabled = true;
+      try {
+        const result = await api('resume', { name });
+        useConversation(result.name, token, result.messages);
+        $('status').textContent = '';
+        $('message').focus();
+      } catch (error) { report(error); }
+      finally { button.disabled = false; }
+    });
+    $('switch-conversation').addEventListener('click', function () {
+      if (!window.confirm('כדי לחזור לשיחה הנוכחית צריך לשמור את קוד החזרה. לעבור לשיחה אחרת?')) return;
+      try { localStorage.removeItem('ribit-named-chat'); } catch (_) {}
+      token = '';
+      visitorName = '';
+      showVisitorLogin();
+    });
+    let saved;
+    try { saved = JSON.parse(localStorage.getItem('ribit-named-chat') || 'null'); } catch (_) {}
+    if (typeof saved?.name === 'string' && /^[a-f0-9]{64}$/.test(saved.token)) {
+      useConversation(saved.name, saved.token);
+      return;
     }
+    showVisitorLogin();
   }
 
   async function api(action, payload) {
@@ -68,7 +130,7 @@
     threads.forEach(item => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = (item.waiting ? 'ממתינה · ' : '') + item.id.slice(0, 6);
+      button.textContent = (item.waiting ? 'ממתינה · ' : '') + (item.name || item.id.slice(0, 6));
       button.setAttribute('aria-pressed', String(item.id === thread));
       button.addEventListener('click', () => {
         thread = item.id;
@@ -108,6 +170,7 @@
       400: 'בדקו שהטקסט תקין.',
       401: 'הסיסמה או קוד ההגדרה אינם תקינים.',
       403: 'קוד ההגדרה אינו תקין.',
+      404: 'לא נמצאה שיחה עם השם והקוד האלה.',
       429: 'בוצעו יותר מדי ניסיונות. נסו שוב בעוד רגע.'
     })[error.status] || 'אין חיבור לצ׳אט כרגע. נסו שוב כשיש אינטרנט.';
   }
@@ -150,7 +213,7 @@
     $('send-button').disabled = true;
     const current = visit;
     try {
-      const reply = await api('messages', { message, thread });
+      const reply = await api('messages', { message, thread, name: visitorName });
       if (current === visit) {
         input.value = '';
         paintMessages(reply.messages);
@@ -182,12 +245,21 @@
       try { await api('logout', {}); showLogin(); }
       catch (error) { report(error); }
     });
-  } else refresh();
+  } else visitorStart();
 
   async function poll() {
     await refresh();
     setTimeout(poll, 7000);
   }
   setTimeout(poll, 7000);
+  $('copy-code').addEventListener('click', async function () {
+    try {
+      await navigator.clipboard.writeText(token);
+      $('status').textContent = 'הקוד הועתק';
+    } catch (_) {
+      $('private-code').focus();
+      $('private-code').select();
+    }
+  });
   window.addEventListener('online', refresh);
 }());

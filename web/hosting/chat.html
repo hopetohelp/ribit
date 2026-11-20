@@ -20,13 +20,31 @@
       <input id="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password">
       <button id="login-button">כניסה</button>
     </form>
+    <form id="visitor-login" class="panel" hidden>
+      <label for="visitor-name">השם שלכם</label>
+      <input id="visitor-name" type="text" required maxlength="60" autocomplete="name">
+      <details id="resume">
+        <summary>חזרה לשיחה קיימת</summary>
+        <label for="resume-code">קוד חזרה פרטי</label>
+        <input id="resume-code" type="text" dir="ltr" maxlength="64" autocomplete="off" spellcheck="false">
+      </details>
+      <button id="visitor-button">פתיחת שיחה</button>
+    </form>
     <div id="chat" class="chat">
       <aside id="inbox" class="panel" hidden aria-label="שיחות פתוחות">
         <h2>שיחות</h2>
         <div id="threads"></div>
       </aside>
       <section class="panel thread" aria-label="שיחה">
-        <p id="intro">כתבו למנהל האתר. אפשר לחזור לכאן מאותו דפדפן כדי לראות תשובה.</p>
+        <p id="intro">כתבו למנהל האתר.</p>
+        <details id="return-code" hidden>
+          <summary>קוד חזרה לשיחה</summary>
+          <p>כדי לחזור ממכשיר אחר, השתמשו בשם שלכם ובקוד הזה לאחר שליחת ההודעה הראשונה.</p>
+          <label for="private-code">הקוד הפרטי שלכם</label>
+          <input id="private-code" type="text" dir="ltr" readonly>
+          <button id="copy-code" type="button">העתקת קוד</button>
+          <button id="switch-conversation" type="button">מעבר לשיחה אחרת</button>
+        </details>
         <div id="messages" role="log" aria-label="הודעות" tabindex="0"></div>
         <form id="send">
           <label for="message">הודעה</label>

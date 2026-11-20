@@ -33,3 +33,11 @@ button[aria-pressed="true"] { background: #ddd0ff; color: #1c132e; }
   .chat { display: grid; grid-template-columns: 1fr; }
   #inbox { max-height: 28vh; }
 }
+
+#visitor-login { max-width: 420px; }
+#visitor-login input, #private-code { width: 100%; margin-block-end: 10px; }
+#resume { margin-block-end: 10px; }
+#return-code { margin-block-end: 12px; }
+#return-code p { margin: 6px 0; }
+#return-code input { font-family: monospace; }
+summary { cursor: pointer; }
