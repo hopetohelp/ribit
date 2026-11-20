@@ -10,9 +10,13 @@ async function memberKey(secret, kind, value) {
 
 function memberResponse(value, status = 200, session) {
   const headers = { 'Cache-Control': 'no-store' };
-  if (session !== undefined) headers['Set-Cookie'] = memberCookie + '=' + session +
-    '; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=' + (session ? memberSessionSeconds : 0);
+  if (session !== undefined) headers['Set-Cookie'] = memberCookieValue(session);
   return Response.json(value, { status, headers });
+}
+
+function memberCookieValue(session) {
+  return memberCookie + '=' + session + '; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=' +
+    (session ? memberSessionSeconds : 0);
 }
 
 class MemberStore {
@@ -32,11 +36,16 @@ class MemberStore {
       const saved = this.sql.exec('INSERT OR IGNORE INTO member VALUES (1, ?, ?, ?, ?)', name, email, salt, hash);
       if (!saved.rowsWritten) return { status: 409 };
     } else if (!existing || !sameSecret(existing.password, hash)) return { status: 401 };
+    return { status: 200, token: await this.newSession() };
+  }
+
+  async newSession() {
+    if (!this.sql.exec('SELECT slot FROM member WHERE slot = 1').toArray().length) return null;
     const token = randomHex(32);
     const tokenHash = await digest(token);
     this.sql.exec('DELETE FROM member_sessions WHERE expires <= ?', Date.now());
     this.sql.exec('INSERT INTO member_sessions VALUES (?, ?)', tokenHash, Date.now() + memberSessionSeconds * 1000);
-    return { status: 200, token };
+    return token;
   }
 
   async session(token, revoke = false) {

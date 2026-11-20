@@ -1,9 +1,12 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const next = new URLSearchParams(location.search).get('next');
+  const params = new URLSearchParams(location.search);
+  const next = params.get('next');
+  const googleResult = params.get('google');
   const target = next === 'chat' ? '/chat?member=1' : next === 'calculator' ? '/app.html?installed=1&account=1' : null;
   let registering = false;
+  let linkingGoogle = false;
 
   async function request(action, payload) {
     const response = await fetch('/api/account/' + action, {
@@ -41,6 +44,10 @@
   }
 
   function notify(error) {
+    if (linkingGoogle && error.status === 401) {
+      $('account-status').textContent = 'לא נמצא חשבון תואם או שהסיסמה שגויה. לחשבון חדש, חזרו להרשמה הרגילה.';
+      return;
+    }
     $('account-status').textContent = ({
       400: 'בדקו את הפרטים. הסיסמה צריכה להכיל לפחות 10 תווים.',
       401: 'כתובת המייל או הסיסמה אינן נכונות.',
@@ -60,12 +67,12 @@
     event.preventDefault();
     $('submit-account').disabled = true;
     try {
-      await request(registering ? 'register' : 'login', {
+      var result = await request(linkingGoogle ? 'google/link' : registering ? 'register' : 'login', {
         email: $('email').value, password: $('password').value
       });
       $('password').value = '';
       remember(true);
-      location.replace(target || '/app.html?installed=1&account=1');
+      location.replace(result.target || target || '/app.html?installed=1&account=1');
     } catch (error) { notify(error); }
     finally { $('submit-account').disabled = false; }
   });
@@ -76,13 +83,41 @@
       else notify(error);
     }
   };
-  request('session').then(member => {
-    remember(true);
-    if (target) location.replace(target);
-    else showMember(member);
-  }).catch(error => {
-    showForm();
-    if (error.status === 401) remember(false);
-    else notify(error);
-  });
+  async function start() {
+    let google;
+    try { google = await request('google/status'); } catch (_) {}
+    if (google?.enabled) {
+      $('google-sign-in').hidden = false;
+      $('google-sign-in').href = '/api/account/google/start?next=' + (next === 'chat' ? 'chat' : 'calculator');
+    }
+    if (googleResult === 'link') {
+      showForm();
+      if (!google?.pendingEmail) {
+        $('account-status').textContent = 'תוקף החיבור פג. התחילו שוב עם Google.';
+        return;
+      }
+      linkingGoogle = true;
+      $('email').value = google.pendingEmail;
+      $('email').readOnly = true;
+      $('toggle-register').hidden = true;
+      $('google-sign-in').hidden = true;
+      $('google-cancel').hidden = false;
+      $('submit-account').textContent = 'חיבור וסנכרון';
+      $('member-note').textContent = 'הקלידו פעם אחת את הסיסמה של הפלא השמיני. לאחר החיבור, כניסה עם Google תפתח את אותם חישובים ושיחות.';
+      $('password').focus();
+      return;
+    }
+    try {
+      const member = await request('session');
+      remember(true);
+      if (target) location.replace(target);
+      else showMember(member);
+    } catch (error) {
+      showForm();
+      if (error.status === 401) remember(false);
+      else notify(error);
+      if (googleResult === 'error') $('account-status').textContent = 'הכניסה עם Google לא הושלמה. אפשר לנסות שוב.';
+    }
+  }
+  start();
 }());

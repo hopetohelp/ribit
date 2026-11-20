@@ -67,9 +67,11 @@ assets['/sw.js'] = [mime['.js'], gzipSync(serviceWorker).toString('base64')];
 if (process.argv[2]) {
   const chatWorker = await readFile(path.join(web, 'chat-worker.mjs'), 'utf8');
   const accountsWorker = await readFile(path.join(web, 'accounts-worker.mjs'), 'utf8');
+  const googleWorker = await readFile(path.join(web, 'google-worker.mjs'), 'utf8');
   const worker = `import { DurableObject } from 'cloudflare:workers';
 ${chatWorker}
 ${accountsWorker}
+${googleWorker}
 export class SiteCounter extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -82,6 +84,11 @@ export class SiteCounter extends DurableObject {
     const sql = this.ctx.storage.sql;
     if (increment) sql.exec('INSERT INTO tally VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET total = MAX(total + 1, excluded.total)', minimum + 1);
     return Math.max(minimum, sql.exec('SELECT total FROM tally WHERE id = 1').toArray()[0]?.total ?? 0);
+  }
+
+  googleOperation(operation, ...args) {
+    const google = new GoogleLinkStore(this.ctx.storage);
+    return google[operation](...args);
   }
 
   memberOperation(operation, ...args) {
@@ -120,6 +127,7 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
     if (pathname.startsWith('/api/chat/')) return chatApi(request, url, env);
+    if (pathname.startsWith('/api/account/google/')) return googleApi(request, url, env);
     if (pathname.startsWith('/api/account/')) return accountsApi(request, url, env);
     const path = pathname === '/account' ? '/account.html' : ['/chat', '/admin-chat'].includes(pathname) ? '/chat.html' : pathname;
     if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document' &&
