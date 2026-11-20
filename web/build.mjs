@@ -151,7 +151,10 @@ export default {
     if (pathname.startsWith('/api/chat/')) return chatApi(request, url, env);
     if (pathname.startsWith('/api/account/google/')) return googleApi(request, url, env);
     if (pathname.startsWith('/api/account/')) return accountsApi(request, url, env);
-    const path = pathname === '/android' ? '/android.html' : pathname === '/account' ? '/account.html' : ['/chat', '/admin-chat'].includes(pathname) ? '/chat.html' : pathname;
+    if ((pathname === '/android' || pathname === '/android.html') && downloadMethods.includes(request.method)) {
+      return new Response(null, { status: 302, headers: { Location: '/?android=1', 'Cache-Control': 'no-store' } });
+    }
+    const path = pathname === '/account' ? '/account.html' : ['/chat', '/admin-chat'].includes(pathname) ? '/chat.html' : pathname;
     if (pathname === '/download' || pathname === '/api/android/latest') return androidStore(request, url, env);
     if (['/download/windows', '/api/windows/latest', '/updates/windows/latest.yml'].includes(pathname)) {
       return windowsStore(request, url, env);

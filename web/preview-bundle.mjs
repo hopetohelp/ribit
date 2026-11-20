@@ -177,10 +177,18 @@ export async function buildFullPreviewHtml() {
   html = html.replace(/\s*<link rel="manifest" href="\/manifest\.webmanifest">\n?/, '\n');
   html = html.replace('href="/chat"', 'href="https://ribit.hopetohelp.net/chat"')
     .replace('href="/account"', 'href="https://ribit.hopetohelp.net/account"')
-    .replace('href="/android.html"', 'href="https://ribit.hopetohelp.net/android"');
+    .replace('href="/download"', 'href="https://ribit.hopetohelp.net/download"')
+    .replace('href="/download/windows"', 'href="https://ribit.hopetohelp.net/download/windows"');
   html = html.replace('class="brand-logo" href="/"', 'class="brand-logo" href="#landing"');
   html = html.replaceAll('href="/icon-192.png"', `href="${iconUri}"`);
-  html = html.replaceAll('src="/icon-192.png"', `src="${iconUri}"`);
+  const logoUri = await dataUri(path.join(hostingDir, 'icon-512.png'), 'image/png');
+  html = html.replaceAll('src="/icon-512.png"', `src="${logoUri}"`);
+  html = html.replace(
+    '<script src="/android-store.js" defer></script>',
+    '',
+  );
+  html = html.replace('<p id="android-release-status" role="status">בודקים איזו גרסה זמינה…</p>', '');
+  html = html.replace('href="https://ribit.hopetohelp.net/download" hidden', 'href="https://ribit.hopetohelp.net/download"');
   html = replaceRequired(
     html,
     '<link rel="stylesheet" href="/preview.css">',

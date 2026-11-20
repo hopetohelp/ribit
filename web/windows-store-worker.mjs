@@ -24,10 +24,43 @@ async function windowsStore(request, url, env) {
   }
 
   const filename = isLegacy ? 'Ribit-Setup.exe' : 'Ribit-Setup-' + version + '.exe';
-  if (isDownload(request)) await env.COUNTS.getByName('windows-downloads').total(true).catch(() => {});
-  return new Response(null, {
-    status: 302, headers: { ...windowsHeaders, Location: windowsReleaseBase + version + '/' + filename }
-  });
+  return downloadWindowsInstaller(request, env, windowsReleaseBase + version + '/' + filename, filename);
+}
+
+async function downloadWindowsInstaller(request, env, source, filename) {
+  const upstreamHeaders = new Headers({ 'Accept-Encoding': 'identity' });
+  for (const name of ['Range', 'If-Range']) {
+    const value = request.headers.get(name);
+    if (value !== null) upstreamHeaders.set(name, value);
+  }
+
+  let upstream;
+  try {
+    upstream = await fetch(source, { method: request.method, headers: upstreamHeaders, redirect: 'follow' });
+  } catch (_) {
+    return new Response(null, { status: 502, headers: windowsHeaders });
+  }
+
+  const headers = new Headers(windowsHeaders);
+  for (const name of ['Accept-Ranges', 'Content-Range', 'ETag', 'Last-Modified']) {
+    const value = upstream.headers.get(name);
+    if (value !== null) headers.set(name, value);
+  }
+
+  if (![200, 206].includes(upstream.status)) {
+    if (upstream.body) await upstream.body.cancel();
+    return new Response(null, { status: upstream.status === 416 ? 416 : 502, headers });
+  }
+
+  headers.set('Content-Type', 'application/octet-stream');
+  headers.set('Content-Disposition', 'attachment; filename="' + filename + '"');
+  const size = upstream.headers.get('Content-Length');
+  if (size && !upstream.headers.has('Content-Encoding')) headers.set('Content-Length', size);
+
+  if (isDownload(request) && !request.headers.has('Range')) {
+    await env.COUNTS.getByName('windows-downloads').total(true).catch(() => {});
+  }
+  return new Response(upstream.body, { status: upstream.status, headers });
 }
 
 function windowsUpdateFile(request, pathname) {

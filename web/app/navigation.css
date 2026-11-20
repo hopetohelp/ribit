@@ -1,4 +1,8 @@
 .back-button {
+  position: fixed;
+  top: 5px;
+  right: 8px;
+  z-index: 3;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -13,6 +17,7 @@
   color: #f6f2ff;
   font: 23px/1 Arial, sans-serif;
   text-decoration: none;
+  box-shadow: 0 2px 8px #0004;
   cursor: pointer;
 }
 .back-button:hover { background: #403454; }

@@ -1,7 +1,8 @@
 (function () {
   'use strict';
+  const launchAndroidDrawer = new URLSearchParams(location.search).get('android') === '1';
   // Safari on Mac may start a Dock app at the URL where it was added.
-  if (window.top === window && location.pathname === '/' &&
+  if (!launchAndroidDrawer && window.top === window && location.pathname === '/' &&
       (navigator.standalone || window.matchMedia('(display-mode: standalone)').matches)) {
     location.replace('/app.html?installed=1');
     return;
@@ -12,6 +13,8 @@
   const glass = document.querySelector('.glass');
   const footprint = document.querySelector('.footprint');
   const stage = document.querySelector('.stage');
+  const landingBack = $('landing-back');
+  const openDrawers = new Set();
   // Body dimensions, display diagonal and native panel proportions.
   const models = {
     smartphone: [71.6, 147.6, 6.1, 1179, 2556, 390, 846],
@@ -95,7 +98,15 @@
     const app = activeApp();
     if (app) {
       if (!app.back()) home();
-    } else if (!frame.hidden) home();
+    } else if (!frame.hidden) {
+      home();
+    } else {
+      const drawer = Array.from(openDrawers).pop();
+      if (drawer) {
+        drawer.open = false;
+        drawer.querySelector('summary').focus();
+      }
+    }
   }
 
   function press(key, literal) {
@@ -109,7 +120,7 @@
   function deviceKeyboard(event) {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     const key = event.key;
-    if (!frame.hidden && (key === 'Escape' || key === 'BrowserBack')) {
+    if ((!frame.hidden || openDrawers.size) && (key === 'Escape' || key === 'BrowserBack')) {
       if (!event.repeat) back();
     } else if (key === 'PageUp' || key === 'PageDown') {
       scroll(key === 'PageUp' ? -1 : 1);
@@ -167,6 +178,20 @@
     else configureKeypad();
     resize();
     if (value === 'keys') document.querySelector('[data-key=Enter]').focus();
+  }
+
+  document.querySelectorAll('.entry-drawer').forEach(drawer => {
+    drawer.addEventListener('toggle', () => {
+      if (drawer.open) openDrawers.add(drawer);
+      else openDrawers.delete(drawer);
+      landingBack.hidden = !openDrawers.size;
+    });
+  });
+  landingBack.addEventListener('click', back);
+  if (launchAndroidDrawer) {
+    const drawer = $('android-drawer');
+    drawer.open = true;
+    drawer.querySelector('summary').scrollIntoView({ block: 'start' });
   }
 
   document.querySelectorAll('[data-model]').forEach(button => button.onclick = () => open(button.dataset.model, button));

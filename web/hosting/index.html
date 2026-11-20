@@ -14,11 +14,12 @@
 <body>
   <main id="preview">
     <section id="landing" aria-labelledby="landing-title">
+      <button type="button" id="landing-back" class="back-button" aria-label="חזרה" hidden>→</button>
       <div class="landing-layout">
         <header class="intro">
           <div class="brand-heading">
             <a class="brand-logo" href="/" aria-label="הפלא השמיני · למסך הראשי">
-              <img src="/icon-192.png" alt="" width="64" height="64" class="brand-icon">
+              <img src="/icon-512.png" alt="" width="192" height="192" class="brand-icon">
             </a>
             <h1 id="landing-title">הפלא <span>השמיני</span></h1>
           </div>
@@ -26,10 +27,6 @@
             <span>מחשבון ריבית דריבית.</span>
             <span>חשבו, השוו ושמרו מסלולי השקעה.</span>
           </p>
-          <div class="growth-art" aria-hidden="true">
-            <div class="growth-grid"></div>
-            <div class="growth-bars"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          </div>
         </header>
         <div class="entry-panel">
           <div class="install-options" aria-label="התחברות, פתיחה והתקנה">
@@ -63,11 +60,18 @@
                 </div>
               </div>
             </details>
-            <a class="primary" href="/android.html">
-              חנות Android
-              <span id="downloads" class="install-count" aria-label="הורדות Android">—</span></a>
+            <details id="android-drawer" class="entry-drawer">
+              <summary class="primary">הורדה ל־Android <span id="downloads" class="install-count" aria-label="הורדות Android">—</span></summary>
+              <div class="drawer-content">
+                <p id="android-release-status" role="status">בודקים איזו גרסה זמינה…</p>
+                <a id="android-download" class="primary" href="/download" hidden>הורדת APK</a>
+                <button type="button" id="android-retry" hidden>בדיקה חוזרת</button>
+                <p>בסיום ההורדה, פתחו את הקובץ ואשרו את ההתקנה. ייתכן שבהתקנה ראשונה Android יבקש לאפשר התקנה מהדפדפן.</p>
+                <p><strong>כבר התקנתם את ריבית?</strong> השאירו את האפליקציה במכשיר. פתחו את הקובץ החדש ובחרו ״עדכון״. כך החישובים השמורים יישארו באפליקציה.</p>
+              </div>
+            </details>
             <a class="primary" href="/download/windows">
-              הורדה לווינדוס
+              הורדה ל־Windows
               <span id="windows-downloads" class="install-count" aria-label="הורדות Windows">—</span></a>
             <details class="entry-drawer">
               <summary class="primary">התקנה בספארי <span id="safari-installs" class="install-count" aria-label="התקנות Safari">—</span></summary>
@@ -135,5 +139,6 @@
     </div>
   </main>
   <script src="/preview.js" defer></script>
+  <script src="/android-store.js" defer></script>
 </body>
 </html>
