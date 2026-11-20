@@ -120,6 +120,7 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   box-shadow: inset 0 1px #efddff12;
   transition: border-color .18s ease, background-color .18s ease;
 }
+.install-options .primary-centered { justify-content: center; text-align: center; }
 .install-options .primary-accent { border-color: #aa92d1; }
 .install-options :is(a, summary).primary:hover,
 .entry-drawer[open] > .primary { border-color: #cbb2fb; background: #393052; }
