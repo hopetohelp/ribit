@@ -2,6 +2,7 @@
   'use strict';
   const admin = location.pathname === '/admin-chat';
   const $ = id => document.getElementById(id);
+  const memberMode = !admin && new URLSearchParams(location.search).get('member') === '1';
   const prefix = '/api/chat/' + (admin ? 'admin/' : '');
   let setup = admin ? new URLSearchParams(location.hash.slice(1)).get('setup') : null;
   if (setup) history.replaceState(null, '', location.pathname);
@@ -55,7 +56,8 @@
 
   async function api(action, payload) {
     const headers = {};
-    if (token) headers['X-Ribit-Chat'] = token;
+    if (memberMode) headers['X-Ribit-Chat-Member'] = '1';
+    else if (token) headers['X-Ribit-Chat'] = token;
     if (payload !== undefined) headers['Content-Type'] = 'application/json';
     const response = await fetch(prefix + action, {
       method: payload === undefined ? 'GET' : 'POST', headers,
@@ -137,6 +139,7 @@
 
   function report(error) {
     if (admin && error.status === 401 && ready) return showLogin();
+    if (memberMode && error.status === 401) return location.replace('/account?next=chat');
     $('status').textContent = ({
       400: 'בדקו שהטקסט תקין.',
       401: 'הסיסמה או קוד ההגדרה אינם תקינים.',
@@ -215,7 +218,22 @@
       try { await api('logout', {}); showLogin(); }
       catch (error) { report(error); }
     });
-  } else visitorStart();
+  } else if (memberMode) {
+    $('guest-chat').hidden = false;
+    $('chat').hidden = true;
+    fetch('/api/account/session', { cache: 'no-store' }).then(response => {
+      if (!response.ok) { const error = new Error('Session unavailable'); error.status = response.status; throw error; }
+      return response.json();
+    }).then(member => {
+      ready = true;
+      $('chat').hidden = false;
+      $('intro').textContent = 'שיחה עם מנהל האתר · ' + member.name;
+      refresh();
+    }).catch(report);
+  } else {
+    $('chat-account').hidden = false;
+    visitorStart();
+  }
 
   async function poll() {
     await refresh();

@@ -45,7 +45,7 @@ assets['/'] = assets['/index.html'];
 const cacheName = 'ribit-' + hash.digest('hex').slice(0, 16);
 const serviceWorker = `
 const CACHE = ${JSON.stringify(cacheName)};
-const FILES = ${JSON.stringify(Object.keys(assets).filter(url => !['/chat.html', '/chat.js', '/chat.css'].includes(url)))};
+const FILES = ${JSON.stringify(Object.keys(assets).filter(url => !['/chat.html', '/chat.js', '/chat.css', '/account.html', '/account.js'].includes(url)))};
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });
@@ -66,8 +66,10 @@ assets['/sw.js'] = [mime['.js'], gzipSync(serviceWorker).toString('base64')];
 
 if (process.argv[2]) {
   const chatWorker = await readFile(path.join(web, 'chat-worker.mjs'), 'utf8');
+  const accountsWorker = await readFile(path.join(web, 'accounts-worker.mjs'), 'utf8');
   const worker = `import { DurableObject } from 'cloudflare:workers';
 ${chatWorker}
+${accountsWorker}
 export class SiteCounter extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -80,6 +82,11 @@ export class SiteCounter extends DurableObject {
     const sql = this.ctx.storage.sql;
     if (increment) sql.exec('INSERT INTO tally VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET total = MAX(total + 1, excluded.total)', minimum + 1);
     return Math.max(minimum, sql.exec('SELECT total FROM tally WHERE id = 1').toArray()[0]?.total ?? 0);
+  }
+
+  memberOperation(operation, ...args) {
+    const member = new MemberStore(this.ctx.storage);
+    return member[operation](...args);
   }
 
   chatOperation(operation, ...args) {
@@ -113,7 +120,8 @@ export default {
     const url = new URL(request.url);
     const { pathname } = url;
     if (pathname.startsWith('/api/chat/')) return chatApi(request, url, env);
-    const path = ['/chat', '/admin-chat'].includes(pathname) ? '/chat.html' : pathname;
+    if (pathname.startsWith('/api/account/')) return accountsApi(request, url, env);
+    const path = pathname === '/account' ? '/account.html' : ['/chat', '/admin-chat'].includes(pathname) ? '/chat.html' : pathname;
     if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document' &&
         url.searchParams.get('installed') !== '1') {
       return Response.redirect(new URL('/', request.url), 302);
@@ -175,7 +183,7 @@ export default {
     const [type, zipped] = files[path];
     const headers = {
       'Content-Type': type,
-      'Cache-Control': path === '/chat.html' ? 'no-store' : 'no-cache',
+      'Cache-Control': ['/chat.html', '/account.html'].includes(path) ? 'no-store' : 'no-cache',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
       'Content-Security-Policy': "default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'none'"

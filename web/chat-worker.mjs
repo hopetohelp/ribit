@@ -34,7 +34,7 @@ function chatResponse(data, status = 200, cookie) {
   return Response.json(data, { status, headers });
 }
 
-async function readChatBody(request) {
+async function readChatBody(request, limit = 12288) {
   if (request.headers.get('Content-Type')?.split(';')[0] !== 'application/json') throw new Error('Invalid body');
   const reader = request.body.getReader();
   const decoder = new TextDecoder();
@@ -44,7 +44,7 @@ async function readChatBody(request) {
     const chunk = await reader.read();
     if (chunk.done) break;
     bytes += chunk.value.byteLength;
-    if (bytes > 12288) {
+    if (bytes > limit) {
       await reader.cancel();
       throw new Error('Body too large');
     }
@@ -157,12 +157,15 @@ async function chatApi(request, url, env) {
     if (action === 'inbox' && !isPost) return chatResponse({ threads: await store.chatOperation('inbox') });
   }
   if (action !== 'messages') return chatResponse({}, 404);
-  const token = admin ? (isPost ? body?.thread : url.searchParams.get('thread')) : request.headers.get('X-Ribit-Chat');
+  const memberMode = !admin && request.headers.get('X-Ribit-Chat-Member') === '1';
+  const user = memberMode ? await getMember(request, env) : null;
+  if (memberMode && !user) return chatResponse({}, 401);
+  const token = user ? user.account : admin ? (isPost ? body?.thread : url.searchParams.get('thread')) : request.headers.get('X-Ribit-Chat');
   if (typeof token !== 'string' || !/^[0-9a-f]{64}$/.test(token)) return chatResponse({}, 400);
-  const thread = admin ? token : await digest(token);
+  const thread = admin ? token : await digest(user ? 'member:' + token : token);
   if (!isPost) return chatResponse({ messages: await store.chatOperation('messages', thread) });
 
-  const name = typeof body?.name === 'string' ? body.name.trim().normalize('NFC') : '';
+  const name = user ? user.name : typeof body?.name === 'string' ? body.name.trim().normalize('NFC') : '';
   if (!admin && (!name || name.length > 60 || /[\x00-\x1f\x7f]/.test(name))) return chatResponse({}, 400);
 
   const message = typeof body?.message === 'string' ? body.message.trim() : '';

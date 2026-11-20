@@ -391,3 +391,5 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   border: 1px solid #515155; border-radius: 0 999px 999px 0;
   background: radial-gradient(circle, #6776a2 0 5%, #242743 6% 13%, #101122 14% 25%, #080809 26% 61%, #363639 64%, #151516 75%);
 }
+
+.member-link { display: inline-block; margin-block-start: 14px; min-height: 30px; color: #e9d7ff; }
