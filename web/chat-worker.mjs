@@ -156,7 +156,7 @@ async function chatApi(request, url, env) {
     if (action === 'logout' && isPost) return chatResponse({ ok: true }, 200, '');
     if (action === 'inbox' && !isPost) return chatResponse({ threads: await store.chatOperation('inbox') });
   }
-  if (action !== 'messages' && (admin || !isPost || action !== 'resume')) return chatResponse({}, 404);
+  if (action !== 'messages') return chatResponse({}, 404);
   const token = admin ? (isPost ? body?.thread : url.searchParams.get('thread')) : request.headers.get('X-Ribit-Chat');
   if (typeof token !== 'string' || !/^[0-9a-f]{64}$/.test(token)) return chatResponse({}, 400);
   const thread = admin ? token : await digest(token);
@@ -164,12 +164,6 @@ async function chatApi(request, url, env) {
 
   const name = typeof body?.name === 'string' ? body.name.trim().normalize('NFC') : '';
   if (!admin && (!name || name.length > 60 || /[\x00-\x1f\x7f]/.test(name))) return chatResponse({}, 400);
-  if (action === 'resume') {
-    const stored = await store.chatOperation('visitorName', thread);
-    return stored && stored.toLowerCase() === name.toLowerCase()
-      ? chatResponse({ name: stored, messages: await store.chatOperation('messages', thread) })
-      : chatResponse({}, 404);
-  }
 
   const message = typeof body?.message === 'string' ? body.message.trim() : '';
   if (!message || message.length > 2000) return chatResponse({}, 400);
