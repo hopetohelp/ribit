@@ -88,7 +88,9 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 }
 #landing h1 { margin: 0; font-size: clamp(2.65rem, 5.4vw, 5.5rem); line-height: 1.04; letter-spacing: -.055em; }
 #landing h1 span { color: #e0bfff; }
-#landing .intro p { max-width: 31ch; color: #d2cde5; font-size: clamp(1rem, 1.55vw, 1.25rem); margin-block: 18px 0; }
+#landing .intro-copy { text-align: center; color: #d2cde5; font-size: clamp(1rem, 1.55vw, 1.25rem); margin-block: 18px 0; }
+
+.intro-copy span { display: block; }
 
 .growth-art {
   position: relative;
@@ -199,7 +201,7 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   #landing .intro { padding: 0; }
   #landing h1 { font-size: clamp(1.85rem, 11.2vw, 3.9rem); }
   .brand-icon { width: clamp(42px, 11vw, 64px); }
-  #landing .intro p { margin-block-start: 12px; }
+  #landing .intro-copy { margin-block-start: 12px; }
   .growth-art { height: 105px; margin-block-start: 10px; }
 }
 @media (max-width: 360px) {

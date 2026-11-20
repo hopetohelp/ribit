@@ -856,7 +856,7 @@
         site.rel = 'noopener';
         site.dir = 'ltr';
       }
-      var chatLink = make('a', 'נשמח לשמוע אותכם');
+      var chatLink = make('a', 'נשמח לשמוע אתכם');
       chatLink.href = 'https://ribit.hopetohelp.net/chat';
       chatLink.target = '_blank';
       chatLink.rel = 'noopener';
