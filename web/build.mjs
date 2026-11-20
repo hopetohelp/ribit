@@ -12,6 +12,17 @@ for (const source of ['app', 'hosting']) {
   await cp(path.join(web, source), dist, { recursive: true });
 }
 
+const accountPanel = await readFile(path.join(web, 'account-panel.html'), 'utf8');
+for (const page of ['account.html', 'index.html']) {
+  const file = path.join(dist, page);
+  const html = await readFile(file, 'utf8');
+  await writeFile(file, html.replace(
+    /^[ \t]*<!-- account-panel -->[\s\S]*?<!-- \/account-panel -->/m,
+    () => accountPanel.trimEnd()
+  ).replace('</body>', '  <script src="/account.js" defer></script>\n</body>')
+    .replace('</head>', '  <link rel="stylesheet" href="/account.css">\n</head>'));
+}
+
 const hostedApp = path.join(dist, 'app.html');
 const appHtml = await readFile(hostedApp, 'utf8');
 await writeFile(hostedApp, appHtml.replace('<title>ריבית</title>', '<title>הפלא השמיני</title>').replace('</body>', '  <script src="/app-offline.js" defer></script>\n</body>'));
@@ -45,7 +56,7 @@ assets['/'] = assets['/index.html'];
 const cacheName = 'ribit-' + hash.digest('hex').slice(0, 16);
 const serviceWorker = `
 const CACHE = ${JSON.stringify(cacheName)};
-const FILES = ${JSON.stringify(Object.keys(assets).filter(url => !['/chat.html', '/chat.js', '/chat.css', '/account.html', '/account.js'].includes(url)))};
+const FILES = ${JSON.stringify(Object.keys(assets).filter(url => !['/chat.html', '/chat.js', '/chat.css', '/account.html'].includes(url)))};
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });

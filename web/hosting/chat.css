@@ -6,7 +6,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 a { color: #e5cdff; }
 h1 { font-size: clamp(1.8rem, 5vw, 3rem); line-height: 1.2; margin: 20px 0; }
 h2 { margin: 0 0 12px; font-size: 1.1rem; }
-.panel { min-width: 0; background: #191828; border: 1px solid #685d886d; border-radius: 18px; padding: 16px; }
+.panel, .account-page .account-panel { min-width: 0; background: #191828; border: 1px solid #685d886d; border-radius: 18px; padding: 16px; }
 .chat { display: flex; align-items: flex-start; gap: 12px; }
 #inbox { flex: 0 0 165px; max-height: 55vh; overflow: auto; }
 .thread { flex: 1; }
@@ -17,9 +17,9 @@ h2 { margin: 0 0 12px; font-size: 1.1rem; }
 .message strong { display: block; color: #efd8ff; font-size: .82rem; }
 .message time { display: block; font-size: .75rem; color: #e0d7eb; }
 label { display: block; margin-block: 10px 4px; }
-button, input, textarea, .account-control { color: inherit; font: inherit; border: 1px solid #8773af; border-radius: 10px; min-height: 44px; padding: 8px 12px; }
+button, input, textarea { color: inherit; font: inherit; border: 1px solid #8773af; border-radius: 10px; min-height: 44px; padding: 8px 12px; }
 input, textarea { min-width: 0; background: #12111e; }
-button, .account-control { background: #34284e; cursor: pointer; }
+button { background: #34284e; cursor: pointer; }
 button:disabled { opacity: .55; cursor: default; }
 button[aria-pressed="true"] { background: #ddd0ff; color: #1c132e; }
 :focus-visible { outline: 2px solid #e3c7ff; outline-offset: 2px; }
@@ -36,10 +36,3 @@ button[aria-pressed="true"] { background: #ddd0ff; color: #1c132e; }
 
 #visitor-login { max-width: 420px; }
 #visitor-login input { width: 100%; margin-block-end: 10px; }
-
-.account-panel { max-width: 480px; }
-.account-panel input { display: block; width: 100%; margin-block-end: 10px; }
-.account-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 10px; }
-#member-note { color: #d3cbe9; }
-
-.account-options > .account-control { flex: 1 1 160px; display: inline-flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
