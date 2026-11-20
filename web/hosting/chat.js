@@ -2,8 +2,11 @@
   'use strict';
   const admin = location.pathname === '/admin-chat';
   const $ = id => document.getElementById(id);
-  const memberMode = !admin && new URLSearchParams(location.search).get('member') === '1';
-  const guestMode = !admin && !memberMode;
+  const embedded = !admin && window.parent !== window && new URLSearchParams(location.search).get('embedded') === '1';
+  let mode = 'checking';
+  let cloudMessages = [];
+  let supportVisible = true;
+  let visitorRequest = 0;
   const guestDraftPrefix = 'ribit-guest-draft:';
   const prefix = '/api/chat/' + (admin ? 'admin/' : '');
   let setup = admin ? new URLSearchParams(location.hash.slice(1)).get('setup') : null;
@@ -15,41 +18,72 @@
   let visit = 0;
 
   function readGuestDrafts() {
-    return Object.keys(localStorage).filter(key => key.startsWith(guestDraftPrefix))
-      .map(key => JSON.parse(localStorage.getItem(key)))
-      .filter(Boolean).sort((a, b) => a.created - b.created || a.id.localeCompare(b.id));
+    return Object.keys(localStorage).filter(key => key.startsWith(guestDraftPrefix)).flatMap(key => {
+      try {
+        const draft = JSON.parse(localStorage.getItem(key));
+        return draft && typeof draft.body === 'string' && Number.isFinite(new Date(draft.created).getTime()) ? [{ ...draft, draft: true, key }] : [];
+      } catch (_) { return []; }
+    }).sort((a, b) => a.created - b.created);
   }
 
-  function loadGuestDrafts() {
-    try {
-      paintMessages(readGuestDrafts());
-      $('status').textContent = '';
-    } catch (_) {
-      $('status').textContent = 'לא ניתן לפתוח את הטיוטות בדפדפן הזה.';
-    }
+  function updateVisitor(next) {
+    mode = next;
+    const member = mode === 'member';
+    $('chat').hidden = false;
+    const notice = member ? 'השיחה נשמרת בחשבון שלכם.' :
+      mode === 'offline' ? 'אין חיבור לענן כרגע. הודעות חדשות נשמרות בדפדפן הזה כטיוטות.' :
+      'הטיוטות נשמרות בדפדפן הזה. כדי לשלוח הודעה ולשמור את השיחה בחשבון, התחברו.';
+    if ($('intro').textContent !== notice) $('intro').textContent = notice;
+    $('chat-sign-in').hidden = mode !== 'guest';
+    $('send-button').textContent = member ? 'שליחה' : 'שמירת טיוטה';
+    let drafts = [];
+    try { drafts = readGuestDrafts(); }
+    catch (_) { $('status').textContent = 'לא ניתן לפתוח טיוטות בדפדפן הזה.'; }
+    paintMessages((mode === 'guest' ? [] : cloudMessages).concat(drafts).sort((a, b) => a.created - b.created));
   }
 
-  function saveGuestDraft(message) {
+  function saveGuestDraft(message, offline) {
     try {
+      const input = $('message');
       const id = crypto.randomUUID();
       const draft = { id, body: message, created: Date.now() };
       localStorage.setItem(guestDraftPrefix + id, JSON.stringify(draft));
-      paintMessages(readGuestDrafts());
+      updateVisitor(offline ? 'offline' : 'guest');
       $('status').textContent = 'הטיוטה נשמרה בדפדפן הזה.';
-      $('message').value = '';
-      $('message').focus();
+      if (input.value.trim() === message) input.value = '';
+      input.focus();
     } catch (_) {
-      $('status').textContent = 'שמירת הטיוטה בדפדפן נכשלה.';
+      $('status').textContent = 'שמירת הטיוטה נכשלה. הטקסט עדיין בשדה ההודעה.';
+    }
+  }
+
+  async function refreshVisitor() {
+    if (document.hidden || !supportVisible || $('send-button').disabled) return;
+    const current = ++visitorRequest;
+    if (!navigator.onLine) {
+      updateVisitor('offline');
+      return;
+    }
+    try {
+      const result = await api('messages');
+      if (current !== visitorRequest) return;
+      cloudMessages = result.messages;
+      updateVisitor('member');
+    } catch (error) {
+      if (current !== visitorRequest) return;
+      if (error.status === 401) cloudMessages = [];
+      updateVisitor(error.status === 401 ? 'guest' : 'offline');
     }
   }
 
   async function api(action, payload) {
     const headers = {};
-    if (memberMode) headers['X-Ribit-Chat-Member'] = '1';
+    if (!admin) headers['X-Ribit-Chat-Member'] = '1';
     if (payload !== undefined) headers['Content-Type'] = 'application/json';
     const response = await fetch(prefix + action, {
       method: payload === undefined ? 'GET' : 'POST', headers,
-      body: payload === undefined ? undefined : JSON.stringify(payload), cache: 'no-store'
+      body: payload === undefined ? undefined : JSON.stringify(payload), cache: 'no-store',
+      signal: !admin && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(7000) : undefined
     });
     if (!response.ok) {
       const error = new Error('Chat request failed');
@@ -60,23 +94,38 @@
   }
 
   function paintMessages(messages) {
-    const signature = guestMode ? messages.map(message => message.id).join(',') :
-      messages.length ? String(messages[messages.length - 1].id) : '';
-    if (guestMode ? signature === lastMessage : Number(signature) <= Number(lastMessage)) return;
+    const signature = JSON.stringify(messages.map(message => [message.id, Boolean(message.draft)]));
+    if (signature === lastMessage) return;
     lastMessage = signature;
     const view = $('messages');
     view.textContent = '';
     for (const message of messages) {
       const bubble = document.createElement('div');
-      bubble.className = 'message' + (message.sender === 'admin' ? ' admin' : '');
+      bubble.className = 'message' + (message.sender === 'admin' ? ' admin' : '') + (message.draft ? ' draft' : '');
       const name = document.createElement('strong');
-      name.textContent = guestMode ? 'טיוטה' : message.sender === 'admin' ? 'מנהל האתר' : admin ? 'מבקר' : 'אתם';
+      name.textContent = message.draft ? 'טיוטה מקומית' : message.sender === 'admin' ? 'מנהל האתר' : admin ? 'מבקר' : 'אתם';
       const body = document.createElement('div');
       body.dir = 'auto';
       body.textContent = message.body;
       const time = document.createElement('time');
-      time.textContent = new Date(message.created).toLocaleString('he-IL');
+      const date = new Date(message.created);
+      time.dateTime = date.toISOString();
+      time.textContent = date.toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' });
       bubble.append(name, body, time);
+      if (message.draft) {
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'draft-edit';
+        edit.textContent = 'העתקה לשדה ההודעה';
+        edit.onclick = () => {
+          const input = $('message');
+          if (input.value.trim()) {
+            $('status').textContent = 'שמרו או נקו את הטקסט שבשדה לפני העתקת הטיוטה.';
+          } else input.value = message.body;
+          input.focus();
+        };
+        bubble.appendChild(edit);
+      }
       view.appendChild(bubble);
     }
     view.scrollTop = view.scrollHeight;
@@ -128,7 +177,6 @@
 
   function report(error) {
     if (admin && error.status === 401 && ready) return showLogin();
-    if (memberMode && error.status === 401) return location.replace('/account?next=chat');
     $('status').textContent = ({
       400: 'בדקו שהטקסט תקין.',
       401: 'הסיסמה או קוד ההגדרה אינם תקינים.',
@@ -138,6 +186,7 @@
   }
 
   async function refresh() {
+    if (!admin) return refreshVisitor();
     if (!ready || document.hidden) return;
     const current = visit;
     try {
@@ -172,26 +221,30 @@
     const input = $('message');
     const message = input.value.trim();
     if (!message || $('send-button').disabled) return;
-    if (guestMode) return saveGuestDraft(message);
+    if (!admin && mode !== 'member') return saveGuestDraft(message, mode !== 'guest');
+    visitorRequest++;
     $('send-button').disabled = true;
     const current = visit;
     try {
       const reply = await api('messages', { message, thread });
       if (current === visit) {
-        input.value = '';
-        paintMessages(reply.messages);
+        if (input.value.trim() === message) input.value = '';
         $('status').textContent = '';
+        if (admin) paintMessages(reply.messages);
+        else {
+          cloudMessages = reply.messages;
+          updateVisitor('member');
+        }
         input.focus();
       }
-    } catch (error) { if (current === visit) report(error); }
-    finally { $('send-button').disabled = false; }
+    } catch (error) {
+      if (current !== visit) return;
+      if (!admin && (!error.status || error.status >= 500 || error.status === 401)) {
+        if (error.status === 401) cloudMessages = [];
+        saveGuestDraft(message, error.status !== 401);
+      } else report(error);
+    } finally { $('send-button').disabled = false; }
   });
-
-  if (!admin) {
-    $('chat-modes').hidden = false;
-    $(memberMode ? 'member-mode' : 'guest-mode').setAttribute('aria-current', 'page');
-    $('storage-help').addEventListener('click', () => $('storage-dialog').showModal());
-  }
 
   if (admin) {
     $('title').textContent = 'ניהול הצ׳אט';
@@ -213,27 +266,39 @@
       try { await api('logout', {}); showLogin(); }
       catch (error) { report(error); }
     });
-  } else if (memberMode) {
-    fetch('/api/account/session', { cache: 'no-store' }).then(response => {
-      if (!response.ok) { const error = new Error('Session unavailable'); error.status = response.status; throw error; }
-      return response.json();
-    }).then(member => {
-      ready = true;
-      $('chat').hidden = false;
-      $('intro').textContent = 'שיחה עם מנהל האתר · ' + member.name;
-      refresh();
-    }).catch(report);
   } else {
-    $('chat').hidden = false;
-    $('intro').textContent = 'הטיוטות נשמרות בדפדפן הזה. לשליחה למנהל האתר, עברו למצב משתמש.';
-    document.querySelector('label[for="message"]').textContent = 'טיוטה';
-    $('messages').setAttribute('aria-label', 'טיוטות שמורות');
-    $('send-button').textContent = 'שמירת טיוטה';
-    loadGuestDrafts();
+    if (embedded) {
+      document.body.classList.add('embedded-chat');
+      const signIn = $('chat-sign-in');
+      signIn.href = '/account';
+      signIn.target = '_blank';
+      signIn.rel = 'noopener';
+      window.addEventListener('message', event => {
+        if (event.source !== window.parent || event.origin !== location.origin) return;
+        if (event.data === 'ribit:support-hidden') {
+          supportVisible = false;
+          visitorRequest++;
+        } else if (event.data === 'ribit:support-visible') {
+          supportVisible = true;
+          refreshVisitor();
+        }
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') window.parent.postMessage('ribit:support-close', location.origin);
+      });
+    }
     window.addEventListener('storage', event => {
-      if (event.key === null || event.key.startsWith(guestDraftPrefix)) loadGuestDrafts();
+      if (event.key === 'ribit-member-active') refreshVisitor();
+      if (event.key === null || event.key?.startsWith(guestDraftPrefix)) {
+        if (mode !== 'checking') updateVisitor(mode);
+      }
     });
-    return;
+    window.addEventListener('offline', () => {
+      visitorRequest++;
+      updateVisitor('offline');
+    });
+    document.addEventListener('visibilitychange', refreshVisitor);
+    refreshVisitor();
   }
 
   async function poll() {

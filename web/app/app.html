@@ -7,6 +7,7 @@
   <title>ריבית</title>
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="navigation.css">
+  <link rel="stylesheet" href="floating.css">
 </head>
 <body>
   <header class="bar" id="bar">
@@ -127,8 +128,8 @@
     <button type="button" data-view="saved" aria-pressed="false">שמורים</button>
   </nav>
   <div id="status" role="status" class="status" hidden></div>
-  <div id="dialog-backdrop" class="backdrop" hidden>
-    <section id="dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
+  <div id="dialog-backdrop" class="floating-backdrop" hidden>
+    <section id="dialog" class="floating-panel dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
       <div class="dialog-heading">
         <button type="button" id="dialog-close" class="back-button" aria-label="סגירה">→</button>
         <h2 id="dialog-title"></h2>
@@ -140,6 +141,7 @@
   <script src="finance.js" defer></script>
   <script src="storage.js" defer></script>
   <script src="chart.js" defer></script>
+  <script src="floating.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

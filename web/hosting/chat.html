@@ -19,13 +19,6 @@
       <button id="logout" type="button" hidden>יציאה</button>
     </header>
     <h1 id="title">נשמח לשמוע אתכם</h1>
-    <div id="chat-modes" class="chat-modes" hidden>
-      <nav class="segments" aria-label="מצב צ׳אט">
-        <a id="guest-mode" href="/chat">אורח</a>
-        <a id="member-mode" href="/chat?member=1">משתמש</a>
-      </nav>
-      <button id="storage-help" type="button" aria-haspopup="dialog">הסבר</button>
-    </div>
     <form id="login" class="panel" hidden>
       <label for="password">סיסמת מנהל האתר</label>
       <input id="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password">
@@ -37,7 +30,10 @@
         <div id="threads"></div>
       </aside>
       <section class="panel thread" aria-label="שיחה">
-        <p id="intro">כתבו למנהל האתר.</p>
+        <div class="chat-notice">
+          <p id="intro" role="status">בודקים את החיבור לצ׳אט…</p>
+          <a id="chat-sign-in" class="chat-control" href="/account?next=chat" hidden>התחברות</a>
+        </div>
         <div id="messages" role="log" aria-label="הודעות" tabindex="0"></div>
         <form id="send">
           <label for="message">הודעה</label>
@@ -50,14 +46,6 @@
     </div>
     <p id="status" role="status"></p>
   </main>
-  <dialog id="storage-dialog" class="panel" aria-labelledby="storage-title">
-    <form method="dialog" class="dialog-heading">
-      <button class="back-button" aria-label="סגירה" autofocus>→</button>
-      <h2 id="storage-title">איפה הצ׳אט נשמר?</h2>
-    </form>
-    <p><strong>אורח</strong> · הטיוטות נשמרות רק בדפדפן הזה. לשליחה למנהל האתר, עברו למצב משתמש.</p>
-    <p><strong>משתמש</strong> · השיחה נשמרת בשרת. כדי להמשיך אותה ממכשיר אחר, היכנסו לאותו חשבון.</p>
-  </dialog>
   <script src="/chat.js" defer></script>
 </body>
 </html>

@@ -108,7 +108,9 @@ const STORAGE_FALLBACK_SHIM = `(function (scope) {
 
 export async function buildAppHtml() {
   let html = await readFile(path.join(appDir, 'app.html'), 'utf8');
-  let css = await readFile(path.join(appDir, 'app.css'), 'utf8');
+  let css = await readFile(path.join(appDir, 'floating.css'), 'utf8') + '\n' +
+    await readFile(path.join(appDir, 'app.css'), 'utf8');
+  html = html.replace('<link rel="stylesheet" href="floating.css">', '');
   css += '\n#preview-storage-notice { margin: 0; padding: 6px 12px; border-top: 1px solid; font-size: .875rem; }';
   html = replaceRequired(
     html,
@@ -144,6 +146,7 @@ export async function buildAppHtml() {
     { tag: '<script src="finance.js" defer></script>', file: 'finance.js' },
     { tag: '<script src="storage.js" defer></script>', file: 'storage.js', suffix: '\n' + STORAGE_FALLBACK_SHIM },
     { tag: '<script src="chart.js" defer></script>', file: 'chart.js' },
+    { tag: '<script src="floating.js" defer></script>', file: 'floating.js' },
     { tag: '<script src="app.js" defer></script>', file: 'app.js', patchPostMessage: true },
   ];
 
@@ -174,6 +177,9 @@ export async function buildFullPreviewHtml() {
   let js = await readFile(path.join(hostingDir, 'preview.js'), 'utf8');
   const iconUri = await dataUri(path.join(appDir, 'icon-192.png'), 'image/png');
 
+  html = html.replace('<link rel="stylesheet" href="/floating.css">', '')
+    .replace('<script src="/floating.js" defer></script>', '')
+    .replace(' data-open-support aria-haspopup="dialog"', '');
   html = html.replace(/\s*<link rel="manifest" href="\/manifest\.webmanifest">\n?/, '\n');
   html = html.replace('href="/chat"', 'href="https://ribit.hopetohelp.net/chat"')
     .replace('href="/account"', 'href="https://ribit.hopetohelp.net/account"')
@@ -206,10 +212,10 @@ export async function buildFullPreviewHtml() {
   );
   js = replaceRequired(
     js,
-    "if (event.source === frame.contentWindow && event.origin === location.origin && event.data === 'ribit:exit') home();",
-    "if (event.source === frame.contentWindow && (event.origin === location.origin || event.origin === 'null') && event.data === 'ribit:exit') home();",
-    'ribit:exit message handler',
-  );
+    "if (event.source !== frame.contentWindow || event.origin !== location.origin) return;",
+    "if (event.source !== frame.contentWindow || (event.origin !== location.origin && event.origin !== 'null')) return;",
+    'device message origin check',
+  ).replace("    if (event.data === 'ribit:support') window.RibitFloating.openSupport();", '');
   js = js.replace(
     "if (navigator.serviceWorker) navigator.serviceWorker.register('/sw.js').catch(() => {});",
     "// Service worker registration skipped in standalone preview bundle.",

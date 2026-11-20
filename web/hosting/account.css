@@ -38,3 +38,5 @@
   color: #e3e3e3; background: #131314; border-color: #8e918f; text-decoration: none;
 }
 .account-google img { flex: none; object-fit: contain; }
+
+#member-name { text-align: center; }

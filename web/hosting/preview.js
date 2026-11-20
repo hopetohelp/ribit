@@ -220,9 +220,13 @@
     updateScreen();
   });
   window.addEventListener('message', event => {
-    if (event.source === frame.contentWindow && event.origin === location.origin && event.data === 'ribit:exit') home();
+    if (event.source !== frame.contentWindow || event.origin !== location.origin) return;
+    if (event.data === 'ribit:exit') home();
+    if (event.data === 'ribit:support') window.RibitFloating.openSupport();
   });
-  document.addEventListener('keydown', deviceKeyboard);
+  document.addEventListener('keydown', event => {
+    if (!document.querySelector('.support-window[open]')) deviceKeyboard(event);
+  });
   document.addEventListener('pointerdown', event => {
     if (!event.target.closest('[data-key], [data-scroll]')) activeApp()?.dismissChart?.();
   });

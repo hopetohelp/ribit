@@ -1052,33 +1052,26 @@
 
   function about() {
     openDialog('אודות ריבית', function (content) {
-      if (installedVersion) content.appendChild(versionLine(hostedVersion ? 'גרסת האתר ' : 'גרסה מותקנת ', installedVersion));
-      content.appendChild(make('p', 'ריבית הוא מחשבון ריבית דריבית חינמי לחלוטין להשקעות. אפשר להשוות מסלולים ולשמור חישובים גם ללא אינטרנט.', 'about-copy'));
-      var mail = make('a', 'hopetohelp.il@gmail.com', 'about-email');
-      mail.href = 'mailto:hopetohelp.il@gmail.com';
-      mail.dir = 'ltr';
-      var site;
-      if (window !== window.parent) {
-        site = action('למסך הפתיחה', function () {
-          closeDialog();
-          window.parent.postMessage('ribit:exit', window.location.origin);
-        }, 'plain text-action');
-      } else {
-        site = make('a', 'ribit.hopetohelp.net');
-        site.href = 'https://ribit.hopetohelp.net';
-        site.target = '_blank';
-        site.rel = 'noopener';
-        site.dir = 'ltr';
-      }
+      content.appendChild(versionLine(hostedVersion ? 'גרסת האתר ' : 'גרסה מותקנת ', installedVersion || '0.2.3'));
+      content.appendChild(make('p', 'ריבית הוא מחשבון ריבית דריבית חינמי לחלוטין להשקעות.', 'about-copy'));
+      content.appendChild(make('p', 'אפשר להשוות מסלולים ולשמור חישובים גם ללא אינטרנט.', 'about-copy'));
+      var row = make('p');
       var chatLink = make('a', 'נשמח לשמוע אתכם');
       chatLink.href = 'https://ribit.hopetohelp.net/chat';
-      chatLink.target = '_blank';
-      chatLink.rel = 'noopener';
-      [chatLink, mail, site].forEach(function (link) {
-        var row = make('p');
-        row.appendChild(link);
-        content.appendChild(row);
-      });
+      if (hosted) {
+        chatLink.setAttribute('aria-haspopup', 'dialog');
+        chatLink.addEventListener('click', function (event) {
+          event.preventDefault();
+          closeDialog();
+          if (window === window.parent) window.RibitFloating.openSupport();
+          else window.parent.postMessage('ribit:support', location.origin);
+        });
+      } else {
+        chatLink.target = '_blank';
+        chatLink.rel = 'noopener';
+      }
+      row.appendChild(chatLink);
+      content.appendChild(row);
     }, true);
   }
 
@@ -1303,6 +1296,7 @@
     previewFocus = target;
   }, true);
   document.addEventListener('keydown', function (event) {
+    if (document.querySelector('.support-window[open]')) return;
     var active = document.activeElement;
     var key = event.key || ({9: 'Tab', 27: 'Escape', 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown'})[event.keyCode];
     if (key === 'Escape' && back()) event.preventDefault();
@@ -1351,6 +1345,7 @@
   listen('help', explanations);
   listen('about', about);
   listen('dialog-close', closeDialog);
+  window.RibitFloating.dismissOutside(byId('dialog-backdrop'), closeDialog);
   listen('edit', showEditor);
   listen('new', function () {
     state.sessions[state.comparing ? 'compare' : 'single'] = session(state.comparing ? 2 : 1);

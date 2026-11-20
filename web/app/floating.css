@@ -1,0 +1,24 @@
+.floating-backdrop {
+  position: fixed; z-index: 5; inset: 0;
+  background: var(--floating-shade, #15203666);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--floating-gutter, 12px);
+}
+.floating-panel {
+  box-sizing: border-box; min-width: 0; max-height: 100%; overflow: auto;
+  border-radius: 14px;
+  background: var(--floating-surface, #fff);
+}
+.floating-native {
+  position: fixed; inset: 0; border: 0; padding: 0; background: transparent; color: inherit;
+  max-width: calc(100vw - 24px); max-height: calc(100dvh - 24px);
+}
+.floating-native::backdrop { background: var(--floating-shade, #15203699); }
+.support-window { width: 520px; color: #f6f2ff; --floating-surface: #191828; }
+.support-panel { border: 1px solid #8773af; padding: 12px; }
+.support-panel .dialog-heading { margin-block-end: 8px; }
+.support-panel .dialog-heading h2 { margin: 0; font-size: 1.2rem; }
+.support-window .support-frame {
+  position: static; display: block; border: 0; width: 100%;
+  height: min(620px, calc(100dvh - 98px)); background: var(--floating-surface);
+}
