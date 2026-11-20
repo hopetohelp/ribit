@@ -128,12 +128,11 @@ async function accountsApi(request, url, env) {
     if (!allowed) return memberResponse({}, 429);
     let body;
     try { body = await readChatBody(request); } catch { return memberResponse({}, 400); }
-    const name = typeof body?.name === 'string' ? body.name.trim().normalize('NFC') : '';
     const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
     const password = body?.password;
-    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
-        typeof password !== 'string' || password.length < 10 || password.length > 128 ||
-        (action === 'register' && (!name || name.length > 60 || /[\x00-\x1f\x7f]/.test(name)))) return memberResponse({}, 400);
+    if (email.length > 254 || !/^[^\s@\x00-\x1f\x7f]+@[^\s@\x00-\x1f\x7f]+\.[^\s@\x00-\x1f\x7f]+$/.test(email) ||
+        typeof password !== 'string' || password.length < 10 || password.length > 128) return memberResponse({}, 400);
+    const name = email.split('@')[0].normalize('NFC').slice(0, 60);
     const account = await memberKey(env.RIBIT_ACCOUNT_KEY, 'email', email);
     const attempt = await env.COUNTS.getByName('member-auth:' + account).chatOperation('permit', 'auth', 15 * 60 * 1000, 15);
     if (!attempt) return memberResponse({}, 429);

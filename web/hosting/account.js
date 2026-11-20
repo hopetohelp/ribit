@@ -51,8 +51,6 @@
 
   $('toggle-register').onclick = () => {
     registering = !registering;
-    $('name-field').hidden = !registering;
-    $('name').required = registering;
     $('password').autocomplete = registering ? 'new-password' : 'current-password';
     $('submit-account').textContent = registering ? 'הרשמה' : 'כניסה';
     $('toggle-register').textContent = registering ? 'כבר יש חשבון' : 'יצירת חשבון';
@@ -63,7 +61,7 @@
     $('submit-account').disabled = true;
     try {
       await request(registering ? 'register' : 'login', {
-        name: $('name').value, email: $('email').value, password: $('password').value
+        email: $('email').value, password: $('password').value
       });
       $('password').value = '';
       remember(true);
