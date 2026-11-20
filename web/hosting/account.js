@@ -127,5 +127,14 @@
       if (googleResult === 'error') $('account-status').textContent = 'הכניסה עם Google לא הושלמה. אפשר לנסות שוב.';
     }
   }
-  start();
+  const drawer = $('account-drawer');
+  if (drawer && !drawer.open) {
+    drawer.addEventListener('toggle', function startOnOpen() {
+      if (!drawer.open) return;
+      drawer.removeEventListener('toggle', startOnOpen);
+      start();
+    });
+  } else {
+    start();
+  }
 }());

@@ -1,0 +1,13 @@
+.account-panel { min-width: 0; max-width: 480px; }
+.account-panel label { display: block; margin-block: 10px 4px; }
+.account-panel input { display: block; width: 100%; min-width: 0; margin-block-end: 10px; background: #12111e; }
+.account-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 10px; }
+.account-panel :is(input, button, .account-control) {
+  min-height: 44px; padding: 8px 12px; font: inherit; color: inherit;
+  border: 1px solid #8773af; border-radius: 10px;
+}
+.account-panel :is(button, .account-control) { background: #34284e; cursor: pointer; }
+.account-panel button[aria-pressed="true"] { background: #ddd0ff; color: #1c132e; }
+.account-panel button:disabled { opacity: .55; cursor: default; }
+.account-options > .account-control { flex: 1 1 160px; display: inline-flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
+#member-note { color: #d3cbe9; }

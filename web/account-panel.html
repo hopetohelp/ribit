@@ -1,0 +1,25 @@
+    <form id="member-form" class="account-panel" hidden>
+      <div id="account-mode" class="account-actions account-options" role="group" aria-label="מצב חשבון">
+        <button id="mode-login" class="account-control" type="button" aria-pressed="true">התחברות</button>
+        <button id="mode-register" class="account-control" type="button" aria-pressed="false">הרשמה</button>
+      </div>
+      <label for="email">כתובת מייל</label>
+      <input id="email" type="email" dir="ltr" autocomplete="username" maxlength="254" required>
+      <label for="password">סיסמה</label>
+      <input id="password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required>
+      <div class="account-actions account-options">
+        <button id="submit-account" class="account-control">התחברות במייל וסיסמה</button>
+        <a id="google-sign-in" class="account-control" href="/api/account/google/start" hidden>התחברות עם Google</a>
+        <a id="google-cancel" class="account-control" href="/account" hidden>חזרה למסך הכניסה</a>
+      </div>
+      <p id="member-note" hidden></p>
+    </form>
+    <section id="member-panel" class="account-panel" hidden>
+      <p id="member-name"></p>
+      <div class="account-actions">
+        <a href="/app.html?installed=1&amp;account=1">חישובים והשוואות בענן</a>
+        <a href="/chat?member=1">הצ׳אט שלי</a>
+        <button id="member-logout" type="button">יציאה</button>
+      </div>
+    </section>
+    <p id="account-status" role="status">טוען…</p>
