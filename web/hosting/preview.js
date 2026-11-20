@@ -228,11 +228,10 @@
   window.addEventListener('message', event => {
     if (event.source !== frame.contentWindow || event.origin !== location.origin) return;
     if (event.data === 'ribit:exit') home();
-    if (event.data === 'ribit:support') window.RibitFloating.openSupport();
+    if (event.data === 'ribit:account-page') location.assign('/account');
+    if (event.data === 'ribit:support-page') location.assign('/chat');
   });
-  document.addEventListener('keydown', event => {
-    if (!document.querySelector('.support-window[open]')) deviceKeyboard(event);
-  });
+  document.addEventListener('keydown', deviceKeyboard);
   document.addEventListener('pointerdown', event => {
     if (!event.target.closest('[data-key], [data-scroll]')) activeApp()?.dismissChart?.();
   });

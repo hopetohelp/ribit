@@ -100,6 +100,7 @@
 
   function setMenu(opened) {
     disclosure('menu', 'menu-items', opened);
+    visibility(byId('menu-backdrop'), opened);
   }
 
   function readDraft() {
@@ -474,7 +475,9 @@
 
   function openDialog(title, render, centered) {
     var focused = document.activeElement;
-    state.dialogFocus = byId('menu-items').contains(focused) ? byId('menu') : focused;
+    if (byId('dialog-backdrop').hidden) {
+      state.dialogFocus = byId('menu-items').contains(focused) ? byId('menu') : focused;
+    }
     setMenu(false);
     var dialog = byId('dialog');
     dialog.classList.toggle('about-dialog', Boolean(centered));
@@ -1005,7 +1008,6 @@
     checkAfterReconnect = false;
     appUpdate = next;
     var available = next.status === 'ready' || next.status === 'available';
-    text('check-update', available ? 'עדכון זמין' : 'בדיקת עדכון');
     byId('menu').setAttribute('aria-label', available ? 'תפריט · עדכון זמין' : 'תפריט');
     renderUpdate();
     if (shouldRetry) return checkForUpdate();
@@ -1015,7 +1017,7 @@
       if (localStorage.getItem(noticeKey) === next.version) return;
       localStorage.setItem(noticeKey, next.version);
     } catch (_) {}
-    notify('עדכון זמין בתפריט');
+    notify('עדכון זמין במסך אודות');
   }
 
   function checkForUpdate() {
@@ -1055,23 +1057,9 @@
       content.appendChild(versionLine(hostedVersion ? 'גרסת האתר ' : 'גרסה מותקנת ', installedVersion || '0.2.3'));
       content.appendChild(make('p', 'ריבית הוא מחשבון ריבית דריבית חינמי לחלוטין להשקעות.', 'about-copy'));
       content.appendChild(make('p', 'אפשר להשוות מסלולים ולשמור חישובים גם ללא אינטרנט.', 'about-copy'));
-      var row = make('p');
-      var chatLink = make('a', 'נשמח לשמוע אתכם');
-      chatLink.href = 'https://ribit.hopetohelp.net/chat';
-      if (hosted) {
-        chatLink.setAttribute('aria-haspopup', 'dialog');
-        chatLink.addEventListener('click', function (event) {
-          event.preventDefault();
-          closeDialog();
-          if (window === window.parent) window.RibitFloating.openSupport();
-          else window.parent.postMessage('ribit:support', location.origin);
-        });
-      } else {
-        chatLink.target = '_blank';
-        chatLink.rel = 'noopener';
+      if (androidUpdater || desktopUpdater) {
+        content.appendChild(action('בדיקת עדכון', showUpdate, 'outline'));
       }
-      row.appendChild(chatLink);
-      content.appendChild(row);
     }, true);
   }
 
@@ -1088,7 +1076,7 @@
 
   function back() {
     if (!byId('dialog-backdrop').hidden) { closeDialog(); return true; }
-    if (!byId('menu-items').hidden) { setMenu(false); return true; }
+    if (!byId('menu-items').hidden) { setMenu(false); byId('menu').focus(); return true; }
     if (chart.dismiss()) return true;
     if (state.view !== 'saved' && current().result) { showEditor(); return true; }
     if (!byId('advanced-fields').hidden) { setAdvanced(false, false); return true; }
@@ -1296,7 +1284,6 @@
     previewFocus = target;
   }, true);
   document.addEventListener('keydown', function (event) {
-    if (document.querySelector('.support-window[open]')) return;
     var active = document.activeElement;
     var key = event.key || ({9: 'Tab', 27: 'Escape', 37: 'ArrowLeft', 38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown'})[event.keyCode];
     if (key === 'Escape' && back()) event.preventDefault();
@@ -1337,6 +1324,25 @@
     button.addEventListener('click', function () { current().display = button.getAttribute('data-value'); showResults(); });
   });
   listen('menu', function () { setMenu(byId('menu-items').hidden); });
+  window.RibitFloating.dismissOutside(byId('menu-backdrop'), function () {
+    setMenu(false);
+    byId('menu').focus();
+  });
+  if (hosted) {
+    byId('menu-account').href = '/account';
+    byId('menu-support').href = '/chat';
+    byId('menu-account').target = byId('menu-support').target = '_top';
+  }
+  ['menu-account', 'menu-support'].forEach(function (id) {
+    listen(id, function (event) {
+      setMenu(false);
+      byId('menu').focus();
+      if (hosted && window !== window.parent && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+        event.preventDefault();
+        window.parent.postMessage(id === 'menu-account' ? 'ribit:account-page' : 'ribit:support-page', location.origin);
+      }
+    });
+  });
   listen('back', requestBack);
   listen('brand-home', goHome);
   listen('theme', function () { setTheme(!state.dark, true); setMenu(false); byId('menu').focus(); });
@@ -1426,8 +1432,6 @@
         openFailed: function () { notify('אי אפשר לפתוח את החנות במכשיר הזה'); }
       };
     } else desktopUpdater.onState(receiveUpdate);
-    visibility(byId('check-update'), true);
-    listen('check-update', showUpdate);
     window.addEventListener('online', checkAfterConnection);
     // A network adapter can stay connected while Internet access drops.
     window.setInterval(checkForUpdate, 15 * 60 * 1000);
