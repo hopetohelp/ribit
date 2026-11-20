@@ -13,15 +13,18 @@
     <header><a href="/">הפלא השמיני</a></header>
     <h1>חשבון ושמירה בענן</h1>
     <form id="member-form" class="panel account-panel" hidden>
+      <div id="account-mode" class="account-actions account-options" role="group" aria-label="מצב חשבון">
+        <button id="mode-login" class="account-control" type="button" aria-pressed="true">התחברות</button>
+        <button id="mode-register" class="account-control" type="button" aria-pressed="false">הרשמה</button>
+      </div>
       <label for="email">כתובת מייל</label>
       <input id="email" type="email" dir="ltr" autocomplete="username" maxlength="254" required>
       <label for="password">סיסמה</label>
       <input id="password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required>
-      <div class="account-actions">
-        <button id="submit-account">כניסה</button>
-        <button id="toggle-register" type="button">יצירת חשבון</button>
-        <a id="google-sign-in" href="/api/account/google/start" hidden>המשך עם Google</a>
-        <a id="google-cancel" href="/account" hidden>חזרה למסך הכניסה</a>
+      <div class="account-actions account-options">
+        <button id="submit-account" class="account-control">התחברות במייל וסיסמה</button>
+        <a id="google-sign-in" class="account-control" href="/api/account/google/start" hidden>התחברות עם Google</a>
+        <a id="google-cancel" class="account-control" href="/account" hidden>חזרה למסך הכניסה</a>
       </div>
       <p id="member-note">המייל משמש לכניסה. בחרו סיסמה שאינכם משתמשים בה באתרים אחרים.</p>
     </form>

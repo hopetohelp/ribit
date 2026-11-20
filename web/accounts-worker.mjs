@@ -39,6 +39,21 @@ class MemberStore {
     return { status: 200, token: await this.newSession() };
   }
 
+  googleSignup(email, subject, register) {
+    return this.storage.transactionSync(() => {
+      this.sql.exec('CREATE TABLE IF NOT EXISTS member_google_signup (slot INTEGER PRIMARY KEY CHECK(slot = 1), subject TEXT NOT NULL)');
+      const existing = this.sql.exec('SELECT slot FROM member WHERE slot = 1').toArray()[0];
+      if (existing) {
+        const signup = this.sql.exec('SELECT subject FROM member_google_signup WHERE slot = 1').toArray()[0];
+        return !signup ? 'password' : signup.subject === subject ? 'google' : 'conflict';
+      }
+      if (!register) return 'missing';
+      this.sql.exec('INSERT INTO member VALUES (1, ?, ?, ?, ?)', email.split('@')[0].normalize('NFC').slice(0, 60), email, randomHex(16), '');
+      this.sql.exec('INSERT INTO member_google_signup VALUES (1, ?)', subject);
+      return 'google';
+    });
+  }
+
   async newSession() {
     if (!this.sql.exec('SELECT slot FROM member WHERE slot = 1').toArray().length) return null;
     const token = randomHex(32);

@@ -90,7 +90,7 @@ async function googleApi(request, url, env) {
   if (!enabled) return memberResponse({}, 503);
   const key = env.RIBIT_ACCOUNT_KEY;
   if (action === 'start' && request.method === 'GET') {
-    const flow = { state: randomHex(32), verifier: randomHex(32), next: googleNext(url.searchParams.get('next')) };
+    const flow = { state: randomHex(32), verifier: randomHex(32), next: googleNext(url.searchParams.get('next')), register: url.searchParams.get('mode') === 'register' };
     const challenge = base64url(await crypto.subtle.digest('SHA-256', textEncoder.encode(flow.verifier)));
     const redirect = new URL('/o/oauth2/v2/auth', googleOrigin);
     redirect.search = new URLSearchParams({
@@ -119,6 +119,18 @@ async function googleApi(request, url, env) {
       return googleRedirect('/account?next=' + googleNext(flow.next) + '&google=done', [cleared, memberCookieValue(linked + '.' + token)]);
     }
     const email = profile.email.trim().toLowerCase();
+    if (email.length > 254 || !/^[^\s@\x00-\x1f\x7f]+@[^\s@\x00-\x1f\x7f]+\.[^\s@\x00-\x1f\x7f]+$/.test(email)) return fail();
+    const account = await memberKey(key, 'email', email);
+    const member = env.COUNTS.getByName('member:' + account);
+    const state = await member.memberOperation('googleSignup', email, subject, flow.register === true);
+    if (state === 'missing') return googleRedirect('/account?google=missing&mode=register&next=' + googleNext(flow.next), [cleared]);
+    if (state === 'conflict') return fail();
+    if (state === 'google') {
+      if (!(await links.googleOperation('link', subject, account))) return fail();
+      const token = await member.memberOperation('newSession');
+      if (!token) return fail();
+      return googleRedirect('/account?next=' + googleNext(flow.next) + '&google=done', [cleared, memberCookieValue(account + '.' + token)]);
+    }
     const ticket = await signGoogleState(key, 'google-link', { subject, email, next: flow.next });
     return googleRedirect('/account?google=link&next=' + googleNext(flow.next), [cleared, googleCookie(googleLinkCookie, ticket)]);
   }
