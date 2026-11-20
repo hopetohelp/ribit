@@ -33,7 +33,14 @@
         </header>
         <div class="entry-panel">
           <div class="install-options" aria-label="התחברות, פתיחה והתקנה">
-            <a class="primary" href="/account">התחברות</a>
+            <details id="account-drawer" class="entry-drawer">
+              <summary class="primary primary-accent">התחברות</summary>
+              <div class="drawer-content">
+                <!-- account-panel -->
+                <a href="/account">חשבון ושמירה בענן</a>
+                <!-- /account-panel -->
+              </div>
+            </details>
             <details class="entry-drawer">
               <summary class="primary">הצגה כאפליקציה באתר <bdi id="visitors" class="install-count" aria-label="צופים באתר">—</bdi></summary>
               <div class="drawer-content">
@@ -70,10 +77,12 @@
                 <p>פתחו את האפליקציה פעם אחת מהאייקון בזמן שיש אינטרנט, כדי להכין אותה לשימוש אופליין.</p>
               </div>
             </details>
-            <a class="primary" href="https://github.com/hopetohelp/ribit">קוד המקור בגיטהב</a>
             <a class="primary" href="/chat">נשמח לשמוע אתכם</a>
           </div>
-          <small class="web-version" id="web-release" hidden>גרסת האתר <bdi id="web-version"></bdi></small>
+          <footer class="landing-footer">
+            <small class="web-version" id="web-release" hidden>גרסת האתר <bdi id="web-version"></bdi></small>
+            <a href="https://github.com/hopetohelp/ribit">קוד המקור ב־GitHub</a>
+          </footer>
         </div>
       </div>
     </section>

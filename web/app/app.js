@@ -1,12 +1,6 @@
 (function () {
   'use strict';
 
-  if (window === window.top && window.location.hostname === 'ribit.hopetohelp.net' &&
-      new URLSearchParams(window.location.search).get('installed') !== '1') {
-    window.location.replace('/');
-    return;
-  }
-
   var finance = window.RibitFinance;
   var chart = window.RibitChart;
   var localStore = window.RibitStorage;

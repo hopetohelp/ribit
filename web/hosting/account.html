@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/navigation.css">
 </head>
 <body>
-  <main>
+  <main class="account-page">
     <header class="page-header">
       <a href="/" id="page-back" class="back-button" aria-label="חזרה">→</a>
       <a href="/" class="brand-logo" aria-label="הפלא השמיני · למסך הראשי">
@@ -18,29 +18,8 @@
       </a>
     </header>
     <h1>חשבון ושמירה בענן</h1>
-    <form id="member-form" class="panel account-panel" hidden>
-      <label for="email">כתובת מייל</label>
-      <input id="email" type="email" dir="ltr" autocomplete="username" maxlength="254" required>
-      <label for="password">סיסמה</label>
-      <input id="password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required>
-      <div class="account-actions">
-        <button id="submit-account">כניסה</button>
-        <button id="toggle-register" type="button">יצירת חשבון</button>
-        <a id="google-sign-in" href="/api/account/google/start" hidden>המשך עם Google</a>
-        <a id="google-cancel" href="/account" hidden>חזרה למסך הכניסה</a>
-      </div>
-      <p id="member-note">המייל משמש לכניסה. בחרו סיסמה שאינכם משתמשים בה באתרים אחרים.</p>
-    </form>
-    <section id="member-panel" class="panel account-panel" hidden>
-      <p id="member-name"></p>
-      <div class="account-actions">
-        <a href="/app.html?installed=1&amp;account=1">חישובים והשוואות בענן</a>
-        <a href="/chat?member=1">הצ׳אט שלי</a>
-        <button id="member-logout" type="button">יציאה</button>
-      </div>
-    </section>
-    <p id="account-status" role="status">טוען…</p>
+    <!-- account-panel -->
+    <!-- /account-panel -->
   </main>
-  <script src="/account.js" defer></script>
 </body>
 </html>
