@@ -7,6 +7,14 @@ const appDir = path.join(webDir, 'app');
 const hostingDir = path.join(webDir, 'hosting');
 const previewDir = path.join(webDir, 'preview');
 
+async function inlineNavigation(html, href) {
+  const css = await readFile(path.join(appDir, 'navigation.css'), 'utf8');
+  return replaceRequired(html, `<link rel="stylesheet" href="${href}">`,
+    `<style>
+${escapeInlineStyle(css)}
+</style>`, 'navigation.css link');
+}
+
 function escapeInlineScript(source) {
   return source.replace(/<\/script/gi, '<\\/script');
 }
@@ -127,6 +135,10 @@ export async function buildAppHtml() {
     'app.css link',
   );
 
+  html = await inlineNavigation(html, 'navigation.css');
+  const logo = await dataUri(path.join(appDir, 'icon-192.png'), 'image/png');
+  html = replaceRequired(html, 'src="icon-192.png"', `src="${logo}"`, 'app logo');
+
   const scripts = [
     { tag: '<script src="vendor/decimal.js" defer></script>', file: 'vendor/decimal.js' },
     { tag: '<script src="finance.js" defer></script>', file: 'finance.js' },
@@ -160,11 +172,13 @@ export async function buildFullPreviewHtml() {
   let html = await readFile(path.join(hostingDir, 'index.html'), 'utf8');
   const css = await readFile(path.join(hostingDir, 'preview.css'), 'utf8');
   let js = await readFile(path.join(hostingDir, 'preview.js'), 'utf8');
-  const iconUri = await dataUri(path.join(hostingDir, 'icon-192.png'), 'image/png');
+  const iconUri = await dataUri(path.join(appDir, 'icon-192.png'), 'image/png');
 
   html = html.replace(/\s*<link rel="manifest" href="\/manifest\.webmanifest">\n?/, '\n');
   html = html.replace('href="/chat"', 'href="https://ribit.hopetohelp.net/chat"')
-    .replace('href="/account"', 'href="https://ribit.hopetohelp.net/account"');
+    .replace('href="/account"', 'href="https://ribit.hopetohelp.net/account"')
+    .replace('href="/android.html"', 'href="https://ribit.hopetohelp.net/android"');
+  html = html.replace('class="brand-logo" href="/"', 'class="brand-logo" href="#landing"');
   html = html.replaceAll('href="/icon-192.png"', `href="${iconUri}"`);
   html = html.replaceAll('src="/icon-192.png"', `src="${iconUri}"`);
   html = replaceRequired(
@@ -173,6 +187,8 @@ export async function buildFullPreviewHtml() {
     `<style>\n${escapeInlineStyle(css)}\n</style>`,
     'preview.css link',
   );
+
+  html = await inlineNavigation(html, '/navigation.css');
 
   js = replaceRequired(
     js,

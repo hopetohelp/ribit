@@ -4,6 +4,7 @@
   const params = new URLSearchParams(location.search);
   const next = params.get('next');
   const googleResult = params.get('google');
+  if (next === 'chat') $('page-back').href = '/chat';
   const target = next === 'chat' ? '/chat?member=1' : next === 'calculator' ? '/app.html?installed=1&account=1' : null;
   let registering = false;
   let linkingGoogle = false;

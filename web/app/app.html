@@ -6,16 +6,18 @@
   <meta name="theme-color" content="#fafbff">
   <title>ריבית</title>
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="navigation.css">
 </head>
 <body>
   <header class="bar" id="bar">
-    <div class="bar-start">
-      <button type="button" id="back" class="back-button" aria-label="חזרה">→</button>
-      <span class="brand">ריבית</span>
-    </div>
+    <button type="button" id="back" class="back-button" aria-label="חזרה">→</button>
+    <button type="button" id="brand-home" class="brand-logo" aria-label="ריבית · למסך הראשי">
+      <img src="icon-192.png" alt="" width="34" height="34">
+    </button>
     <button type="button" class="plain menu-trigger" id="menu" aria-label="תפריט" aria-expanded="false" aria-controls="menu-items">⋯</button>
     <div id="menu-items" class="menu" hidden>
       <button type="button" id="theme" class="plain">מראה כהה</button>
+      <button type="button" id="check-update" class="plain" hidden>בדיקת עדכון</button>
       <button type="button" id="about" class="plain">אודות</button>
     </div>
   </header>
@@ -113,7 +115,10 @@
   <div id="status" role="status" class="status" hidden></div>
   <div id="dialog-backdrop" class="backdrop" hidden>
     <section id="dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
-      <div class="dialog-heading"><h2 id="dialog-title"></h2><button type="button" id="dialog-close" class="plain" aria-label="סגירה">×</button></div>
+      <div class="dialog-heading">
+        <button type="button" id="dialog-close" class="back-button" aria-label="סגירה">→</button>
+        <h2 id="dialog-title"></h2>
+      </div>
       <div id="dialog-content"></div>
     </section>
   </div>

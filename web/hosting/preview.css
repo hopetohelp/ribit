@@ -22,8 +22,10 @@ details label { display: block; }
 details input { display: block; max-width: 100%; }
 #ruler { width: 50mm; border: 1px solid #dbebff; margin: 9px 0; }
 .toolbar { display: flex; justify-content: center; flex-wrap: wrap; gap: 9px; padding: 10px; }
-.stage { overflow: auto; padding: 12px; min-height: 60vh; }
-.footprint { position: relative; margin: auto; }
+.stage {
+  display: flex; overflow: auto; padding: 12px; min-height: 100vh; min-height: 100dvh;
+}
+.footprint { position: relative; flex: none; margin: auto; }
 .device {
   position: absolute; left: var(--side-clearance, 0px); top: 0; transform-origin: top left;
   background: #171e30; outline: 1px solid #64748f; border-radius: 14px;
@@ -60,7 +62,7 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   display: grid;
   place-items: center;
   min-height: 100vh;
-  min-height: 100svh;
+  min-height: 100dvh;
   padding: clamp(24px, 6vw, 80px);
   color: #f6f2ff;
   background:
@@ -71,12 +73,15 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 .landing-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.18fr) minmax(330px, 1fr);
-  align-items: start;
+  align-items: center;
   gap: clamp(28px, 7vw, 105px);
   width: min(100%, 1130px);
 }
 #landing .intro { padding-block: 18px 0; min-width: 0; }
-.brand-heading { display: flex; align-items: center; gap: clamp(10px, 1.6vw, 21px); }
+.brand-heading {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: clamp(10px, 1.6vw, 21px);
+}
 .brand-icon {
   display: block;
   flex: none;
@@ -393,4 +398,10 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   background: radial-gradient(circle, #6776a2 0 5%, #242743 6% 13%, #101122 14% 25%, #080809 26% 61%, #363639 64%, #151516 75%);
 }
 
-.member-link { display: inline-block; margin-block-start: 14px; min-height: 30px; color: #e9d7ff; }
+.web-version {
+  display: block;
+  margin-block-start: 12px;
+  color: #d2cde5;
+  font-size: .8rem;
+  text-align: center;
+}

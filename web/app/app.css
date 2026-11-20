@@ -32,17 +32,9 @@ button { border: 1px solid transparent; border-radius: 12px; padding: 7px 12px; 
   width: 100%; max-width: 544px; align-self: center; padding: 4px 16px;
 }
 .bar {
-  position: absolute; top: 0; right: 0; left: 0; margin: 0 auto; height: 53px;
-  background: #fafbff; border-bottom: 1px solid #dae2f0; z-index: 2;
+  position: relative; height: 53px;
+  border-bottom: 1px solid #dae2f0; z-index: 2;
 }
-.bar.retracted { transform: translateY(-100%); pointer-events: none; }
-.bar-start { display: flex; align-items: center; }
-.bar-start .brand { margin-right: 8px; }
-.back-button {
-  min-width: 44px; padding: 0 5px; border: 2px solid #5165a4;
-  background: transparent; color: #2445bb; font-size: 23px; line-height: 1;
-}
-.brand { font-size: 20px; font-weight: 700; }
 .menu-trigger { min-width: 44px; font-size: 24px; line-height: 1; }
 .menu {
   position: absolute; top: 100%; left: 16px; z-index: 3;
@@ -50,8 +42,11 @@ button { border: 1px solid transparent; border-radius: 12px; padding: 7px 12px; 
   border-radius: 12px; box-shadow: 0 8px 24px #15203620;
 }
 .menu button { display: block; width: 100%; text-align: right; }
-main { min-height: 0; flex: 1 1 auto; overflow: auto; overscroll-behavior-y: none; padding-top: 53px; }
-.screen { width: 100%; max-width: 544px; margin: 0 auto; padding: 16px; }
+main {
+  display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto;
+  overflow: auto; overscroll-behavior-y: none;
+}
+.screen { flex: none; width: 100%; max-width: 544px; margin: auto; padding: 16px; }
 h1, h2, h3, p, figure { margin: 0; }
 h1 { font-size: 24px; line-height: 1.25; margin-bottom: 14px; }
 h2 { font-size: 20px; line-height: 1.3; }
@@ -174,26 +169,24 @@ canvas { display: block; width: 100%; height: 126px; }
   width: 100%; max-width: 405px; max-height: 100%; overflow: auto;
   padding: 13px 15px; border-radius: 14px; background: #fff;
 }
-.dialog-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.dialog-heading button { min-width: 44px; font-size: 22px; }
+.dialog-heading { margin-bottom: 8px; }
 .dialog ul { margin: 0; padding-right: 21px; }
 .keypad-only #main, .keypad-only .dialog { overflow: hidden; }
 .dialog li { margin-bottom: 8px; }
 .dialog p { margin-bottom: 8px; }
 .about-dialog { border: 2px solid #a9b6dc; text-align: center; }
 .about-dialog:focus { outline: 0; }
-.about-dialog .dialog-heading { position: relative; display: block; padding: 8px 40px; }
-.about-dialog .dialog-heading button { position: absolute; top: 0; left: 0; }
+.about-dialog .dialog-heading { position: relative; display: block; min-height: 44px; padding: 8px 48px; }
+.about-dialog .dialog-heading button { position: absolute; top: 0; right: 0; }
 .about-copy { font-size: 14px; }
 .about-email { font-size: 13px; }
 .about-dialog #dialog-content p:last-child { margin-bottom: 2px; }
 .dark { background: #13191a; color: #f0f5ec; color-scheme: dark; }
-.dark .bar { background: #13191a; }
-.dark .back-button { color: #d7f875; border-color: #a1b96b; }
 .dark .disclosure { border-color: #61784a; background: #212d28; color: #d7f875; }
 .dark .disclosure:hover, .dark .disclosure[aria-expanded="true"] { background: #303d33; }
-.dark button:focus, .dark a:focus, .dark input:focus, .dark select:focus, .dark .key-focus { outline-color: #d7f875; }
-.dark a, .dark .brand, .dark .text-action, .dark .disclosure { color: #d7f875; }
+.dark button:not(.back-button):focus, .dark a:focus, .dark input:focus, .dark select:focus,
+.dark .key-focus:not(.back-button) { outline-color: #d7f875; }
+.dark a, .dark .text-action, .dark .disclosure { color: #d7f875; }
 .dark .primary { background: #d7f875; color: #172100; border-color: #d7f875; }
 .dark .outline, .dark .field input, .dark .field select, .dark .menu { border-color: #52655e; }
 .dark .field input, .dark .field select { background: #191f20; }

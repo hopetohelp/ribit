@@ -1,0 +1,33 @@
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 2px solid #9b89b8;
+  border-radius: 12px;
+  background: #29223e;
+  color: #f6f2ff;
+  font: 23px/1 Arial, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+.back-button:hover { background: #403454; }
+.back-button:active { background: #211a32; }
+.back-button:focus, .back-button.key-focus { outline: 2px solid #9b89b8; outline-offset: 2px; }
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+.brand-logo img { display: block; border-radius: 50%; }
+.dialog-heading { display: flex; align-items: center; gap: 12px; }

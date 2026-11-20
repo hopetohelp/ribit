@@ -4,7 +4,12 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
@@ -50,6 +55,25 @@ class MainActivity : ComponentActivity() {
     private val store by lazy { CalculationStore(applicationContext) }
 
     private var pendingBackup: String? = null
+    private val connectivity by lazy { getSystemService(ConnectivityManager::class.java) }
+    private var watchingNetwork = false
+    private val availableNetworks = mutableSetOf<Network>()
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+            runOnUiThread {
+                if (!watchingNetwork) return@runOnUiThread
+                if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
+                    availableNetworks.remove(network)
+                } else if (availableNetworks.add(network)) {
+                    appView.evaluateJavascript("window.RibitUpdate && window.RibitUpdate.connected()", null)
+                }
+            }
+        }
+
+        override fun onLost(network: Network) {
+            runOnUiThread { availableNetworks.remove(network) }
+        }
+    }
 
     private val createBackup = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         val pending = pendingBackup
@@ -158,6 +182,29 @@ class MainActivity : ComponentActivity() {
         })
     }
 
+    override fun onStart() {
+        super.onStart()
+        val manager = connectivity ?: return
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        try {
+            manager.registerNetworkCallback(request, networkCallback)
+            watchingNetwork = true
+        } catch (_: RuntimeException) {
+            // Startup and the manual check still work if network callbacks are unavailable.
+        }
+    }
+
+    override fun onStop() {
+        if (watchingNetwork) {
+            watchingNetwork = false
+            availableNetworks.clear()
+            connectivity?.unregisterNetworkCallback(networkCallback)
+        }
+        super.onStop()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         appView.saveState(outState)
         outState.putString("pendingBackup", pendingBackup)
@@ -179,14 +226,15 @@ class MainActivity : ComponentActivity() {
         if (::appView.isInitialized) appView.setBackgroundColor(if (dark) graphite else light)
     }
 
-    private fun openExternal(uri: Uri, gesture: Boolean) {
+    private fun openExternal(uri: Uri, gesture: Boolean): Boolean {
         val approved = (uri.scheme == "https" && uri.host == "ribit.hopetohelp.net") ||
             uri.toString() == "mailto:hopetohelp.il@gmail.com"
-        if (!gesture || !approved) return
-        try {
+        if (!gesture || !approved) return false
+        return try {
             startActivity(Intent(Intent.ACTION_VIEW, uri))
+            true
         } catch (_: ActivityNotFoundException) {
-            // The app still displays the address when no handler is installed.
+            false
         }
     }
 
@@ -194,6 +242,35 @@ class MainActivity : ComponentActivity() {
         @JavascriptInterface
         fun exit() {
             runOnUiThread { if (!isFinishing) finish() }
+        }
+
+        @JavascriptInterface
+        fun installedVersion(): String = BuildConfig.VERSION_NAME
+
+        @JavascriptInterface
+        fun checkAndroidUpdate() {
+            lifecycleScope.launch {
+                val release = withContext(Dispatchers.IO) { AndroidRelease.latest() }
+                if (isDestroyed) return@launch
+                val status = when {
+                    release == null -> "error"
+                    release.versionCode <= BuildConfig.VERSION_CODE -> "current"
+                    release.minSdk > Build.VERSION.SDK_INT -> "incompatible"
+                    else -> "available"
+                }
+                val version = JSONObject.quote(release?.versionName.orEmpty())
+                val installed = JSONObject.quote(BuildConfig.VERSION_NAME)
+                appView.evaluateJavascript("window.RibitUpdate.receive('$status', $version, $installed)", null)
+            }
+        }
+
+        @JavascriptInterface
+        fun openAndroidStore() {
+            runOnUiThread {
+                if (!isDestroyed && !openExternal(AndroidRelease.STORE_URL.toUri(), true)) {
+                    appView.evaluateJavascript("window.RibitUpdate.openFailed()", null)
+                }
+            }
         }
 
         @JavascriptInterface

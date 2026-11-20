@@ -1,6 +1,6 @@
 {
   "name": "ribit",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Offline Ribit compound interest calculator",
   "author": "Ribit",
   "private": true,
@@ -15,9 +15,11 @@
   "build": {
     "appId": "com.hopetohelp.ribit",
     "productName": "Ribit",
-    "artifactName": "Ribit-Setup.${ext}",
+    "artifactName": "Ribit-Setup-${version}.${ext}",
     "files": [
-      "main.cjs"
+      "main.cjs",
+      "preload.cjs",
+      "updates.cjs"
     ],
     "extraResources": [
       {
@@ -28,12 +30,17 @@
     "directories": {
       "output": "dist"
     },
-    "win": {
-      "signAndEditExecutable": false
-    },
     "nsis": {
       "oneClick": true,
       "perMachine": false
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://ribit.hopetohelp.net/updates/windows/"
     }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11",
+    "js-yaml": "4.3.2"
   }
 }
