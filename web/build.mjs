@@ -41,7 +41,7 @@ async function filesIn(directory) {
 const mime = {
   '.css': 'text/css; charset=UTF-8', '.html': 'text/html; charset=UTF-8',
   '.js': 'text/javascript; charset=UTF-8', '.md': 'text/plain; charset=UTF-8',
-  '.png': 'image/png', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json; charset=UTF-8',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json; charset=UTF-8',
 };
 const assets = {};
 const hash = createHash('sha256');

@@ -5,6 +5,12 @@
   const next = params.get('next');
   const googleResult = params.get('google');
   const target = next === 'chat' ? '/chat?member=1' : next === 'calculator' ? '/app.html?installed=1&account=1' : null;
+  const drawer = $('account-drawer');
+  if (drawer) {
+    try {
+      if (localStorage.getItem('ribit-member-active') === '1') $('account-trigger').textContent = 'החשבון שלי';
+    } catch (_) {}
+  }
   let registering = false;
   let linkingGoogle = false;
 
@@ -24,13 +30,21 @@
   }
 
   function remember(active) {
+    if (drawer) $('account-trigger').textContent = active ? 'החשבון שלי' : 'התחברות';
     try {
       if (active) localStorage.setItem('ribit-member-active', '1');
       else localStorage.removeItem('ribit-member-active');
     } catch (_) {}
   }
 
+  function setPasswordVisibility(visible) {
+    $('password').type = visible ? 'text' : 'password';
+    $('password-visibility').textContent = visible ? 'הסתרה' : 'הצגה';
+    $('password-visibility').setAttribute('aria-label', visible ? 'הסתרת סיסמה' : 'הצגת סיסמה');
+  }
+
   function showForm() {
+    setPasswordVisibility(false);
     $('member-panel').hidden = true;
     $('member-form').hidden = false;
     $('account-status').textContent = '';
@@ -39,8 +53,39 @@
   function showMember(member) {
     $('member-form').hidden = true;
     $('member-panel').hidden = false;
-    $('member-name').textContent = member.name + ' · ' + member.email;
+    $('member-email').textContent = member.email;
     $('account-status').textContent = '';
+    if (!drawer) {
+      $('member-google').textContent = member.googleLinked === true ? 'מחובר' :
+        member.googleLinked === false ? 'טרם חובר' : 'לא זמין כרגע';
+      $('member-google-link').hidden = member.googleLinked !== false;
+      loadRecent();
+    }
+  }
+
+  async function loadRecent() {
+    const list = $('member-recent-list');
+    const status = $('member-recent-status');
+    $('member-recent').hidden = true;
+    list.replaceChildren();
+    status.textContent = '';
+    try {
+      const { result } = await request('records', { method: 'recent', data: {} });
+      if ($('member-panel').hidden) return;
+      for (const entry of result) {
+        const item = document.createElement('li');
+        const link = document.createElement('a');
+        link.className = 'account-control';
+        link.href = '/app.html?installed=1&account=1&view=saved&record=' + encodeURIComponent(entry.id);
+        link.dir = 'auto';
+        link.textContent = entry.title;
+        item.appendChild(link);
+        list.appendChild(item);
+      }
+      $('member-recent').hidden = !result.length;
+    } catch (_) {
+      if (!$('member-panel').hidden) status.textContent = 'טעינת הפריטים האחרונים נכשלה.';
+    }
   }
 
   function notify(error) {
@@ -61,41 +106,57 @@
     const verb = register ? 'הרשמה' : 'התחברות';
     $('mode-login').setAttribute('aria-pressed', String(!register));
     $('mode-register').setAttribute('aria-pressed', String(register));
+    setPasswordVisibility(false);
     $('password').autocomplete = register ? 'new-password' : 'current-password';
     $('submit-account').textContent = verb + ' במייל וסיסמה';
-    $('google-sign-in').textContent = verb + ' עם Google';
+    $('google-action').textContent = verb + ' עם Google';
     $('google-sign-in').href = '/api/account/google/start?' + new URLSearchParams({
-      next: next === 'chat' ? 'chat' : 'calculator', mode: register ? 'register' : 'login'
+      next: next === 'chat' || next === 'calculator' ? next : 'account', mode: register ? 'register' : 'login'
     });
     $('account-status').textContent = '';
   }
+  $('password-visibility').onclick = () => setPasswordVisibility($('password').type === 'password');
   $('mode-login').onclick = () => chooseMode(false);
   $('mode-register').onclick = () => chooseMode(true);
   $('member-form').addEventListener('submit', async event => {
     event.preventDefault();
     $('submit-account').disabled = true;
+    $('account-status').textContent = linkingGoogle ? 'מחברים את החשבון…' : registering ? 'יוצרים חשבון…' : 'מתחברים…';
     try {
       var result = await request(linkingGoogle ? 'google/link' : registering ? 'register' : 'login', {
         email: $('email').value, password: $('password').value
       });
       $('password').value = '';
       remember(true);
-      location.replace(result.target || target || '/app.html?installed=1&account=1');
+      if (result.target || target) location.replace(result.target || target);
+      else {
+        showMember(await request('session'));
+        $('member-panel').querySelector('a').focus();
+      }
     } catch (error) { notify(error); }
     finally { $('submit-account').disabled = false; }
   });
   $('member-logout').onclick = async () => {
-    try { await request('logout', {}); remember(false); showForm(); }
-    catch (error) {
-      if (error.status === 401) { remember(false); showForm(); }
-      else notify(error);
+    $('member-logout').disabled = true;
+    try {
+      try { await request('logout', {}); }
+      catch (error) { if (error.status !== 401) throw error; }
+      remember(false);
+      $('member-email').textContent = '';
+      $('member-recent-list').replaceChildren();
+      showForm();
+      $('email').focus();
+    } catch (_) {
+      $('account-status').textContent = 'היציאה נכשלה. בדקו את החיבור ונסו שוב.';
+    } finally {
+      $('member-logout').disabled = false;
     }
   };
   async function start() {
     let google;
     try { google = await request('google/status'); } catch (_) {}
     chooseMode(params.get('mode') === 'register');
-    $('google-sign-in').hidden = !google?.enabled;
+    $('google-sign-in').hidden = $('account-divider').hidden = !google?.enabled;
     if (googleResult === 'link') {
       showForm();
       if (!google?.pendingEmail) {
@@ -106,7 +167,7 @@
       $('email').value = google.pendingEmail;
       $('email').readOnly = true;
       $('account-mode').hidden = true;
-      $('google-sign-in').hidden = true;
+      $('google-sign-in').hidden = $('account-divider').hidden = true;
       $('google-cancel').hidden = false;
       $('submit-account').textContent = 'חיבור וסנכרון';
       $('member-note').hidden = false;
@@ -118,7 +179,10 @@
       const member = await request('session');
       remember(true);
       if (target) location.replace(target);
-      else showMember(member);
+      else {
+        showMember(member);
+        if (googleResult === 'error') $('account-status').textContent = 'החיבור ל־Google לא הושלם. ודאו שבחרתם את כתובת המייל של החשבון.';
+      }
     } catch (error) {
       showForm();
       if (error.status === 401) remember(false);
@@ -127,7 +191,6 @@
       if (googleResult === 'error') $('account-status').textContent = 'הכניסה עם Google לא הושלמה. אפשר לנסות שוב.';
     }
   }
-  const drawer = $('account-drawer');
   if (drawer && !drawer.open) {
     drawer.addEventListener('toggle', function startOnOpen() {
       if (!drawer.open) return;

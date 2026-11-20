@@ -11,3 +11,30 @@
 .account-panel button:disabled { opacity: .55; cursor: default; }
 .account-options > .account-control { flex: 1 1 160px; display: inline-flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
 #member-note { color: #d3cbe9; }
+
+.account-password { position: relative; margin-block-end: 10px; }
+.account-password input { margin: 0; padding-left: 12px; padding-right: 80px; }
+.account-password button { position: absolute; inset-block: 0; inset-inline-start: 0; }
+#member-form .account-actions:not(#account-mode) { display: grid; }
+#account-mode { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-block-start: 0; }
+.account-divider { display: flex; align-items: center; gap: 10px; }
+.account-divider::before, .account-divider::after { content: ""; flex: 1; border-block-start: 1px solid #8773af; }
+.account-panel .account-primary { flex-basis: 100%; background: #dfccff; color: #22183d; font-weight: bold; }
+.account-panel .account-control:hover, .account-password button:hover { border-color: #e3c7ff; }
+#member-email { font-weight: 700; overflow-wrap: anywhere; }
+.account-page-content, .account-page .account-page-link { display: none; }
+.account-page .account-page-content { display: block; }
+.account-page-link { display: block; text-align: center; text-decoration: none; }
+.account-settings, #member-recent { margin-block-start: 16px; padding-block-start: 12px; border-block-start: 1px solid #8773af; }
+.account-settings summary { cursor: pointer; min-block-size: 44px; padding-block: 8px; }
+.account-settings dl div { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; }
+.account-settings dd { margin: 0; }
+#member-recent-list { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+#member-recent-list a { display: block; text-decoration: none; overflow-wrap: anywhere; }
+.account-status:empty, #member-recent-status:empty { display: none; }
+
+.account-panel .account-google {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  color: #e3e3e3; background: #131314; border-color: #8e918f; text-decoration: none;
+}
+.account-google img { flex: none; object-fit: contain; }

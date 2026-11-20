@@ -97,11 +97,25 @@
     <section id="saved" class="screen" aria-labelledby="saved-title" hidden>
       <h1 id="saved-title">שמורים</h1>
       <p id="web-account" hidden></p>
+      <div class="pair saved-filters">
+        <label class="field"><span>חיפוש שמורים</span><input type="search" id="saved-search" dir="auto"></label>
+        <label class="field"><span>סוג פריט</span>
+          <select id="saved-type">
+            <option value="">הכול</option>
+            <option value="1">חישובים</option>
+            <option value="2">השוואות</option>
+          </select>
+        </label>
+      </div>
       <div class="actions">
+        <button type="button" id="export-selected" class="outline" disabled>ייצוא בחירה</button>
         <button type="button" id="export-all" class="outline">ייצוא הכול</button>
         <button type="button" id="import-backup" class="outline">ייבוא קובץ</button>
+        <button type="button" id="copy-local" class="outline" hidden>העתקה מהמכשיר לענן</button>
       </div>
       <input id="backup-file" type="file" accept=".json,application/json" hidden>
+      <p id="saved-status" class="dim" role="status"></p>
+      <button id="retry-saved" class="outline" type="button" hidden>טעינה מחדש</button>
       <div id="saved-list"></div>
     </section>
   </main>
