@@ -56,13 +56,21 @@
     })[error.status] || 'הכניסה לחשבון דורשת חיבור לאינטרנט.';
   }
 
-  $('toggle-register').onclick = () => {
-    registering = !registering;
-    $('password').autocomplete = registering ? 'new-password' : 'current-password';
-    $('submit-account').textContent = registering ? 'הרשמה' : 'כניסה';
-    $('toggle-register').textContent = registering ? 'כבר יש חשבון' : 'יצירת חשבון';
+  function chooseMode(register) {
+    registering = register;
+    const verb = register ? 'הרשמה' : 'התחברות';
+    $('mode-login').setAttribute('aria-pressed', String(!register));
+    $('mode-register').setAttribute('aria-pressed', String(register));
+    $('password').autocomplete = register ? 'new-password' : 'current-password';
+    $('submit-account').textContent = verb + ' במייל וסיסמה';
+    $('google-sign-in').textContent = verb + ' עם Google';
+    $('google-sign-in').href = '/api/account/google/start?' + new URLSearchParams({
+      next: next === 'chat' ? 'chat' : 'calculator', mode: register ? 'register' : 'login'
+    });
     $('account-status').textContent = '';
-  };
+  }
+  $('mode-login').onclick = () => chooseMode(false);
+  $('mode-register').onclick = () => chooseMode(true);
   $('member-form').addEventListener('submit', async event => {
     event.preventDefault();
     $('submit-account').disabled = true;
@@ -86,10 +94,8 @@
   async function start() {
     let google;
     try { google = await request('google/status'); } catch (_) {}
-    if (google?.enabled) {
-      $('google-sign-in').hidden = false;
-      $('google-sign-in').href = '/api/account/google/start?next=' + (next === 'chat' ? 'chat' : 'calculator');
-    }
+    chooseMode(params.get('mode') === 'register');
+    $('google-sign-in').hidden = !google?.enabled;
     if (googleResult === 'link') {
       showForm();
       if (!google?.pendingEmail) {
@@ -99,7 +105,7 @@
       linkingGoogle = true;
       $('email').value = google.pendingEmail;
       $('email').readOnly = true;
-      $('toggle-register').hidden = true;
+      $('account-mode').hidden = true;
       $('google-sign-in').hidden = true;
       $('google-cancel').hidden = false;
       $('submit-account').textContent = 'חיבור וסנכרון';
@@ -116,6 +122,7 @@
       showForm();
       if (error.status === 401) remember(false);
       else notify(error);
+      if (googleResult === 'missing') $('account-status').textContent = 'עדיין אין חשבון למייל הזה. בחרו הרשמה עם Google.';
       if (googleResult === 'error') $('account-status').textContent = 'הכניסה עם Google לא הושלמה. אפשר לנסות שוב.';
     }
   }
