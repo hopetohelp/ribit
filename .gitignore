@@ -8,3 +8,6 @@ local.properties
 web/dist/
 web/preview/
 .agents/.toolchain/
+
+desktop/node_modules/
+desktop/dist/

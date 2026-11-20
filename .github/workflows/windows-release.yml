@@ -1,0 +1,55 @@
+name: Windows installer
+
+on:
+  push:
+    tags:
+      - 'windows-v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: npm run build:windows
+      - name: Verify installer and app startup
+        run: |
+          $installer = Resolve-Path dist/Ribit-Setup.exe
+          $installed = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
+          if ($installed.ExitCode -ne 0) { throw "Installer exit code: $($installed.ExitCode)" }
+          $app = Join-Path $env:LOCALAPPDATA 'Programs\ribit\Ribit.exe'
+          if (!(Test-Path $app)) { throw "Installed app is missing: $app" }
+          $instance = Start-Process -FilePath $app -ArgumentList '--remote-debugging-port=9223' -PassThru
+          try {
+            for ($attempt = 0; $attempt -lt 30; $attempt++) {
+              try {
+                $pages = Invoke-RestMethod 'http://127.0.0.1:9223/json/list' -TimeoutSec 2
+                if ($pages | Where-Object { $_.url -eq 'ribit://app/app.html' -and $_.title -eq 'ריבית' }) {
+                  exit 0
+                }
+              } catch {}
+              Start-Sleep -Seconds 1
+            }
+            throw 'Installed app did not load its packaged interface'
+          } finally {
+            if (!$instance.HasExited) { Stop-Process -Id $instance.Id }
+          }
+      - name: Publish the verified installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create $env:GITHUB_REF_NAME dist/Ribit-Setup.exe --verify-tag --title "Ribit for Windows $($env:GITHUB_REF_NAME -replace '^windows-v','')" --notes 'Offline Windows 64-bit installer.'

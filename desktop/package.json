@@ -1,0 +1,30 @@
+{
+  "name": "ribit",
+  "version": "0.2.1",
+  "description": "Offline Ribit compound interest calculator",
+  "author": "Ribit",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "build:windows": "electron-builder --win nsis --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.4.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.hopetohelp.ribit",
+    "productName": "Ribit",
+    "artifactName": "Ribit-Setup.${ext}",
+    "files": ["main.cjs"],
+    "extraResources": [{ "from": "../web/app", "to": "app" }],
+    "directories": { "output": "dist" },
+    "win": {
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    }
+  }
+}
