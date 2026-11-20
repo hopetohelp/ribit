@@ -12,6 +12,10 @@ for (const source of ['app', 'hosting']) {
   await cp(path.join(web, source), dist, { recursive: true });
 }
 
+const hostedApp = path.join(dist, 'app.html');
+const appHtml = await readFile(hostedApp, 'utf8');
+await writeFile(hostedApp, appHtml.replace('</body>', '  <script src="/app-offline.js" defer></script>\n</body>'));
+
 async function filesIn(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -96,8 +100,10 @@ function isDownload(request) {
 const minimumViewers = 30;
 export default {
   async fetch(request, env) {
-    const path = new URL(request.url).pathname;
-    if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document') {
+    const url = new URL(request.url);
+    const { pathname: path } = url;
+    if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document' &&
+        url.searchParams.get('installed') !== '1') {
       return Response.redirect(new URL('/', request.url), 302);
     }
     const apk = 'ribit-0.2.1.apk';
