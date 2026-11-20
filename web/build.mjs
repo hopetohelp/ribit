@@ -75,8 +75,9 @@ self.addEventListener('activate', event => {
 });
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
-  if (event.request.method !== 'GET' || url.origin !== self.location.origin || !FILES.includes(url.pathname)) return;
-  const cached = () => caches.open(CACHE).then(cache => cache.match(url.pathname));
+  const cachePath = url.pathname === '/chat' ? '/chat.html' : url.pathname;
+  if (event.request.method !== 'GET' || url.origin !== self.location.origin || !FILES.includes(cachePath)) return;
+  const cached = () => caches.open(CACHE).then(cache => cache.match(cachePath));
   event.respondWith(fetch(event.request).catch(cached));
 });
 `;

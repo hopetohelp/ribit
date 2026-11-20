@@ -177,9 +177,6 @@ export async function buildFullPreviewHtml() {
   let js = await readFile(path.join(hostingDir, 'preview.js'), 'utf8');
   const iconUri = await dataUri(path.join(appDir, 'icon-192.png'), 'image/png');
 
-  html = html.replace('<link rel="stylesheet" href="/floating.css">', '')
-    .replace('<script src="/floating.js" defer></script>', '')
-    .replace(' data-open-support aria-haspopup="dialog"', '');
   html = html.replace(/\s*<link rel="manifest" href="\/manifest\.webmanifest">\n?/, '\n');
   html = html.replace('href="/chat"', 'href="https://ribit.hopetohelp.net/chat"')
     .replace('href="/account"', 'href="https://ribit.hopetohelp.net/account"')
@@ -215,7 +212,8 @@ export async function buildFullPreviewHtml() {
     "if (event.source !== frame.contentWindow || event.origin !== location.origin) return;",
     "if (event.source !== frame.contentWindow || (event.origin !== location.origin && event.origin !== 'null')) return;",
     'device message origin check',
-  ).replace("    if (event.data === 'ribit:support') window.RibitFloating.openSupport();", '');
+  ).replace("    if (event.data === 'ribit:account-page') location.assign('/account');", '')
+    .replace("    if (event.data === 'ribit:support-page') location.assign('/chat');", '');
   js = js.replace(
     "if (navigator.serviceWorker) navigator.serviceWorker.register('/sw.js').catch(() => {});",
     "// Service worker registration skipped in standalone preview bundle.",

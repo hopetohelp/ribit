@@ -10,6 +10,7 @@ const appUrl = 'ribit://app/app.html';
 const externalLinks = new Set([
   'https://ribit.hopetohelp.net/',
   'https://ribit.hopetohelp.net/chat',
+  'https://ribit.hopetohelp.net/account',
   'mailto:hopetohelp.il@gmail.com'
 ]);
 

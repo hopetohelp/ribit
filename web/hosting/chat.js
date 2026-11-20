@@ -2,10 +2,8 @@
   'use strict';
   const admin = location.pathname === '/admin-chat';
   const $ = id => document.getElementById(id);
-  const embedded = !admin && window.parent !== window && new URLSearchParams(location.search).get('embedded') === '1';
   let mode = 'checking';
   let cloudMessages = [];
-  let supportVisible = true;
   let visitorRequest = 0;
   const guestDraftPrefix = 'ribit-guest-draft:';
   const prefix = '/api/chat/' + (admin ? 'admin/' : '');
@@ -58,7 +56,7 @@
   }
 
   async function refreshVisitor() {
-    if (document.hidden || !supportVisible || $('send-button').disabled) return;
+    if (document.hidden || $('send-button').disabled) return;
     const current = ++visitorRequest;
     if (!navigator.onLine) {
       updateVisitor('offline');
@@ -267,26 +265,7 @@
       catch (error) { report(error); }
     });
   } else {
-    if (embedded) {
-      document.body.classList.add('embedded-chat');
-      const signIn = $('chat-sign-in');
-      signIn.href = '/account';
-      signIn.target = '_blank';
-      signIn.rel = 'noopener';
-      window.addEventListener('message', event => {
-        if (event.source !== window.parent || event.origin !== location.origin) return;
-        if (event.data === 'ribit:support-hidden') {
-          supportVisible = false;
-          visitorRequest++;
-        } else if (event.data === 'ribit:support-visible') {
-          supportVisible = true;
-          refreshVisitor();
-        }
-      });
-      document.addEventListener('keydown', event => {
-        if (event.key === 'Escape') window.parent.postMessage('ribit:support-close', location.origin);
-      });
-    }
+    document.body.classList.add('visitor-chat');
     window.addEventListener('storage', event => {
       if (event.key === 'ribit-member-active') refreshVisitor();
       if (event.key === null || event.key?.startsWith(guestDraftPrefix)) {

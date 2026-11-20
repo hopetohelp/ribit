@@ -16,11 +16,13 @@
       <img src="icon-192.png" alt="" width="34" height="34">
     </button>
     <button type="button" class="plain menu-trigger" id="menu" aria-label="תפריט" aria-expanded="false" aria-controls="menu-items">⋯</button>
-    <div id="menu-items" class="menu" hidden>
+    <div id="menu-backdrop" class="floating-backdrop floating-light-dismiss" hidden></div>
+    <nav id="menu-items" class="menu floating-panel" aria-label="תפריט המחשבון" hidden>
+      <a id="menu-account" class="plain" href="https://ribit.hopetohelp.net/account" target="_blank" rel="noopener">החשבון שלי</a>
+      <a id="menu-support" class="plain" href="https://ribit.hopetohelp.net/chat" target="_blank" rel="noopener">נשמח לשמוע אתכם</a>
       <button type="button" id="theme" class="plain">מראה כהה</button>
-      <button type="button" id="check-update" class="plain" hidden>בדיקת עדכון</button>
       <button type="button" id="about" class="plain">אודות</button>
-    </div>
+    </nav>
   </header>
   <main id="main">
     <section id="editor" class="screen" aria-labelledby="editor-title">

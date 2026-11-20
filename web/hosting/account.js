@@ -58,12 +58,10 @@
     $('member-panel').hidden = false;
     $('member-email').textContent = member.email;
     $('account-status').textContent = '';
-    if (!drawer) {
-      $('member-google').textContent = member.googleLinked === true ? 'מחובר' :
-        member.googleLinked === false ? 'טרם חובר' : 'לא זמין כרגע';
-      $('member-google-link').hidden = member.googleLinked !== false;
-      loadRecent();
-    }
+    $('member-google').textContent = member.googleLinked === true ? 'מחובר' :
+      member.googleLinked === false ? 'טרם חובר' : 'לא זמין כרגע';
+    $('member-google-link').hidden = member.googleLinked !== false;
+    loadRecent();
   }
 
   async function loadRecent() {
