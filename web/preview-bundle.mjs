@@ -163,6 +163,7 @@ export async function buildFullPreviewHtml() {
   const iconUri = await dataUri(path.join(hostingDir, 'icon-192.png'), 'image/png');
 
   html = html.replace(/\s*<link rel="manifest" href="\/manifest\.webmanifest">\n?/, '\n');
+  html = html.replace('href="/chat"', 'href="https://ribit.hopetohelp.net/chat"');
   html = html.replaceAll('href="/icon-192.png"', `href="${iconUri}"`);
   html = html.replaceAll('src="/icon-192.png"', `src="${iconUri}"`);
   html = replaceRequired(

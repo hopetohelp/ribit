@@ -819,7 +819,11 @@
         site.rel = 'noopener';
         site.dir = 'ltr';
       }
-      [mail, site].forEach(function (link) {
+      var chatLink = make('a', 'נשמח לשמוע אותכם');
+      chatLink.href = 'https://ribit.hopetohelp.net/chat';
+      chatLink.target = '_blank';
+      chatLink.rel = 'noopener';
+      [chatLink, mail, site].forEach(function (link) {
         var row = make('p');
         row.appendChild(link);
         content.appendChild(row);

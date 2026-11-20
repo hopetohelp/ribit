@@ -45,7 +45,7 @@ assets['/'] = assets['/index.html'];
 const cacheName = 'ribit-' + hash.digest('hex').slice(0, 16);
 const serviceWorker = `
 const CACHE = ${JSON.stringify(cacheName)};
-const FILES = ${JSON.stringify(Object.keys(assets))};
+const FILES = ${JSON.stringify(Object.keys(assets).filter(url => !['/chat.html', '/chat.js', '/chat.css'].includes(url)))};
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });
@@ -65,7 +65,9 @@ await writeFile(path.join(dist, 'sw.js'), serviceWorker);
 assets['/sw.js'] = [mime['.js'], gzipSync(serviceWorker).toString('base64')];
 
 if (process.argv[2]) {
+  const chatWorker = await readFile(path.join(web, 'chat-worker.mjs'), 'utf8');
   const worker = `import { DurableObject } from 'cloudflare:workers';
+${chatWorker}
 export class SiteCounter extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -78,6 +80,13 @@ export class SiteCounter extends DurableObject {
     const sql = this.ctx.storage.sql;
     if (increment) sql.exec('INSERT INTO tally VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET total = MAX(total + 1, excluded.total)', minimum + 1);
     return Math.max(minimum, sql.exec('SELECT total FROM tally WHERE id = 1').toArray()[0]?.total ?? 0);
+  }
+
+  chatOperation(operation, ...args) {
+    const storage = this.ctx.storage;
+    const chat = new ChatStore(storage);
+    if (operation === 'send') return chat.send(...args, storage);
+    return chat[operation](...args);
   }
 
   seeBrowser(browserId, minimum) {
@@ -102,7 +111,9 @@ const validBrowserId = id => /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const { pathname: path } = url;
+    const { pathname } = url;
+    if (pathname.startsWith('/api/chat/')) return chatApi(request, url, env);
+    const path = ['/chat', '/admin-chat'].includes(pathname) ? '/chat.html' : pathname;
     if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document' &&
         url.searchParams.get('installed') !== '1') {
       return Response.redirect(new URL('/', request.url), 302);
@@ -164,7 +175,7 @@ export default {
     const [type, zipped] = files[path];
     const headers = {
       'Content-Type': type,
-      'Cache-Control': 'no-cache',
+      'Cache-Control': path === '/chat.html' ? 'no-store' : 'no-cache',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
       'Content-Security-Policy': "default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'none'"
