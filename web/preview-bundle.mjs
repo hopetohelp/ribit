@@ -183,6 +183,7 @@ export async function buildFullPreviewHtml() {
   html = html.replace(/\s*<link rel="manifest" href="\/manifest\.webmanifest">\n?/, '\n');
   html = html.replace('href="/chat"', 'href="https://ribit.hopetohelp.net/chat"')
     .replace('href="/account"', 'href="https://ribit.hopetohelp.net/account"')
+    .replace('href="/app.html"', 'href="https://ribit.hopetohelp.net/app.html"')
     .replace('href="/download"', 'href="https://ribit.hopetohelp.net/download"')
     .replace('href="/download/windows"', 'href="https://ribit.hopetohelp.net/download/windows"');
   html = html.replace('class="brand-logo" href="/"', 'class="brand-logo" href="#landing"');

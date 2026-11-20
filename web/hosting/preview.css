@@ -122,8 +122,8 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 }
 .install-options .primary-centered { justify-content: center; text-align: center; }
 .install-options .primary-accent { border-color: #aa92d1; }
-.install-options :is(a, summary).primary:hover,
-.entry-drawer[open] > .primary { border-color: #cbb2fb; background: #393052; }
+.install-options :is(a, button, summary).primary:hover,
+.entry-drawer[open] > .primary, .display-modes .primary[aria-expanded="true"] { border-color: #cbb2fb; background: #393052; }
 .entry-drawer { margin: 0; min-width: 0; }
 .install-count {
   flex: none;
@@ -150,6 +150,9 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 .drawer-content p { font-size: .9375rem; }
 .drawer-content p:first-child { margin-top: 0; }
 .drawer-content p:last-child { margin-bottom: 0; }
+.display-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.drawer-content .display-modes .primary { min-height: 44px; padding: 7px 8px; }
+#app-display-settings { margin-block-start: 14px; }
 .drawer-content .sizes { margin: 0; }
 .drawer-content button { border-color: #8b77b07d; background: #252239; }
 .drawer-content button[aria-pressed="true"] { background: #dfccff; color: #22183d; }
