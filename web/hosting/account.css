@@ -22,10 +22,6 @@
 .account-panel .account-primary { flex-basis: 100%; background: #dfccff; color: #22183d; font-weight: bold; }
 .account-panel .account-control:hover, .account-password button:hover { border-color: #e3c7ff; }
 #member-email { font-weight: 700; overflow-wrap: anywhere; }
-.account-settings { margin-block-start: 16px; padding-block-start: 12px; border-block-start: 1px solid #8773af; }
-.account-settings summary { cursor: pointer; min-block-size: 44px; padding-block: 8px; }
-.account-settings dl div { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; }
-.account-settings dd { margin: 0; }
 .account-status:empty { display: none; }
 
 .account-panel .account-google {

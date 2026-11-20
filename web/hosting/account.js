@@ -12,6 +12,7 @@
       if (localStorage.getItem('ribit-member-active') === '1') $('account-trigger').textContent = 'החשבון שלי';
     } catch (_) {}
   }
+  let hasPassword = true;
   let registering = false;
   let linkingGoogle = false;
 
@@ -55,10 +56,10 @@
     $('member-form').hidden = true;
     $('member-panel').hidden = false;
     $('member-email').textContent = member.email;
+    hasPassword = member.hasPassword !== false;
     $('account-status').textContent = '';
-    $('member-google').textContent = member.googleLinked === true ? 'מחובר' :
-      member.googleLinked === false ? 'טרם חובר' : 'לא זמין כרגע';
-    $('member-google-link').hidden = member.googleLinked !== false;
+    $('password-change-form').hidden = true;
+    $('change-password').setAttribute('aria-expanded', 'false');
   }
 
   function notify(error) {
@@ -109,6 +110,41 @@
     } catch (error) { notify(error); }
     finally { $('submit-account').disabled = false; }
   });
+  $('change-password').onclick = () => {
+    const form = $('password-change-form');
+    $('account-status').textContent = '';
+    if (!hasPassword) {
+      $('account-status').textContent = 'החשבון נוצר עם Google בלבד. את סיסמת Google מנהלים בחשבון Google.';
+      return;
+    }
+    if (!form.hidden) form.reset();
+    form.hidden = !form.hidden;
+    $('change-password').setAttribute('aria-expanded', String(!form.hidden));
+    if (!form.hidden) $('current-password').focus();
+  };
+
+  $('password-change-form').onsubmit = async event => {
+    event.preventDefault();
+    $('save-password').disabled = true;
+    $('change-password').disabled = true;
+    $('member-logout').disabled = true;
+    try {
+      await request('password', { currentPassword: $('current-password').value, newPassword: $('new-password').value });
+      $('change-password').onclick();
+      $('change-password').focus();
+      $('account-status').textContent = 'הסיסמה הוחלפה.';
+    } catch (error) {
+      $('account-status').textContent = ({
+        400: 'בחרו סיסמה חדשה באורך 10 תווים לפחות, שונה מהסיסמה הנוכחית.',
+        401: 'תוקף הכניסה פג. התחברו מחדש.',
+        403: 'הסיסמה הנוכחית שגויה.',
+        409: 'לחשבון שנוצר עם Google בלבד אין סיסמת אתר להחלפה. את סיסמת Google מנהלים בחשבון Google.',
+        429: 'בוצעו יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.'
+      })[error.status] || 'לא ניתן היה להחליף את הסיסמה כרגע.';
+    } finally {
+      $('save-password').disabled = $('change-password').disabled = $('member-logout').disabled = false;
+    }
+  };
   $('member-logout').onclick = async () => {
     $('member-logout').disabled = true;
     try {
@@ -116,6 +152,7 @@
       catch (error) { if (error.status !== 401) throw error; }
       remember(false);
       $('member-email').textContent = '';
+      $('password-change-form').reset();
       showForm();
       $('email').focus();
     } catch (_) {
