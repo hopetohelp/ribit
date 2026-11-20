@@ -35,7 +35,7 @@
       if (error) return callback(error);
       var request;
       var result;
-      var write = method === 'save' || method === 'remove' || method === 'import';
+      var write = method === 'save' || method === 'remove' || method === 'import' || method === 'rename';
       try {
         var tx = db.transaction('calculations', write ? 'readwrite' : 'readonly');
         var store = tx.objectStore('calculations');
@@ -66,6 +66,15 @@
               planCount: entry.calculation.plans.length, calculation: entry.calculation
             });
           });
+        } else if (method === 'rename') {
+          request = store.get(data.id);
+          request.onsuccess = function () {
+            var entry = request.result;
+            if (!entry) return tx.abort();
+            entry.title = data.title;
+            entry.updatedAt = Date.now();
+            store.put(entry);
+          };
         } else if (method === 'remove') {
           store.delete(data.id);
         } else {

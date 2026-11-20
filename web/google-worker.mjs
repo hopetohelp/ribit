@@ -30,10 +30,11 @@ async function readGoogleState(request, secret, kind, name) {
 }
 
 function googleNext(value) {
-  return value === 'chat' ? 'chat' : 'calculator';
+  return value === 'chat' || value === 'account' ? value : 'calculator';
 }
 
 function googleDestination(value) {
+  if (value === 'account') return '/account';
   return value === 'chat' ? '/chat?member=1' : '/app.html?installed=1&account=1';
 }
 
@@ -51,6 +52,10 @@ class GoogleLinkStore {
 
   get(subject) {
     return this.sql.exec('SELECT account FROM google_links WHERE subject = ?', subject).toArray()[0]?.account ?? null;
+  }
+
+  hasAccount(account) {
+    return this.sql.exec('SELECT 1 FROM google_links WHERE account = ?', account).toArray().length > 0;
   }
 
   link(subject, account) {
@@ -91,6 +96,11 @@ async function googleApi(request, url, env) {
   const key = env.RIBIT_ACCOUNT_KEY;
   if (action === 'start' && request.method === 'GET') {
     const flow = { state: randomHex(32), verifier: randomHex(32), next: googleNext(url.searchParams.get('next')), register: url.searchParams.get('mode') === 'register' };
+    if (url.searchParams.get('connect') === '1') {
+      const member = await getMember(request, env);
+      if (!member) return googleRedirect('/account');
+      flow.account = member.account;
+    }
     const challenge = base64url(await crypto.subtle.digest('SHA-256', textEncoder.encode(flow.verifier)));
     const redirect = new URL('/o/oauth2/v2/auth', googleOrigin);
     redirect.search = new URLSearchParams({
@@ -113,7 +123,9 @@ async function googleApi(request, url, env) {
     if (!profile) return fail();
     const subject = await memberKey(key, 'google-subject', profile.sub);
     const linked = await links.googleOperation('get', subject);
+    if (flow.account && (await getMember(request, env))?.account !== flow.account) return fail();
     if (linked) {
+      if (flow.account && linked !== flow.account) return fail();
       const token = await env.COUNTS.getByName('member:' + linked).memberOperation('newSession');
       if (!token) return fail();
       return googleRedirect('/account?next=' + googleNext(flow.next) + '&google=done', [cleared, memberCookieValue(linked + '.' + token)]);
@@ -122,6 +134,7 @@ async function googleApi(request, url, env) {
     if (email.length > 254 || !/^[^\s@\x00-\x1f\x7f]+@[^\s@\x00-\x1f\x7f]+\.[^\s@\x00-\x1f\x7f]+$/.test(email)) return fail();
     const account = await memberKey(key, 'email', email);
     const member = env.COUNTS.getByName('member:' + account);
+    if (flow.account && account !== flow.account) return fail();
     const state = await member.memberOperation('googleSignup', email, subject, flow.register === true);
     if (state === 'missing') return googleRedirect('/account?google=missing&mode=register&next=' + googleNext(flow.next), [cleared]);
     if (state === 'conflict') return fail();

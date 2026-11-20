@@ -4,22 +4,41 @@
         <button id="mode-register" class="account-control" type="button" aria-pressed="false">הרשמה</button>
       </div>
       <label for="email">כתובת מייל</label>
-      <input id="email" type="email" dir="ltr" autocomplete="username" maxlength="254" required>
+      <input id="email" name="email" type="email" dir="ltr" autocomplete="username" maxlength="254" required>
       <label for="password">סיסמה</label>
-      <input id="password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required>
+      <div class="account-password">
+        <input id="password" name="password" type="password" dir="ltr" minlength="10" maxlength="128" autocomplete="current-password" required>
+        <button id="password-visibility" type="button" aria-controls="password">הצגה</button>
+      </div>
       <div class="account-actions account-options">
-        <button id="submit-account" class="account-control">התחברות במייל וסיסמה</button>
-        <a id="google-sign-in" class="account-control" href="/api/account/google/start" hidden>התחברות עם Google</a>
+        <button id="submit-account" class="account-control account-primary">התחברות במייל וסיסמה</button>
+        <span id="account-divider" class="account-divider" hidden>או</span>
+        <a id="google-sign-in" class="account-control account-google" href="/api/account/google/start" hidden><img src="/google-mark.svg" alt="" width="18" height="18"><span id="google-action">התחברות עם Google</span></a>
         <a id="google-cancel" class="account-control" href="/account" hidden>חזרה למסך הכניסה</a>
       </div>
       <p id="member-note" hidden></p>
     </form>
     <section id="member-panel" class="account-panel" hidden>
-      <p id="member-name"></p>
-      <div class="account-actions">
-        <a href="/app.html?installed=1&amp;account=1">חישובים והשוואות בענן</a>
-        <a href="/chat?member=1">הצ׳אט שלי</a>
-        <button id="member-logout" type="button">יציאה</button>
+      <p id="member-name"><bdi id="member-email" dir="ltr"></bdi></p>
+      <div class="account-actions account-options">
+        <a class="account-control account-primary" href="/app.html?installed=1&amp;account=1&amp;view=saved">חישובים והשוואות</a>
+        <a class="account-control" href="/chat?member=1">הצ׳אט שלי</a>
+        <button id="member-logout" class="account-control" type="button">יציאה</button>
+      </div>
+      <a class="account-control account-page-link" href="/account">עמוד החשבון</a>
+      <div class="account-page-content">
+        <section id="member-recent" aria-labelledby="member-recent-title" hidden>
+          <h2 id="member-recent-title">נפתחו לאחרונה</h2>
+          <ul id="member-recent-list"></ul>
+        </section>
+        <p id="member-recent-status" role="status"></p>
+        <details class="account-settings">
+          <summary>הגדרות חשבון</summary>
+          <dl>
+            <div><dt>חיבור ל־Google</dt><dd id="member-google"></dd></div>
+          </dl>
+          <a id="member-google-link" class="account-control account-google" href="/api/account/google/start?next=account&amp;connect=1" hidden><img src="/google-mark.svg" alt="" width="18" height="18">חיבור ל־Google</a>
+        </details>
       </div>
     </section>
-    <p id="account-status" role="status">טוען…</p>
+    <p id="account-status" class="account-status" role="status">טוען…</p>

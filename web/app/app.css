@@ -223,3 +223,9 @@ canvas { display: block; width: 100%; height: 126px; }
   .chart-metric { display: block; }
   .chart-metric strong { display: block; text-align: right; margin-right: 0; }
 }
+
+.saved-filters, #web-account, #saved-status:not(:empty) { margin-block-end: 10px; }
+.record h2, #web-account { overflow-wrap: anywhere; }
+.saved-record-options summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
+.saved-record-options .actions { margin-block-start: 0; }
+.saved-selection { margin-block: 8px; }
