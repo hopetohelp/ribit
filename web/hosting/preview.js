@@ -167,13 +167,6 @@
     else configureKeypad();
     resize();
     if (value === 'keys') document.querySelector('[data-key=Enter]').focus();
-    if (location.protocol === 'https:' || location.protocol === 'http:') {
-      fetch('/api/preview/open', { method: 'POST' }).then(response => {
-        if (response.ok) return response.json();
-      }).then(stats => {
-        if (stats) updatePreviewCount(stats.previewLaunches);
-      }).catch(() => {});
-    }
   }
 
   document.querySelectorAll('[data-model]').forEach(button => button.onclick = () => open(button.dataset.model, button));
@@ -247,13 +240,6 @@
   }, { passive: false });
   window.addEventListener('resize', resize);
   selectSize('fit');
-  let previewCount = 0;
-  function updatePreviewCount(total) {
-    if (!Number.isFinite(total)) return;
-    previewCount = Math.max(previewCount, total);
-    $('preview-launches').textContent = previewCount.toLocaleString('he-IL');
-  }
-
   function browserId() {
     try {
       const stored = localStorage.getItem('ribit-visitor');
@@ -278,7 +264,6 @@
     $('downloads').textContent = stats.downloads.toLocaleString('he-IL');
     $('windows-downloads').textContent = stats.windowsDownloads.toLocaleString('he-IL');
     $('safari-installs').textContent = stats.safariInstalls.toLocaleString('he-IL');
-    updatePreviewCount(stats.previewLaunches);
   }).catch(() => {});
   if (navigator.serviceWorker) navigator.serviceWorker.register('/sw.js').catch(() => {});
 }());
