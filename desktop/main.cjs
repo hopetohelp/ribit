@@ -5,6 +5,7 @@ const { pathToFileURL } = require('node:url');
 const appUrl = 'ribit://app/app.html';
 const externalLinks = new Set([
   'https://ribit.hopetohelp.net/',
+  'https://ribit.hopetohelp.net/chat',
   'mailto:hopetohelp.il@gmail.com'
 ]);
 

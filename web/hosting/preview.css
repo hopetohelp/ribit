@@ -76,14 +76,17 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   width: min(100%, 1130px);
 }
 #landing .intro { padding-block: 18px 0; min-width: 0; }
+.brand-heading { display: flex; align-items: center; gap: clamp(10px, 1.6vw, 21px); }
 .brand-icon {
   display: block;
-  margin-block-end: 28px;
-  border-radius: 15px;
+  flex: none;
+  width: clamp(44px, 5.3vw, 76px);
+  height: auto;
+  border-radius: 50%;
   border: 1px solid #b8a6ed85;
   box-shadow: 0 0 30px #ad8eff42;
 }
-#landing h1 { font-size: clamp(3rem, 6.3vw, 6.1rem); line-height: 1.04; letter-spacing: -.055em; }
+#landing h1 { margin: 0; font-size: clamp(2.65rem, 5.4vw, 5.5rem); line-height: 1.04; letter-spacing: -.055em; }
 #landing h1 span { color: #e0bfff; }
 #landing .intro p { max-width: 31ch; color: #d2cde5; font-size: clamp(1rem, 1.55vw, 1.25rem); margin-block: 18px 0; }
 
@@ -155,7 +158,7 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   box-shadow: inset 0 1px #efddff12;
   transition: border-color .18s ease, background-color .18s ease;
 }
-.install-options .primary:hover,
+.install-options :is(a, summary).primary:hover,
 .entry-drawer[open] > .primary { border-color: #cbb2fb; background: #393052; }
 .entry-drawer { margin: 0; min-width: 0; }
 .install-count {
@@ -189,13 +192,13 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 #profiles { display: grid; gap: 7px; }
 #profiles button { text-align: start; }
 #scale { max-width: 100%; }
-.visitor-count { color: #c1b8d5; font-size: .9375rem; margin: 18px 3px 0; }
-.visitor-count bdi { color: #f2dbff; font-variant-numeric: tabular-nums; }
+.install-options .visitor-count { cursor: default; }
 
-@media (max-width: 740px) {
+@media (max-width: 850px) {
   .landing-layout { grid-template-columns: minmax(0, 1fr); max-width: 505px; gap: 22px; }
   #landing .intro { padding: 0; }
-  .brand-icon { width: 42px; height: 42px; margin-block-end: 13px; }
+  #landing h1 { font-size: clamp(1.85rem, 11.2vw, 3.9rem); }
+  .brand-icon { width: clamp(42px, 11vw, 64px); }
   #landing .intro p { margin-block-start: 12px; }
   .growth-art { height: 105px; margin-block-start: 10px; }
 }

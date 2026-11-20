@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>צ׳אט · הפלא השמיני</title>
+  <link rel="icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/chat.css">
+</head>
+<body>
+  <main>
+    <header>
+      <a href="/">הפלא השמיני</a>
+      <button id="logout" type="button" hidden>יציאה</button>
+    </header>
+    <h1 id="title">נשמח לשמוע אותכם</h1>
+    <form id="login" class="panel" hidden>
+      <label for="password">סיסמת מנהל האתר</label>
+      <input id="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password">
+      <button id="login-button">כניסה</button>
+    </form>
+    <div id="chat" class="chat">
+      <aside id="inbox" class="panel" hidden aria-label="שיחות פתוחות">
+        <h2>שיחות</h2>
+        <div id="threads"></div>
+      </aside>
+      <section class="panel thread" aria-label="שיחה">
+        <p id="intro">כתבו למנהל האתר. אפשר לחזור לכאן מאותו דפדפן כדי לראות תשובה.</p>
+        <div id="messages" role="log" aria-label="הודעות" tabindex="0"></div>
+        <form id="send">
+          <label for="message">הודעה</label>
+          <div class="compose">
+            <textarea id="message" maxlength="2000" rows="2" required></textarea>
+            <button id="send-button">שליחה</button>
+          </div>
+        </form>
+      </section>
+    </div>
+    <p id="status" role="status"></p>
+  </main>
+  <script src="/chat.js" defer></script>
+</body>
+</html>
