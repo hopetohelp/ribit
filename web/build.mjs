@@ -166,23 +166,17 @@ export default {
       await env.COUNTS.getByName('safari-installs').seeBrowser(id, 0);
       return new Response(null, {status: 204});
     }
-    if (path === '/api/preview/open' && request.method === 'POST') {
-      if (request.headers.get('Origin') !== url.origin) return new Response(null, {status: 403});
-      const previewLaunches = await env.COUNTS.getByName('preview-launches').total(true);
-      return Response.json({previewLaunches}, {headers: {'Cache-Control': 'no-store'}});
-    }
     if (path === '/api/view' && request.method === 'POST') {
       const browserId = request.headers.get('X-Ribit-Visitor');
       const browsers = env.COUNTS.getByName('unique-browsers');
       const validVisitor = validBrowserId(browserId);
-      const [visitors, downloadRequests, windowsDownloads, safariInstalls, previewLaunches] = await Promise.all([
+      const [visitors, downloadRequests, windowsDownloads, safariInstalls] = await Promise.all([
         validVisitor ? browsers.seeBrowser(browserId, minimumViewers) : browsers.total(false, minimumViewers),
         env.COUNTS.getByName('site-downloads').total(false),
         env.COUNTS.getByName('windows-downloads').total(false),
-        env.COUNTS.getByName('safari-installs').total(false),
-        env.COUNTS.getByName('preview-launches').total(false)
+        env.COUNTS.getByName('safari-installs').total(false)
       ]);
-      return Response.json({visitors, downloads: historicalDownloads + downloadRequests, windowsDownloads, safariInstalls, previewLaunches}, {headers: {'Cache-Control': 'no-store'}});
+      return Response.json({visitors, downloads: historicalDownloads + downloadRequests, windowsDownloads, safariInstalls}, {headers: {'Cache-Control': 'no-store'}});
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(null, {status: 405, headers: {Allow: 'GET, HEAD'}});

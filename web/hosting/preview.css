@@ -194,7 +194,6 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 #profiles { display: grid; gap: 7px; }
 #profiles button { text-align: start; }
 #scale { max-width: 100%; }
-.install-options .visitor-count { cursor: default; }
 
 @media (max-width: 850px) {
   .landing-layout { grid-template-columns: minmax(0, 1fr); max-width: 505px; gap: 22px; }
