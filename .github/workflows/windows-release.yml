@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ribit-windows-release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: windows-latest
@@ -25,14 +29,39 @@ jobs:
       - run: npm ci
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
-      - run: npm run build:windows
-      - name: Verify installer and app startup
+      - run: node --test updates.test.cjs
+      - name: Confirm version and catalog configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_KV_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          DOWNLOADS_NAMESPACE_ID: ${{ vars.RIBIT_DOWNLOADS_NAMESPACE_ID }}
         run: |
-          $installer = Resolve-Path dist/Ribit-Setup.exe
+          if (!$env:CLOUDFLARE_API_TOKEN -or $env:CLOUDFLARE_ACCOUNT_ID -notmatch '^[a-f0-9]{32}$' -or $env:DOWNLOADS_NAMESPACE_ID -notmatch '^[a-f0-9]{32}$') {
+            throw 'Configure Cloudflare KV access for the Windows catalog'
+          }
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          if ($version -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' -or "windows-v$version" -ne $env:GITHUB_REF_NAME) {
+            throw 'The release tag must match the version in desktop/package.json'
+          }
+          $published = Invoke-RestMethod 'https://ribit.hopetohelp.net/api/windows/latest' -TimeoutSec 15
+          if ([version]$version -lt [version]$published.versionName) { throw 'A newer Windows release is already active' }
+          "RIBIT_WINDOWS_VERSION=$version" >> $env:GITHUB_ENV
+      - name: Build the signed installer and update metadata
+        env:
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+        run: npm run build:windows -- --config.forceCodeSigning=true
+      - name: Verify installer, installed version, and app startup
+        run: |
+          $installer = Resolve-Path "dist/Ribit-Setup-$env:RIBIT_WINDOWS_VERSION.exe"
+          if ((Get-AuthenticodeSignature $installer).Status -ne 'Valid') { throw 'Installer signature is invalid' }
           $installed = Start-Process -FilePath $installer -ArgumentList '/S' -Wait -PassThru
           if ($installed.ExitCode -ne 0) { throw "Installer exit code: $($installed.ExitCode)" }
-          $app = Join-Path $env:LOCALAPPDATA 'Programs\ribit\Ribit.exe'
-          if (!(Test-Path $app)) { throw "Installed app is missing: $app" }
+          $directory = Join-Path $env:LOCALAPPDATA 'Programs\ribit'
+          $app = Join-Path $directory 'Ribit.exe'
+          if ((Get-AuthenticodeSignature $app).Status -ne 'Valid') { throw 'Program signature is invalid' }
+          node -e "const fs = require('node:fs'), assert = require('node:assert/strict'), yaml = require('js-yaml'); const name = 'Ribit-Setup-' + process.env.RIBIT_WINDOWS_VERSION + '.exe'; const feed = yaml.load(fs.readFileSync('dist/latest.yml', 'utf8')); assert.equal(feed.version, process.env.RIBIT_WINDOWS_VERSION); assert.equal(feed.files[0].url, name); assert.ok(fs.existsSync('dist/' + name + '.blockmap')); const config = yaml.load(fs.readFileSync(process.argv[1], 'utf8')); assert.ok([config.publisherName].flat().some(name => typeof name === 'string' && name.trim()));" (Join-Path $directory 'resources\app-update.yml')
+          if ($LASTEXITCODE -ne 0) { throw 'Update metadata verification failed' }
           $instance = Start-Process -FilePath $app -ArgumentList '--remote-debugging-port=9223' -PassThru
           try {
             for ($attempt = 0; $attempt -lt 30; $attempt++) {
@@ -48,8 +77,29 @@ jobs:
           } finally {
             if (!$instance.HasExited) { Stop-Process -Id $instance.Id }
           }
-      - name: Publish the verified installer
+      - name: Publish the verified installer and update feed
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create $env:GITHUB_REF_NAME dist/Ribit-Setup.exe --verify-tag --title "Ribit for Windows $($env:GITHUB_REF_NAME -replace '^windows-v','')" --notes 'Offline Windows 64-bit installer.'
+          $name = "Ribit-Setup-$env:RIBIT_WINDOWS_VERSION.exe"
+          $assets = @($name, "$name.blockmap", 'latest.yml')
+          $existing = gh release view $env:GITHUB_REF_NAME --json assets,isDraft,tagName 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $release = $existing | ConvertFrom-Json
+            if ($release.isDraft -or $release.tagName -ne $env:GITHUB_REF_NAME) { throw 'Existing release is not public and complete' }
+            foreach ($asset in $assets) {
+              if ($asset -notin $release.assets.name) { throw "Existing release is missing $asset" }
+            }
+          } else {
+            $paths = @($assets | ForEach-Object { "dist/$_" })
+            gh release create $env:GITHUB_REF_NAME @paths --verify-tag --title "Ribit for Windows $env:RIBIT_WINDOWS_VERSION" --notes 'Signed, offline Windows 64-bit installer with automatic updates.'
+            if ($LASTEXITCODE -ne 0) { throw 'GitHub release failed' }
+          }
+      - name: Activate the release on the Ribit website
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_KV_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          DOWNLOADS_NAMESPACE_ID: ${{ vars.RIBIT_DOWNLOADS_NAMESPACE_ID }}
+        run: |
+          npx --yes wrangler@4.165.0 kv key put windows-latest $env:RIBIT_WINDOWS_VERSION --namespace-id $env:DOWNLOADS_NAMESPACE_ID --remote
+          if ($LASTEXITCODE -ne 0) { throw 'Activating the Windows catalog failed' }

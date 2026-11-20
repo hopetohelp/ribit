@@ -1,11 +1,6 @@
 (function () {
   'use strict';
 
-  if (window === window.top && window.location.hostname === 'ribit.hopetohelp.net') {
-    window.location.replace('/');
-    return;
-  }
-
   var finance = window.RibitFinance;
   var chart = window.RibitChart;
   var localStore = window.RibitStorage;
@@ -38,8 +33,14 @@
   var keys = ['initial', 'deposit', 'annualRate', 'years', 'months', 'frequency', 'timing',
     'depositFee', 'balanceFee', 'inflation', 'taxType', 'taxRate', 'includeDepositFeeInBasis'];
   var toastTimer;
+  var androidUpdater = window.RibitDevice && window.RibitDevice.checkAndroidUpdate ? window.RibitDevice : null;
+  var desktopUpdater = window.RibitDesktopUpdates;
+  var hostedVersion = document.querySelector('meta[name="ribit-version"]');
+  var installedVersion = androidUpdater && androidUpdater.installedVersion ? androidUpdater.installedVersion() :
+    desktopUpdater ? desktopUpdater.version : hostedVersion ? hostedVersion.content : '';
+  var appUpdate = { status: 'idle', version: '' };
+  var checkAfterReconnect = false;
   var previewFocus;
-  var barScrollEdge = 0;
   var keypadEnabled = false;
   var titleNumbers = false;
   var lastTap;
@@ -161,10 +162,9 @@
 
   function pageTop() {
     main.scrollTop = 0;
-    revealBar(0);
   }
 
-  function view(name) {
+  function view(name, openEditor) {
     stash();
     setMenu(false);
     state.view = name;
@@ -178,7 +178,7 @@
     if (name === 'saved') {
       showSection('saved');
       loadSaved();
-    } else if (current().result) {
+    } else if (!openEditor && current().result) {
       showResults();
     } else {
       showEditor();
@@ -970,8 +970,89 @@
     });
   }
 
+  function versionLine(label, version) {
+    var line = make('p', label);
+    line.appendChild(make('bdi', version));
+    return line;
+  }
+
+  function renderUpdate() {
+    var status = byId('update-status');
+    if (!status) return;
+    var button = byId('update-action');
+    var message = {
+      idle: 'בודקים אם יש עדכון…',
+      checking: 'בודקים אם יש עדכון…',
+      available: 'זמינה גרסה ',
+      downloading: 'מורידים ברקע את גרסה ',
+      ready: 'העדכון מוכן. הוא יותקן בסגירה או בהפעלה מחדש. גרסה ',
+      current: 'הגרסה המותקנת עדכנית.',
+      incompatible: 'הגרסה החדשה דורשת גרסת Android חדשה יותר.',
+      unavailable: 'עדכונים זמינים בהתקנה הרשמית של ריבית.',
+      error: 'בדיקת העדכון נכשלה. בדקו את החיבור ונסו שוב.'
+    }[appUpdate.status];
+    status.textContent = message;
+    if (appUpdate.version && ['available', 'downloading', 'ready'].indexOf(appUpdate.status) >= 0) {
+      status.appendChild(make('bdi', appUpdate.version));
+    }
+    button.textContent = appUpdate.status === 'ready' ? 'הפעלה מחדש לעדכון' :
+      appUpdate.status === 'error' ? 'בדיקה חוזרת' : 'פתיחת החנות';
+    visibility(button, ['ready', 'available', 'error'].indexOf(appUpdate.status) >= 0);
+  }
+
+  function receiveUpdate(next) {
+    var shouldRetry = checkAfterReconnect && appUpdate.status === 'checking' && next.status === 'error';
+    checkAfterReconnect = false;
+    appUpdate = next;
+    var available = next.status === 'ready' || next.status === 'available';
+    text('check-update', available ? 'עדכון זמין' : 'בדיקת עדכון');
+    byId('menu').setAttribute('aria-label', available ? 'תפריט · עדכון זמין' : 'תפריט');
+    renderUpdate();
+    if (shouldRetry) return checkForUpdate();
+    if (!available || byId('update-status')) return;
+    var noticeKey = androidUpdater ? 'ribit-android-update-notice' : 'ribit-windows-update-notice';
+    try {
+      if (localStorage.getItem(noticeKey) === next.version) return;
+      localStorage.setItem(noticeKey, next.version);
+    } catch (_) {}
+    notify('עדכון זמין בתפריט');
+  }
+
+  function checkForUpdate() {
+    if (['checking', 'downloading', 'ready'].indexOf(appUpdate.status) >= 0) return;
+    appUpdate = { status: 'checking', version: '' };
+    renderUpdate();
+    if (androidUpdater) androidUpdater.checkAndroidUpdate();
+    else desktopUpdater.check().catch(function () { receiveUpdate({ status: 'error', version: '' }); });
+  }
+
+  function checkAfterConnection() {
+    if (appUpdate.status === 'checking') checkAfterReconnect = true;
+    else checkForUpdate();
+  }
+
+  function showUpdate() {
+    openDialog(androidUpdater ? 'עדכוני Android' : 'עדכוני Windows', function (content) {
+      if (installedVersion) content.appendChild(versionLine('גרסה מותקנת ', installedVersion));
+      var status = make('p');
+      status.id = 'update-status';
+      status.setAttribute('role', 'status');
+      content.appendChild(status);
+      var button = action('', function () {
+        if (appUpdate.status === 'error') checkForUpdate();
+        else if (androidUpdater) androidUpdater.openAndroidStore();
+        else desktopUpdater.install().catch(function () { notify('אי אפשר להפעיל את העדכון כרגע'); });
+      }, 'primary full');
+      button.id = 'update-action';
+      content.appendChild(button);
+    });
+    if (appUpdate.status !== 'available') checkForUpdate();
+    renderUpdate();
+  }
+
   function about() {
     openDialog('אודות ריבית', function (content) {
+      if (installedVersion) content.appendChild(versionLine(hostedVersion ? 'גרסת האתר ' : 'גרסה מותקנת ', installedVersion));
       content.appendChild(make('p', 'ריבית הוא מחשבון ריבית דריבית חינמי לחלוטין להשקעות. אפשר להשוות מסלולים ולשמור חישובים גם ללא אינטרנט.', 'about-copy'));
       var mail = make('a', 'hopetohelp.il@gmail.com', 'about-email');
       mail.href = 'mailto:hopetohelp.il@gmail.com';
@@ -1026,6 +1107,19 @@
     if (back()) return;
     if (window.RibitDevice && window.RibitDevice.exit) window.RibitDevice.exit();
     else if (window !== window.parent) window.parent.postMessage('ribit:exit', window.location.origin);
+    else if (hosted && !isStandalone()) window.location.assign('/');
+  }
+
+  function isStandalone() {
+    return navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+  }
+
+  function goHome() {
+    if (state.busy) return;
+    closeDialog();
+    view('single', true);
+    if (window !== window.parent) window.parent.postMessage('ribit:exit', window.location.origin);
+    else if (hosted && !isStandalone()) window.location.assign('/');
   }
 
   function focusable(scope) {
@@ -1129,7 +1223,7 @@
     var dialog = !byId('dialog-backdrop').hidden;
     var scope = navigationScope();
     var items = focusable(scope).filter(function (control) {
-      return !bar.contains(control) || byId('menu-items').contains(control);
+      return !bar.contains(control) || control.id === 'brand-home' || byId('menu-items').contains(control);
     });
     if (dialog) items.push.apply(items, scope.querySelectorAll('li[tabindex="-1"]'));
     var active = items.indexOf(previewFocus) < 0 ? null : previewFocus;
@@ -1201,32 +1295,6 @@
     content.scrollTop += direction * Math.max(35, Math.round(content.clientHeight * .65));
   }
 
-  function scrollPosition() {
-    return Math.max(0, Math.min(main.scrollTop, main.scrollHeight - main.clientHeight));
-  }
-
-  function revealBar(position) {
-    bar.classList.remove('retracted');
-    barScrollEdge = position;
-  }
-
-  main.addEventListener('scroll', function () {
-    var top = scrollPosition();
-    if (top === 0) {
-      revealBar(0);
-    } else if (bar.classList.contains('retracted')) {
-      // Ignore the small reversal at the end of a touch scroll.
-      barScrollEdge = Math.max(barScrollEdge, top);
-      if (barScrollEdge - top >= 8) revealBar(top);
-    } else {
-      barScrollEdge = Math.min(barScrollEdge, top);
-      if (top > barScrollEdge) {
-        bar.classList.add('retracted');
-        barScrollEdge = top;
-      }
-    }
-  });
-  bar.addEventListener('focus', function () { revealBar(scrollPosition()); }, true);
   document.addEventListener('focus', function (event) {
     var target = event.target;
     if (!/^(?:BUTTON|INPUT|SELECT|A|LI)$/.test(target.tagName)) return;
@@ -1276,6 +1344,7 @@
   });
   listen('menu', function () { setMenu(byId('menu-items').hidden); });
   listen('back', requestBack);
+  listen('brand-home', goHome);
   listen('theme', function () { setTheme(!state.dark, true); setMenu(false); byId('menu').focus(); });
   listen('advanced', function () { setAdvanced(byId('advanced-fields').hidden, true); });
   listen('pick-saved', pickSaved);
@@ -1351,4 +1420,22 @@
       openSaved({ id: recordId });
     }
   } else showEditor();
+  if (androidUpdater || desktopUpdater) {
+    if (androidUpdater) {
+      window.RibitUpdate = {
+        receive: function (status, version, installed) {
+          installedVersion = installed || installedVersion;
+          receiveUpdate({ status: status, version: version });
+        },
+        connected: checkAfterConnection,
+        openFailed: function () { notify('אי אפשר לפתוח את החנות במכשיר הזה'); }
+      };
+    } else desktopUpdater.onState(receiveUpdate);
+    visibility(byId('check-update'), true);
+    listen('check-update', showUpdate);
+    window.addEventListener('online', checkAfterConnection);
+    // A network adapter can stay connected while Internet access drops.
+    window.setInterval(checkForUpdate, 15 * 60 * 1000);
+    checkForUpdate();
+  }
 }());

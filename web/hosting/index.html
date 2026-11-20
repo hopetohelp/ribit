@@ -9,6 +9,7 @@
   <link rel="icon" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="stylesheet" href="/preview.css">
+  <link rel="stylesheet" href="/navigation.css">
 </head>
 <body>
   <main id="preview">
@@ -16,7 +17,9 @@
       <div class="landing-layout">
         <header class="intro">
           <div class="brand-heading">
-            <img src="/icon-192.png" alt="" width="64" height="64" class="brand-icon">
+            <a class="brand-logo" href="/" aria-label="הפלא השמיני · למסך הראשי">
+              <img src="/icon-192.png" alt="" width="64" height="64" class="brand-icon">
+            </a>
             <h1 id="landing-title">הפלא <span>השמיני</span></h1>
           </div>
           <p class="intro-copy">
@@ -29,7 +32,15 @@
           </div>
         </header>
         <div class="entry-panel">
-          <div class="install-options" aria-label="פתיחה והתקנה">
+          <div class="install-options" aria-label="התחברות, פתיחה והתקנה">
+            <details id="account-drawer" class="entry-drawer">
+              <summary class="primary primary-accent" id="account-trigger">התחברות</summary>
+              <div class="drawer-content">
+                <!-- account-panel -->
+                <a href="/account">חשבון ושמירה בענן</a>
+                <!-- /account-panel -->
+              </div>
+            </details>
             <details class="entry-drawer">
               <summary class="primary">הצגה כאפליקציה באתר <bdi id="visitors" class="install-count" aria-label="צופים באתר">—</bdi></summary>
               <div class="drawer-content">
@@ -52,8 +63,12 @@
                 </div>
               </div>
             </details>
-            <a class="primary" href="/download">הורדה לאנדרואיד <span id="downloads" class="install-count" aria-label="הורדות Android">—</span></a>
-            <a class="primary" href="/download/windows">הורדה לווינדוס <span id="windows-downloads" class="install-count" aria-label="הורדות Windows">—</span></a>
+            <a class="primary" href="/android.html">
+              חנות Android
+              <span id="downloads" class="install-count" aria-label="הורדות Android">—</span></a>
+            <a class="primary" href="/download/windows">
+              הורדה לווינדוס
+              <span id="windows-downloads" class="install-count" aria-label="הורדות Windows">—</span></a>
             <details class="entry-drawer">
               <summary class="primary">התקנה בספארי <span id="safari-installs" class="install-count" aria-label="התקנות Safari">—</span></summary>
               <div class="drawer-content">
@@ -62,17 +77,12 @@
                 <p>פתחו את האפליקציה פעם אחת מהאייקון בזמן שיש אינטרנט, כדי להכין אותה לשימוש אופליין.</p>
               </div>
             </details>
-            <a class="primary" href="https://github.com/hopetohelp/ribit">קוד המקור בגיטהב</a>
             <a class="primary" href="/chat">נשמח לשמוע אתכם</a>
-            <details id="account-drawer" class="entry-drawer">
-              <summary class="primary" id="account-trigger">התחברות</summary>
-              <div class="drawer-content">
-                <!-- account-panel -->
-                <a href="/account">חשבון ושמירה בענן</a>
-                <!-- /account-panel -->
-              </div>
-            </details>
           </div>
+          <footer class="landing-footer">
+            <small class="web-version" id="web-release" hidden>גרסת האתר <bdi id="web-version"></bdi></small>
+            <a href="https://github.com/hopetohelp/ribit">קוד המקור ב־GitHub</a>
+          </footer>
         </div>
       </div>
     </section>

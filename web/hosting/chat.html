@@ -7,28 +7,31 @@
   <title>צ׳אט · הפלא השמיני</title>
   <link rel="icon" href="/icon-192.png">
   <link rel="stylesheet" href="/chat.css">
+  <link rel="stylesheet" href="/navigation.css">
 </head>
 <body>
   <main>
-    <header>
-      <a href="/">הפלא השמיני</a>
+    <header class="page-header">
+      <a href="/" id="page-back" class="back-button" aria-label="חזרה">→</a>
+      <a href="/" class="brand-logo" aria-label="הפלא השמיני · למסך הראשי">
+        <img src="/icon-192.png" alt="" width="34" height="34">
+      </a>
       <button id="logout" type="button" hidden>יציאה</button>
-      <a id="chat-account" href="/account?next=chat" hidden>כניסה במייל וסיסמה</a>
-      <a id="guest-chat" href="/chat" hidden>מעבר לצ׳אט כאורח</a>
     </header>
     <h1 id="title">נשמח לשמוע אתכם</h1>
+    <div id="chat-modes" class="chat-modes" hidden>
+      <nav class="segments" aria-label="מצב צ׳אט">
+        <a id="guest-mode" href="/chat">אורח</a>
+        <a id="member-mode" href="/chat?member=1">משתמש</a>
+      </nav>
+      <button id="storage-help" type="button" aria-haspopup="dialog">הסבר</button>
+    </div>
     <form id="login" class="panel" hidden>
       <label for="password">סיסמת מנהל האתר</label>
       <input id="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password">
       <button id="login-button">כניסה</button>
     </form>
-    <form id="visitor-login" class="panel" hidden>
-      <p>השיחה נשמרת תחת השם שלכם ותיפתח מחדש מאותו דפדפן.</p>
-      <label for="visitor-name">השם שלכם</label>
-      <input id="visitor-name" type="text" required maxlength="60" autocomplete="name">
-      <button id="visitor-button">כתיבה כאורח</button>
-    </form>
-    <div id="chat" class="chat">
+    <div id="chat" class="chat" hidden>
       <aside id="inbox" class="panel" hidden aria-label="שיחות פתוחות">
         <h2>שיחות</h2>
         <div id="threads"></div>
@@ -39,7 +42,7 @@
         <form id="send">
           <label for="message">הודעה</label>
           <div class="compose">
-            <textarea id="message" maxlength="2000" rows="2" required></textarea>
+            <textarea id="message" dir="auto" maxlength="2000" rows="2" required></textarea>
             <button id="send-button">שליחה</button>
           </div>
         </form>
@@ -47,6 +50,14 @@
     </div>
     <p id="status" role="status"></p>
   </main>
+  <dialog id="storage-dialog" class="panel" aria-labelledby="storage-title">
+    <form method="dialog" class="dialog-heading">
+      <button class="back-button" aria-label="סגירה" autofocus>→</button>
+      <h2 id="storage-title">איפה הצ׳אט נשמר?</h2>
+    </form>
+    <p><strong>אורח</strong> · הטיוטות נשמרות רק בדפדפן הזה. לשליחה למנהל האתר, עברו למצב משתמש.</p>
+    <p><strong>משתמש</strong> · השיחה נשמרת בשרת. כדי להמשיך אותה ממכשיר אחר, היכנסו לאותו חשבון.</p>
+  </dialog>
   <script src="/chat.js" defer></script>
 </body>
 </html>

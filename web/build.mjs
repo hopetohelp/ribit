@@ -12,6 +12,8 @@ for (const source of ['app', 'hosting']) {
   await cp(path.join(web, source), dist, { recursive: true });
 }
 
+const version = (await readFile(path.join(web, 'version.txt'), 'utf8')).trim();
+if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid web version');
 const accountPanel = await readFile(path.join(web, 'account-panel.html'), 'utf8');
 for (const page of ['account.html', 'index.html']) {
   const file = path.join(dist, page);
@@ -24,8 +26,14 @@ for (const page of ['account.html', 'index.html']) {
 }
 
 const hostedApp = path.join(dist, 'app.html');
+const landingPage = path.join(dist, 'index.html');
 const appHtml = await readFile(hostedApp, 'utf8');
-await writeFile(hostedApp, appHtml.replace('<title>ריבית</title>', '<title>הפלא השמיני</title>').replace('</body>', '  <script src="/app-offline.js" defer></script>\n</body>'));
+const landingHtml = await readFile(landingPage, 'utf8');
+await writeFile(hostedApp, appHtml.replace('<title>ריבית</title>', '<title>הפלא השמיני</title>')
+  .replace('</head>', '  <meta name="ribit-version" content="' + version + '">\n</head>')
+  .replace('src="app.js"', 'src="app.js?v=' + version + '"')
+  .replace('</body>', '  <script src="/app-offline.js" defer></script>\n</body>'));
+await writeFile(landingPage, landingHtml.replace('id="web-release" hidden', 'id="web-release"').replace('<bdi id="web-version"></bdi>', '<bdi id="web-version">' + version + '</bdi>'));
 
 async function filesIn(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -79,10 +87,14 @@ if (process.argv[2]) {
   const chatWorker = await readFile(path.join(web, 'chat-worker.mjs'), 'utf8');
   const accountsWorker = await readFile(path.join(web, 'accounts-worker.mjs'), 'utf8');
   const googleWorker = await readFile(path.join(web, 'google-worker.mjs'), 'utf8');
+  const androidStoreWorker = await readFile(path.join(web, 'android-store-worker.mjs'), 'utf8');
+  const windowsStoreWorker = await readFile(path.join(web, 'windows-store-worker.mjs'), 'utf8');
   const worker = `import { DurableObject } from 'cloudflare:workers';
 ${chatWorker}
 ${accountsWorker}
 ${googleWorker}
+${androidStoreWorker}
+${windowsStoreWorker}
 export class SiteCounter extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -124,7 +136,6 @@ export class SiteCounter extends DurableObject {
 }
 const files = ${JSON.stringify(assets)};
 const historicalDownloads = 15;
-const windowsInstaller = 'https://github.com/hopetohelp/ribit/releases/download/windows-v0.2.2/Ribit-Setup.exe';
 const downloadMethods = ['GET', 'HEAD'];
 function isDownload(request) {
   return request.method === 'GET' && !['Sec-Purpose', 'Purpose'].some(
@@ -140,35 +151,12 @@ export default {
     if (pathname.startsWith('/api/chat/')) return chatApi(request, url, env);
     if (pathname.startsWith('/api/account/google/')) return googleApi(request, url, env);
     if (pathname.startsWith('/api/account/')) return accountsApi(request, url, env);
-    const path = pathname === '/account' ? '/account.html' : ['/chat', '/admin-chat'].includes(pathname) ? '/chat.html' : pathname;
-    if (path === '/app.html' && request.headers.get('Sec-Fetch-Dest') === 'document' &&
-        url.searchParams.get('installed') !== '1') {
-      return Response.redirect(new URL('/', request.url), 302);
+    const path = pathname === '/android' ? '/android.html' : pathname === '/account' ? '/account.html' : ['/chat', '/admin-chat'].includes(pathname) ? '/chat.html' : pathname;
+    if (pathname === '/download' || pathname === '/api/android/latest') return androidStore(request, url, env);
+    if (['/download/windows', '/api/windows/latest', '/updates/windows/latest.yml'].includes(pathname)) {
+      return windowsStore(request, url, env);
     }
-    const apk = 'ribit-0.2.1.apk';
-    if (path === '/download' && downloadMethods.includes(request.method)) {
-      const file = await env.DOWNLOADS.getWithMetadata(apk, {type: 'stream'});
-      if (!file.value) return new Response('Download unavailable', {status: 503});
-      const headers = new Headers({
-        'Content-Type': 'application/vnd.android.package-archive',
-        'Content-Disposition': 'attachment; filename="' + apk + '"',
-        'Cache-Control': 'no-store',
-        'X-Content-Type-Options': 'nosniff'
-      });
-      if (file.metadata?.size) headers.set('Content-Length', String(file.metadata.size));
-      if (request.method === 'HEAD') return new Response(null, {headers});
-      if (isDownload(request)) await env.COUNTS.getByName('site-downloads').total(true).catch(() => {});
-      return new Response(file.value, {headers});
-    }
-    if (path === '/download/windows' && downloadMethods.includes(request.method)) {
-      if (isDownload(request)) {
-        await env.COUNTS.getByName('windows-downloads').total(true).catch(() => {});
-      }
-      return new Response(null, {
-        status: 302,
-        headers: { Location: windowsInstaller, 'Cache-Control': 'no-store' }
-      });
-    }
+    if (pathname.startsWith('/updates/windows/')) return windowsUpdateFile(request, pathname);
     if (path === '/api/install/safari' && request.method === 'POST') {
       const id = request.headers.get('X-Ribit-Visitor');
       if (request.headers.get('Origin') !== url.origin || !validBrowserId(id)) {

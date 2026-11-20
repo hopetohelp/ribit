@@ -3,61 +3,49 @@
   const admin = location.pathname === '/admin-chat';
   const $ = id => document.getElementById(id);
   const memberMode = !admin && new URLSearchParams(location.search).get('member') === '1';
+  const guestMode = !admin && !memberMode;
+  const guestDraftPrefix = 'ribit-guest-draft:';
   const prefix = '/api/chat/' + (admin ? 'admin/' : '');
   let setup = admin ? new URLSearchParams(location.hash.slice(1)).get('setup') : null;
   if (setup) history.replaceState(null, '', location.pathname);
   let thread = '';
-  let token = '';
-  let visitorName = '';
   let ready = false;
   let lastMessage = '';
   let lastInbox = '';
   let visit = 0;
 
-  function useConversation(name, privateToken) {
-    visitorName = name;
-    token = privateToken;
-    try { localStorage.setItem('ribit-named-chat', JSON.stringify({ name, token })); } catch (_) {}
-    ready = true;
-    $('visitor-login').hidden = true;
-    $('chat').hidden = false;
-    $('intro').textContent = 'שיחה עם מנהל האתר · ' + visitorName;
-    refresh();
+  function readGuestDrafts() {
+    return Object.keys(localStorage).filter(key => key.startsWith(guestDraftPrefix))
+      .map(key => JSON.parse(localStorage.getItem(key)))
+      .filter(Boolean).sort((a, b) => a.created - b.created || a.id.localeCompare(b.id));
   }
 
-  function showVisitorLogin() {
-    ready = false;
-    visit++;
-    lastMessage = '';
-    $('messages').textContent = '';
-    $('message').value = '';
-    $('chat').hidden = true;
-    $('visitor-login').hidden = false;
-    $('visitor-name').focus();
-  }
-
-  function visitorStart() {
-    $('visitor-login').addEventListener('submit', function (event) {
-      event.preventDefault();
-      const name = $('visitor-name').value.trim().normalize('NFC');
-      if (!name) return report({ status: 400 });
-      const privateToken = Array.from(crypto.getRandomValues(new Uint8Array(32)), value => value.toString(16).padStart(2, '0')).join('');
-      useConversation(name, privateToken);
-      $('message').focus();
-    });
-    let saved;
-    try { saved = JSON.parse(localStorage.getItem('ribit-named-chat') || 'null'); } catch (_) {}
-    if (typeof saved?.name === 'string' && /^[a-f0-9]{64}$/.test(saved.token)) {
-      useConversation(saved.name, saved.token);
-      return;
+  function loadGuestDrafts() {
+    try {
+      paintMessages(readGuestDrafts());
+      $('status').textContent = '';
+    } catch (_) {
+      $('status').textContent = 'לא ניתן לפתוח את הטיוטות בדפדפן הזה.';
     }
-    showVisitorLogin();
+  }
+
+  function saveGuestDraft(message) {
+    try {
+      const id = crypto.randomUUID();
+      const draft = { id, body: message, created: Date.now() };
+      localStorage.setItem(guestDraftPrefix + id, JSON.stringify(draft));
+      paintMessages(readGuestDrafts());
+      $('status').textContent = 'הטיוטה נשמרה בדפדפן הזה.';
+      $('message').value = '';
+      $('message').focus();
+    } catch (_) {
+      $('status').textContent = 'שמירת הטיוטה בדפדפן נכשלה.';
+    }
   }
 
   async function api(action, payload) {
     const headers = {};
     if (memberMode) headers['X-Ribit-Chat-Member'] = '1';
-    else if (token) headers['X-Ribit-Chat'] = token;
     if (payload !== undefined) headers['Content-Type'] = 'application/json';
     const response = await fetch(prefix + action, {
       method: payload === undefined ? 'GET' : 'POST', headers,
@@ -72,8 +60,9 @@
   }
 
   function paintMessages(messages) {
-    const signature = messages.length ? String(messages[messages.length - 1].id) : '';
-    if (Number(signature) <= Number(lastMessage)) return;
+    const signature = guestMode ? messages.map(message => message.id).join(',') :
+      messages.length ? String(messages[messages.length - 1].id) : '';
+    if (guestMode ? signature === lastMessage : Number(signature) <= Number(lastMessage)) return;
     lastMessage = signature;
     const view = $('messages');
     view.textContent = '';
@@ -81,7 +70,7 @@
       const bubble = document.createElement('div');
       bubble.className = 'message' + (message.sender === 'admin' ? ' admin' : '');
       const name = document.createElement('strong');
-      name.textContent = message.sender === 'admin' ? 'מנהל האתר' : admin ? 'מבקר' : 'אתם';
+      name.textContent = guestMode ? 'טיוטה' : message.sender === 'admin' ? 'מנהל האתר' : admin ? 'מבקר' : 'אתם';
       const body = document.createElement('div');
       body.dir = 'auto';
       body.textContent = message.body;
@@ -183,10 +172,11 @@
     const input = $('message');
     const message = input.value.trim();
     if (!message || $('send-button').disabled) return;
+    if (guestMode) return saveGuestDraft(message);
     $('send-button').disabled = true;
     const current = visit;
     try {
-      const reply = await api('messages', { message, thread, name: visitorName });
+      const reply = await api('messages', { message, thread });
       if (current === visit) {
         input.value = '';
         paintMessages(reply.messages);
@@ -197,9 +187,14 @@
     finally { $('send-button').disabled = false; }
   });
 
+  if (!admin) {
+    $('chat-modes').hidden = false;
+    $(memberMode ? 'member-mode' : 'guest-mode').setAttribute('aria-current', 'page');
+    $('storage-help').addEventListener('click', () => $('storage-dialog').showModal());
+  }
+
   if (admin) {
     $('title').textContent = 'ניהול הצ׳אט';
-    $('chat').hidden = true;
     api('inbox').then(data => showInbox(data.threads)).catch(() => showLogin());
     $('login').addEventListener('submit', async event => {
       event.preventDefault();
@@ -219,8 +214,6 @@
       catch (error) { report(error); }
     });
   } else if (memberMode) {
-    $('guest-chat').hidden = false;
-    $('chat').hidden = true;
     fetch('/api/account/session', { cache: 'no-store' }).then(response => {
       if (!response.ok) { const error = new Error('Session unavailable'); error.status = response.status; throw error; }
       return response.json();
@@ -231,8 +224,16 @@
       refresh();
     }).catch(report);
   } else {
-    $('chat-account').hidden = false;
-    visitorStart();
+    $('chat').hidden = false;
+    $('intro').textContent = 'הטיוטות נשמרות בדפדפן הזה. לשליחה למנהל האתר, עברו למצב משתמש.';
+    document.querySelector('label[for="message"]').textContent = 'טיוטה';
+    $('messages').setAttribute('aria-label', 'טיוטות שמורות');
+    $('send-button').textContent = 'שמירת טיוטה';
+    loadGuestDrafts();
+    window.addEventListener('storage', event => {
+      if (event.key === null || event.key.startsWith(guestDraftPrefix)) loadGuestDrafts();
+    });
+    return;
   }
 
   async function poll() {
