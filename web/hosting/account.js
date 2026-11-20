@@ -109,6 +109,7 @@
       $('google-sign-in').hidden = true;
       $('google-cancel').hidden = false;
       $('submit-account').textContent = 'חיבור וסנכרון';
+      $('member-note').hidden = false;
       $('member-note').textContent = 'הקלידו פעם אחת את הסיסמה של הפלא השמיני. לאחר החיבור, כניסה עם Google תפתח את אותם חישובים ושיחות.';
       $('password').focus();
       return;
