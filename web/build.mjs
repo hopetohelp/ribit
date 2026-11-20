@@ -86,6 +86,13 @@ export class SiteCounter extends DurableObject {
 }
 const files = ${JSON.stringify(assets)};
 const historicalDownloads = 15;
+const windowsInstaller = 'https://github.com/hopetohelp/ribit/releases/download/windows-v0.2.1/Ribit-Setup.exe';
+const downloadMethods = ['GET', 'HEAD'];
+function isDownload(request) {
+  return request.method === 'GET' && !['Sec-Purpose', 'Purpose'].some(
+    name => request.headers.get(name)?.toLowerCase().includes('prefetch')
+  );
+}
 const minimumViewers = 30;
 export default {
   async fetch(request, env) {
@@ -94,7 +101,7 @@ export default {
       return Response.redirect(new URL('/', request.url), 302);
     }
     const apk = 'ribit-0.2.1.apk';
-    if (path === '/download' && ['GET', 'HEAD'].includes(request.method)) {
+    if (path === '/download' && downloadMethods.includes(request.method)) {
       const file = await env.DOWNLOADS.getWithMetadata(apk, {type: 'stream'});
       if (!file.value) return new Response('Download unavailable', {status: 503});
       const headers = new Headers({
@@ -104,21 +111,29 @@ export default {
         'X-Content-Type-Options': 'nosniff'
       });
       if (file.metadata?.size) headers.set('Content-Length', String(file.metadata.size));
-      const prefetch = [request.headers.get('Sec-Purpose'), request.headers.get('Purpose')]
-        .some(value => value?.toLowerCase().includes('prefetch'));
       if (request.method === 'HEAD') return new Response(null, {headers});
-      if (!prefetch) await env.COUNTS.getByName('site-downloads').total(true).catch(() => {});
+      if (isDownload(request)) await env.COUNTS.getByName('site-downloads').total(true).catch(() => {});
       return new Response(file.value, {headers});
+    }
+    if (path === '/download/windows' && downloadMethods.includes(request.method)) {
+      if (isDownload(request)) {
+        await env.COUNTS.getByName('windows-downloads').total(true).catch(() => {});
+      }
+      return new Response(null, {
+        status: 302,
+        headers: { Location: windowsInstaller, 'Cache-Control': 'no-store' }
+      });
     }
     if (path === '/api/view' && request.method === 'POST') {
       const browserId = request.headers.get('X-Ribit-Visitor');
       const browsers = env.COUNTS.getByName('unique-browsers');
       const validVisitor = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(browserId);
-      const [visitors, downloadRequests] = await Promise.all([
+      const [visitors, downloadRequests, windowsDownloads] = await Promise.all([
         validVisitor ? browsers.seeBrowser(browserId, minimumViewers) : browsers.total(false, minimumViewers),
-        env.COUNTS.getByName('site-downloads').total(false)
+        env.COUNTS.getByName('site-downloads').total(false),
+        env.COUNTS.getByName('windows-downloads').total(false)
       ]);
-      return Response.json({visitors, downloads: historicalDownloads + downloadRequests}, {headers: {'Cache-Control': 'no-store'}});
+      return Response.json({visitors, downloads: historicalDownloads + downloadRequests, windowsDownloads}, {headers: {'Cache-Control': 'no-store'}});
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(null, {status: 405, headers: {Allow: 'GET, HEAD'}});

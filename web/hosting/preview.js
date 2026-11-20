@@ -256,6 +256,7 @@
     if (!stats) return;
     $('visitors').textContent = stats.visitors.toLocaleString('he-IL');
     $('downloads').textContent = stats.downloads.toLocaleString('he-IL');
+    $('windows-downloads').textContent = stats.windowsDownloads.toLocaleString('he-IL');
   }).catch(() => {});
   if (navigator.serviceWorker) navigator.serviceWorker.register('/sw.js').catch(() => {});
 }());
