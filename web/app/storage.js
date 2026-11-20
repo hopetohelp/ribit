@@ -25,12 +25,17 @@
     request.onerror = function () { callback(request.error); };
   }
 
+  function newId() {
+    var random = scope.crypto.getRandomValues(new Uint32Array(4));
+    return Array.prototype.map.call(random, function (number) { return number.toString(16); }).join('-');
+  }
+
   function browserRequest(method, data, callback) {
     withDatabase(function (error, db) {
       if (error) return callback(error);
       var request;
       var result;
-      var write = method === 'save' || method === 'remove';
+      var write = method === 'save' || method === 'remove' || method === 'import';
       try {
         var tx = db.transaction('calculations', write ? 'readwrite' : 'readonly');
         var store = tx.objectStore('calculations');
@@ -49,11 +54,17 @@
           request = store.get(data.id);
           request.onsuccess = function () { result = request.result || null; };
         } else if (method === 'save') {
-          var random = scope.crypto.getRandomValues(new Uint32Array(4));
-          result = data.id || Array.prototype.map.call(random, function (number) { return number.toString(16); }).join('-');
+          result = data.id || newId();
           store.put({
             id: result, title: data.title, updatedAt: Date.now(),
             planCount: data.calculation.plans.length, calculation: data.calculation
+          });
+        } else if (method === 'import') {
+          data.entries.forEach(function (entry) {
+            store.add({
+              id: newId(), title: entry.title, updatedAt: entry.updatedAt,
+              planCount: entry.calculation.plans.length, calculation: entry.calculation
+            });
           });
         } else if (method === 'remove') {
           store.delete(data.id);

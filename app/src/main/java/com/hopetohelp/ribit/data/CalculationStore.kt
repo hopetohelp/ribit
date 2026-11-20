@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Base64
 import androidx.room.Dao
 import androidx.room.Database
+import androidx.room.Insert
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
@@ -39,6 +40,8 @@ data class SavedSummary(
     val planCount: Int,
 )
 
+data class BackupEntry(val title: String, val updatedAt: Long, val planCount: Int, val calculation: JsonObject)
+
 @Dao
 interface CalculationDao {
     @Query("SELECT id, title, updatedAt, planCount FROM calculations ORDER BY updatedAt DESC, id")
@@ -49,6 +52,9 @@ interface CalculationDao {
 
     @Upsert
     suspend fun save(calculation: SavedCalculation)
+
+    @Insert
+    suspend fun insertAll(calculations: List<SavedCalculation>)
 
     @Query("DELETE FROM calculations WHERE id = :id")
     suspend fun remove(id: String): Int
@@ -80,19 +86,21 @@ class CalculationStore(context: Context) {
 
     suspend fun save(id: String?, title: String, planCount: Int, calculation: JsonObject): String {
         val savedId = id ?: UUID.randomUUID().toString()
+        dao.save(snapshot(savedId, title, System.currentTimeMillis(), planCount, calculation))
+        return savedId
+    }
+
+    suspend fun importAll(entries: List<BackupEntry>) {
+        dao.insertAll(entries.map { entry ->
+            snapshot(UUID.randomUUID().toString(), entry.title, entry.updatedAt, entry.planCount, entry.calculation)
+        })
+    }
+
+    private fun snapshot(id: String, title: String, updatedAt: Long, planCount: Int, calculation: JsonObject): SavedCalculation {
         val encoded = json.encodeToString(calculation)
         val bytes = ByteArrayOutputStream()
         GZIPOutputStream(bytes).use { it.write(encoded.toByteArray(Charsets.UTF_8)) }
-        dao.save(
-            SavedCalculation(
-                id = savedId,
-                title = title,
-                updatedAt = System.currentTimeMillis(),
-                planCount = planCount,
-                snapshot = "gzip:" + Base64.encodeToString(bytes.toByteArray(), Base64.NO_WRAP),
-            ),
-        )
-        return savedId
+        return SavedCalculation(id, title, updatedAt, planCount, "gzip:" + Base64.encodeToString(bytes.toByteArray(), Base64.NO_WRAP))
     }
 
     suspend fun load(id: String): Pair<String, JsonObject>? {

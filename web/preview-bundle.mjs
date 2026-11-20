@@ -62,6 +62,17 @@ const STORAGE_FALLBACK_SHIM = `(function (scope) {
         memory.push(record);
         return callback(null, id);
       }
+      if (method === 'import') {
+        var records = data.entries.map(function (entry) {
+          return {
+            id: 'preview-' + Date.now() + '-' + Math.random().toString(16).slice(2, 8),
+            title: entry.title, updatedAt: entry.updatedAt,
+            planCount: entry.calculation.plans.length, calculation: entry.calculation
+          };
+        });
+        memory = memory.concat(records);
+        return callback(null);
+      }
       if (method === 'remove') {
         memory = memory.filter(function (entry) { return entry.id !== data.id; });
         return callback(null);

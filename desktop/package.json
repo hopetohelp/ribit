@@ -1,6 +1,6 @@
 {
   "name": "ribit",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Offline Ribit compound interest calculator",
   "author": "Ribit",
   "private": true,
@@ -16,9 +16,18 @@
     "appId": "com.hopetohelp.ribit",
     "productName": "Ribit",
     "artifactName": "Ribit-Setup.${ext}",
-    "files": ["main.cjs"],
-    "extraResources": [{ "from": "../web/app", "to": "app" }],
-    "directories": { "output": "dist" },
+    "files": [
+      "main.cjs"
+    ],
+    "extraResources": [
+      {
+        "from": "../web/app",
+        "to": "app"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
     "win": {
       "signAndEditExecutable": false
     },

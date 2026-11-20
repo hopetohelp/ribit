@@ -30,14 +30,16 @@
       <img src="/icon-192.png" alt="" width="58" height="58">
       <h1>ריבית</h1>
       <p>חשבו, השוו ושמרו מסלולי השקעה.</p>
-      <a class="primary" href="/download">הורדה ל־Android</a>
-      <a class="primary" href="/download/windows">הורדה ל־Windows 64 ביט</a>
+      <div class="install-options" aria-label="אפשרויות התקנה">
+      <a class="primary" href="/download">הורדה ל־Android <span id="downloads" class="install-count" aria-label="הורדות Android">—</span></a>
+      <a class="primary" href="/download/windows">הורדה ל־Windows 64 ביט <span id="windows-downloads" class="install-count" aria-label="הורדות Windows">—</span></a>
       <details class="safari-install">
-        <summary class="primary">התקנה דרך Safari</summary>
+        <summary class="primary">התקנה דרך Safari <span id="safari-installs" class="install-count" aria-label="התקנות Safari">—</span></summary>
         <p><strong>iPhone ו־iPad</strong> · פתחו את האתר ב־Safari, לחצו על ״שיתוף״ ובחרו ״הוספה למסך הבית״. אם מוצגת האפשרות ״פתיחה כיישום אינטרנט״, הפעילו אותה, ואז לחצו על ״הוספה״.</p>
         <p><strong>Mac</strong> · ב־Safari ב־macOS Sonoma ואילך, בחרו ״קובץ״ ואז ״הוספה ל־Dock״.</p>
         <p>פתחו את ריבית פעם אחת מהאייקון בזמן שיש אינטרנט, כדי להכין אותה לשימוש אופליין.</p>
       </details>
+      </div>
     </header>
     <section class="launch" aria-labelledby="launch-title">
       <h2 id="launch-title">הצגה כאפליקציה</h2>
@@ -59,14 +61,12 @@
     </section>
     <section class="statistics" aria-label="נתוני האתר">
       <div><strong id="visitors">—</strong><span>צופים באתר</span></div>
-      <div><strong id="downloads">—</strong><span>הורדות Android</span></div>
-      <div><strong id="windows-downloads">—</strong><span>הורדות Windows</span></div>
     </section>
     <a class="github" href="https://github.com/hopetohelp/ribit">מעבר ל־GitHub</a>
     </div>
   </section>
 
-            <iframe id="app" hidden title="אפליקציית ריבית" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+            <iframe id="app" hidden title="אפליקציית ריבית" sandbox="allow-same-origin allow-downloads allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
           </div>
             <div id="keypad" aria-label="מקשי המכשיר" dir="ltr" hidden>
               <div class="qin-navigation" role="group" aria-label="ניווט">

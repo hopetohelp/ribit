@@ -88,6 +88,7 @@
       </div>
       <div class="actions">
         <button type="button" id="save" class="primary">שמירה</button>
+        <button type="button" id="export-result" class="outline">ייצוא</button>
         <button type="button" id="edit" class="outline">עריכה</button>
       </div>
       <button type="button" id="details" class="disclosure" aria-expanded="false" aria-controls="details-content"><span>פירוט</span><span class="chevron" aria-hidden="true"></span></button>
@@ -95,6 +96,11 @@
     </section>
     <section id="saved" class="screen" aria-labelledby="saved-title" hidden>
       <h1 id="saved-title">שמורים</h1>
+      <div class="actions">
+        <button type="button" id="export-all" class="outline">ייצוא הכול</button>
+        <button type="button" id="import-backup" class="outline">ייבוא קובץ</button>
+      </div>
+      <input id="backup-file" type="file" accept=".json,application/json" hidden>
       <div id="saved-list"></div>
     </section>
   </main>
