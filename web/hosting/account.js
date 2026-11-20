@@ -14,6 +14,7 @@
   }
   let registering = false;
   let linkingGoogle = false;
+  let recentLoad = 0;
 
   async function request(action, payload) {
     const response = await fetch('/api/account/' + action, {
@@ -45,6 +46,7 @@
   }
 
   function showForm() {
+    recentLoad++;
     setPasswordVisibility(false);
     $('member-panel').hidden = true;
     $('member-form').hidden = false;
@@ -65,6 +67,7 @@
   }
 
   async function loadRecent() {
+    const load = ++recentLoad;
     const list = $('member-recent-list');
     const status = $('member-recent-status');
     $('member-recent').hidden = true;
@@ -72,7 +75,7 @@
     status.textContent = '';
     try {
       const { result } = await request('records', { method: 'recent', data: {} });
-      if ($('member-panel').hidden) return;
+      if (load !== recentLoad) return;
       for (const entry of result) {
         const item = document.createElement('li');
         const link = document.createElement('a');
@@ -85,7 +88,7 @@
       }
       $('member-recent').hidden = !result.length;
     } catch (_) {
-      if (!$('member-panel').hidden) status.textContent = 'טעינת הפריטים האחרונים נכשלה.';
+      if (load === recentLoad) status.textContent = 'טעינת הפריטים האחרונים נכשלה.';
     }
   }
 
