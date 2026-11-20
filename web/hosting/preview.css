@@ -90,6 +90,8 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   background: linear-gradient(115deg, #edf3ff, #a8c1ff);
   border-color: #ccd9ff; box-shadow: 0 5px 23px #4d78db57;
 }
+#landing .safari-install summary { cursor: pointer; }
+#landing .safari-install p { text-align: start; margin-block: 9px 0; }
 #landing .launch { margin-top: 17px; }
 #landing #profiles { display: grid; gap: 5px; }
 #landing #profiles button { width: 100%; padding: 5px; background: #172743; border-color: #536b98; }

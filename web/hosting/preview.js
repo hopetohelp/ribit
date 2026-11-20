@@ -1,5 +1,11 @@
 (function () {
   'use strict';
+  // Safari on Mac may start a Dock app at the URL where it was added.
+  if (window.top === window && location.pathname === '/' &&
+      (navigator.standalone || window.matchMedia('(display-mode: standalone)').matches)) {
+    location.replace('/app.html?installed=1');
+    return;
+  }
   const $ = id => document.getElementById(id);
   const frame = $('app');
   const device = document.querySelector('.device');
