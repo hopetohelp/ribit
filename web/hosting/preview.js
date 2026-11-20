@@ -51,11 +51,9 @@
     glass.style.height = screenHeight + 'px';
     device.style.setProperty('--depth', (model === 'touch' ? 9.5 : 8.5) * pxPerMm + 'px');
     glass.style.top = screenTop * pxPerMm + 'px';
-    [frame, $('landing')].forEach(surface => {
-      surface.style.width = width + 'px';
-      surface.style.height = height + 'px';
-      surface.style.transform = 'scale(' + screenWidth / width + ',' + screenHeight / height + ')';
-    });
+    frame.style.width = width + 'px';
+    frame.style.height = height + 'px';
+    frame.style.transform = 'scale(' + screenWidth / width + ',' + screenHeight / height + ')';
     const sideClearance = 6;
     const w = bodyWidth * pxPerMm + sideClearance * 2;
     const h = bodyHeight * pxPerMm;
@@ -87,8 +85,7 @@
   function scroll(direction) {
     if (model === 'keys') return;
     if (frame.hidden) {
-      const landing = $('landing');
-      landing.scrollTop += direction * Math.max(35, Math.round(landing.clientHeight * .65));
+      window.scrollBy(0, direction * Math.round(window.innerHeight * .65));
       return;
     }
     activeApp()?.scroll(direction);
@@ -150,6 +147,7 @@
   function home() {
     model = 'smartphone';
     frame.hidden = true;
+    stage.hidden = true;
     $('landing').hidden = false;
     $('keypad').hidden = true;
     resize();
@@ -160,6 +158,8 @@
     launchButton = button;
     model = value;
     $('landing').hidden = true;
+    stage.hidden = false;
+    window.scrollTo(0, 0);
     frame.hidden = false;
     $('keypad').hidden = value === 'smartphone';
     updateScreen();
@@ -167,6 +167,13 @@
     else configureKeypad();
     resize();
     if (value === 'keys') document.querySelector('[data-key=Enter]').focus();
+    if (location.protocol === 'https:' || location.protocol === 'http:') {
+      fetch('/api/preview/open', { method: 'POST' }).then(response => {
+        if (response.ok) return response.json();
+      }).then(stats => {
+        if (stats) updatePreviewCount(stats.previewLaunches);
+      }).catch(() => {});
+    }
   }
 
   document.querySelectorAll('[data-model]').forEach(button => button.onclick = () => open(button.dataset.model, button));
@@ -240,6 +247,13 @@
   }, { passive: false });
   window.addEventListener('resize', resize);
   selectSize('fit');
+  let previewCount = 0;
+  function updatePreviewCount(total) {
+    if (!Number.isFinite(total)) return;
+    previewCount = Math.max(previewCount, total);
+    $('preview-launches').textContent = previewCount.toLocaleString('he-IL');
+  }
+
   function browserId() {
     try {
       const stored = localStorage.getItem('ribit-visitor');
@@ -264,6 +278,7 @@
     $('downloads').textContent = stats.downloads.toLocaleString('he-IL');
     $('windows-downloads').textContent = stats.windowsDownloads.toLocaleString('he-IL');
     $('safari-installs').textContent = stats.safariInstalls.toLocaleString('he-IL');
+    updatePreviewCount(stats.previewLaunches);
   }).catch(() => {});
   if (navigator.serviceWorker) navigator.serviceWorker.register('/sw.js').catch(() => {});
 }());
