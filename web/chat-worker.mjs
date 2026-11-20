@@ -34,7 +34,7 @@ function chatResponse(data, status = 200, cookie) {
   return Response.json(data, { status, headers });
 }
 
-async function readChatBody(request) {
+async function readChatBody(request, limit = 12288) {
   if (request.headers.get('Content-Type')?.split(';')[0] !== 'application/json') throw new Error('Invalid body');
   const reader = request.body.getReader();
   const decoder = new TextDecoder();
@@ -44,7 +44,7 @@ async function readChatBody(request) {
     const chunk = await reader.read();
     if (chunk.done) break;
     bytes += chunk.value.byteLength;
-    if (bytes > 12288) {
+    if (bytes > limit) {
       await reader.cancel();
       throw new Error('Body too large');
     }
@@ -57,6 +57,7 @@ class ChatStore {
   constructor(storage) {
     this.sql = storage.sql;
     this.sql.exec("CREATE TABLE IF NOT EXISTS chat_threads (id TEXT PRIMARY KEY, updated INTEGER NOT NULL, waiting INTEGER NOT NULL)");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS chat_names (thread TEXT PRIMARY KEY, name TEXT NOT NULL)");
     this.sql.exec("CREATE INDEX IF NOT EXISTS chat_threads_updated ON chat_threads(updated DESC)");
     this.sql.exec("CREATE TABLE IF NOT EXISTS chat_messages (id INTEGER PRIMARY KEY, thread TEXT NOT NULL, sender TEXT NOT NULL, body TEXT NOT NULL, created INTEGER NOT NULL)");
     this.sql.exec("CREATE INDEX IF NOT EXISTS chat_messages_thread ON chat_messages(thread, id)");
@@ -97,16 +98,25 @@ class ChatStore {
   }
 
   inbox() {
-    return this.sql.exec('SELECT id, updated, waiting FROM chat_threads ORDER BY waiting DESC, updated DESC LIMIT 100').toArray();
+    return this.sql.exec('SELECT chat_threads.id, updated, waiting, chat_names.name FROM chat_threads LEFT JOIN chat_names ON chat_names.thread = chat_threads.id ORDER BY waiting DESC, updated DESC LIMIT 100').toArray();
   }
 
   messages(thread) {
     return this.sql.exec('SELECT * FROM (SELECT id, sender, body, created FROM chat_messages WHERE thread = ? ORDER BY id DESC LIMIT 200) ORDER BY id', thread).toArray();
   }
 
-  send(thread, sender, message, storage) {
+  visitorName(thread) {
+    return this.sql.exec('SELECT name FROM chat_names WHERE thread = ?', thread).toArray()[0]?.name ?? null;
+  }
+
+  send(thread, sender, message, name, storage) {
     return storage.transactionSync(() => {
       if (sender === 'admin' && !this.sql.exec('SELECT id FROM chat_threads WHERE id = ?', thread).toArray().length) return null;
+      if (sender === 'visitor') {
+        const prior = this.visitorName(thread);
+        if (prior && prior.toLowerCase() !== name.toLowerCase()) return null;
+        this.sql.exec('INSERT OR IGNORE INTO chat_names VALUES (?, ?)', thread, name);
+      }
       const now = Date.now();
       this.sql.exec('INSERT INTO chat_threads VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET updated = excluded.updated, waiting = excluded.waiting', thread, now, sender === 'visitor' ? 1 : 0);
       this.sql.exec('INSERT INTO chat_messages (thread, sender, body, created) VALUES (?, ?, ?, ?)', thread, sender, message, now);
@@ -147,15 +157,21 @@ async function chatApi(request, url, env) {
     if (action === 'inbox' && !isPost) return chatResponse({ threads: await store.chatOperation('inbox') });
   }
   if (action !== 'messages') return chatResponse({}, 404);
-  const token = admin ? (isPost ? body?.thread : url.searchParams.get('thread')) : request.headers.get('X-Ribit-Chat');
+  const memberMode = !admin && request.headers.get('X-Ribit-Chat-Member') === '1';
+  const user = memberMode ? await getMember(request, env) : null;
+  if (memberMode && !user) return chatResponse({}, 401);
+  const token = user ? user.account : admin ? (isPost ? body?.thread : url.searchParams.get('thread')) : request.headers.get('X-Ribit-Chat');
   if (typeof token !== 'string' || !/^[0-9a-f]{64}$/.test(token)) return chatResponse({}, 400);
-  const thread = admin ? token : await digest(token);
+  const thread = admin ? token : await digest(user ? 'member:' + token : token);
   if (!isPost) return chatResponse({ messages: await store.chatOperation('messages', thread) });
+
+  const name = user ? user.name : typeof body?.name === 'string' ? body.name.trim().normalize('NFC') : '';
+  if (!admin && (!name || name.length > 60 || /[\x00-\x1f\x7f]/.test(name))) return chatResponse({}, 400);
 
   const message = typeof body?.message === 'string' ? body.message.trim() : '';
   if (!message || message.length > 2000) return chatResponse({}, 400);
   const rateKey = admin ? 'admin:send' : 'send:' + (await digest(request.headers.get('CF-Connecting-IP') || token)).slice(0, 5);
   if (!(await store.chatOperation('permit', rateKey, 60 * 1000, admin ? 40 : 8))) return chatResponse({}, 429);
-  const messages = await store.chatOperation('send', thread, admin ? 'admin' : 'visitor', message);
+  const messages = await store.chatOperation('send', thread, admin ? 'admin' : 'visitor', message, name);
   return messages ? chatResponse({ messages }) : chatResponse({}, 404);
 }

@@ -13,12 +13,20 @@
     <header>
       <a href="/">הפלא השמיני</a>
       <button id="logout" type="button" hidden>יציאה</button>
+      <a id="chat-account" href="/account?next=chat" hidden>כניסה במייל וסיסמה</a>
+      <a id="guest-chat" href="/chat" hidden>מעבר לצ׳אט כאורח</a>
     </header>
-    <h1 id="title">נשמח לשמוע אותכם</h1>
+    <h1 id="title">נשמח לשמוע אתכם</h1>
     <form id="login" class="panel" hidden>
       <label for="password">סיסמת מנהל האתר</label>
       <input id="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password">
       <button id="login-button">כניסה</button>
+    </form>
+    <form id="visitor-login" class="panel" hidden>
+      <p>השיחה נשמרת תחת השם שלכם ותיפתח מחדש מאותו דפדפן.</p>
+      <label for="visitor-name">השם שלכם</label>
+      <input id="visitor-name" type="text" required maxlength="60" autocomplete="name">
+      <button id="visitor-button">כתיבה כאורח</button>
     </form>
     <div id="chat" class="chat">
       <aside id="inbox" class="panel" hidden aria-label="שיחות פתוחות">
@@ -26,7 +34,7 @@
         <div id="threads"></div>
       </aside>
       <section class="panel thread" aria-label="שיחה">
-        <p id="intro">כתבו למנהל האתר. אפשר לחזור לכאן מאותו דפדפן כדי לראות תשובה.</p>
+        <p id="intro">כתבו למנהל האתר.</p>
         <div id="messages" role="log" aria-label="הודעות" tabindex="0"></div>
         <form id="send">
           <label for="message">הודעה</label>

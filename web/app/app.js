@@ -8,7 +8,15 @@
 
   var finance = window.RibitFinance;
   var chart = window.RibitChart;
-  var store = window.RibitStorage;
+  var localStore = window.RibitStorage;
+  var hosted = !!document.querySelector('script[src="/app-offline.js"]');
+  var memberActive = false;
+  if (hosted) {
+    try { memberActive = localStorage.getItem('ribit-member-active') === '1'; } catch (_) {}
+  }
+  var query = hosted ? new URLSearchParams(location.search) : null;
+  var cloud = hosted && query.get('local') !== '1' && (query.get('account') === '1' || memberActive);
+  var store = cloud ? { request: cloudStorage } : localStore;
   var Money = finance.Money;
   var form = document.getElementById('calculator');
   var fields = form.elements;
@@ -523,7 +531,7 @@
         store.request('save', { id: copy ? null : selected.id, title: title, calculation: selected.calculation }, function (error, id) {
           state.busy = false;
           Array.prototype.forEach.call(actions.children, function (button) { button.disabled = false; });
-          if (error) return notify('השמירה נכשלה');
+          if (error) return notify(cloud ? 'השמירה בענן נכשלה. בדקו את האינטרנט או עברו לשמורים במכשיר.' : 'השמירה נכשלה');
           selected.id = id;
           selected.title = title;
           text('result-title', title);
@@ -554,6 +562,35 @@
         else resolve(result);
       });
     });
+  }
+
+  function cloudStorage(method, data, callback) {
+    var payload = data;
+    if (method === 'save') {
+      payload = backupRecord(data);
+      payload.id = data.id;
+    } else if (method === 'import') payload = { entries: data.entries.map(backupRecord) };
+    fetch('/api/account/records', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method: method, data: payload }), cache: 'no-store'
+    }).then(function (response) {
+      if (!response.ok) {
+        if (response.status === 401) {
+          try { localStorage.removeItem('ribit-member-active'); } catch (_) {}
+          if (window === window.top) location.replace('/account?next=calculator');
+        }
+        throw new Error('Cloud storage unavailable');
+      }
+      return response.json();
+    }).then(function (data) {
+      var result = data.result;
+      if (method === 'load' && result) {
+        result.calculation = decodeBackup(JSON.stringify({
+          format: 'ribit-backup', version: 1, entries: [result]
+        }))[0].calculation;
+      }
+      return result;
+    }).then(function (result) { callback(null, result); }, callback);
   }
 
   function backupRecord(entry) {
@@ -819,7 +856,7 @@
         site.rel = 'noopener';
         site.dir = 'ltr';
       }
-      var chatLink = make('a', 'נשמח לשמוע אותכם');
+      var chatLink = make('a', 'נשמח לשמוע אתכם');
       chatLink.href = 'https://ribit.hopetohelp.net/chat';
       chatLink.target = '_blank';
       chatLink.rel = 'noopener';
@@ -1118,6 +1155,24 @@
     state.active = 0;
     showEditor();
   });
+  if (hosted) {
+    var account = byId('web-account');
+    var accountLink = make('a', cloud ? 'ניהול החשבון' : 'כניסה לשמירה בענן');
+    accountLink.href = cloud ? '/account' : '/account?next=calculator';
+    accountLink.target = window === window.top ? '_self' : '_blank';
+    accountLink.rel = 'noopener';
+    if (cloud) {
+      account.appendChild(document.createTextNode('שמורים בענן · '));
+      var localLink = make('a', 'שמורים במכשיר');
+      localLink.href = '/app.html?installed=1&local=1';
+      localLink.target = accountLink.target;
+      localLink.rel = 'noopener';
+      account.appendChild(localLink);
+      account.appendChild(document.createTextNode(' · '));
+    }
+    account.appendChild(accountLink);
+    visibility(account, true);
+  }
   listen('save', saveDialog);
   listen('export-result', function () { downloadBackup(encodeBackup([current()])); });
   listen('export-all', function () {

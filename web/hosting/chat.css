@@ -33,3 +33,11 @@ button[aria-pressed="true"] { background: #ddd0ff; color: #1c132e; }
   .chat { display: grid; grid-template-columns: 1fr; }
   #inbox { max-height: 28vh; }
 }
+
+#visitor-login { max-width: 420px; }
+#visitor-login input { width: 100%; margin-block-end: 10px; }
+
+.account-panel { max-width: 480px; }
+.account-panel input { display: block; width: 100%; margin-block-end: 10px; }
+.account-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 10px; }
+#member-note { color: #d3cbe9; }

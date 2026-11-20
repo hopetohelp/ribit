@@ -2,27 +2,62 @@
   'use strict';
   const admin = location.pathname === '/admin-chat';
   const $ = id => document.getElementById(id);
+  const memberMode = !admin && new URLSearchParams(location.search).get('member') === '1';
   const prefix = '/api/chat/' + (admin ? 'admin/' : '');
   let setup = admin ? new URLSearchParams(location.hash.slice(1)).get('setup') : null;
   if (setup) history.replaceState(null, '', location.pathname);
   let thread = '';
   let token = '';
-  let ready = !admin;
+  let visitorName = '';
+  let ready = false;
   let lastMessage = '';
   let lastInbox = '';
   let visit = 0;
 
-  if (!admin) {
-    try { token = localStorage.getItem('ribit-chat') || ''; } catch (_) {}
-    if (!/^[a-f0-9]{64}$/.test(token)) {
-      token = Array.from(crypto.getRandomValues(new Uint8Array(32)), value => value.toString(16).padStart(2, '0')).join('');
-      try { localStorage.setItem('ribit-chat', token); } catch (_) {}
+  function useConversation(name, privateToken) {
+    visitorName = name;
+    token = privateToken;
+    try { localStorage.setItem('ribit-named-chat', JSON.stringify({ name, token })); } catch (_) {}
+    ready = true;
+    $('visitor-login').hidden = true;
+    $('chat').hidden = false;
+    $('intro').textContent = 'שיחה עם מנהל האתר · ' + visitorName;
+    refresh();
+  }
+
+  function showVisitorLogin() {
+    ready = false;
+    visit++;
+    lastMessage = '';
+    $('messages').textContent = '';
+    $('message').value = '';
+    $('chat').hidden = true;
+    $('visitor-login').hidden = false;
+    $('visitor-name').focus();
+  }
+
+  function visitorStart() {
+    $('visitor-login').addEventListener('submit', function (event) {
+      event.preventDefault();
+      const name = $('visitor-name').value.trim().normalize('NFC');
+      if (!name) return report({ status: 400 });
+      const privateToken = Array.from(crypto.getRandomValues(new Uint8Array(32)), value => value.toString(16).padStart(2, '0')).join('');
+      useConversation(name, privateToken);
+      $('message').focus();
+    });
+    let saved;
+    try { saved = JSON.parse(localStorage.getItem('ribit-named-chat') || 'null'); } catch (_) {}
+    if (typeof saved?.name === 'string' && /^[a-f0-9]{64}$/.test(saved.token)) {
+      useConversation(saved.name, saved.token);
+      return;
     }
+    showVisitorLogin();
   }
 
   async function api(action, payload) {
     const headers = {};
-    if (token) headers['X-Ribit-Chat'] = token;
+    if (memberMode) headers['X-Ribit-Chat-Member'] = '1';
+    else if (token) headers['X-Ribit-Chat'] = token;
     if (payload !== undefined) headers['Content-Type'] = 'application/json';
     const response = await fetch(prefix + action, {
       method: payload === undefined ? 'GET' : 'POST', headers,
@@ -68,7 +103,7 @@
     threads.forEach(item => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = (item.waiting ? 'ממתינה · ' : '') + item.id.slice(0, 6);
+      button.textContent = (item.waiting ? 'ממתינה · ' : '') + (item.name || item.id.slice(0, 6));
       button.setAttribute('aria-pressed', String(item.id === thread));
       button.addEventListener('click', () => {
         thread = item.id;
@@ -104,6 +139,7 @@
 
   function report(error) {
     if (admin && error.status === 401 && ready) return showLogin();
+    if (memberMode && error.status === 401) return location.replace('/account?next=chat');
     $('status').textContent = ({
       400: 'בדקו שהטקסט תקין.',
       401: 'הסיסמה או קוד ההגדרה אינם תקינים.',
@@ -150,7 +186,7 @@
     $('send-button').disabled = true;
     const current = visit;
     try {
-      const reply = await api('messages', { message, thread });
+      const reply = await api('messages', { message, thread, name: visitorName });
       if (current === visit) {
         input.value = '';
         paintMessages(reply.messages);
@@ -182,7 +218,22 @@
       try { await api('logout', {}); showLogin(); }
       catch (error) { report(error); }
     });
-  } else refresh();
+  } else if (memberMode) {
+    $('guest-chat').hidden = false;
+    $('chat').hidden = true;
+    fetch('/api/account/session', { cache: 'no-store' }).then(response => {
+      if (!response.ok) { const error = new Error('Session unavailable'); error.status = response.status; throw error; }
+      return response.json();
+    }).then(member => {
+      ready = true;
+      $('chat').hidden = false;
+      $('intro').textContent = 'שיחה עם מנהל האתר · ' + member.name;
+      refresh();
+    }).catch(report);
+  } else {
+    $('chat-account').hidden = false;
+    visitorStart();
+  }
 
   async function poll() {
     await refresh();
