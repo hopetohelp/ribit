@@ -14,7 +14,6 @@
   }
   let registering = false;
   let linkingGoogle = false;
-  let recentLoad = 0;
 
   async function request(action, payload) {
     const response = await fetch('/api/account/' + action, {
@@ -46,7 +45,6 @@
   }
 
   function showForm() {
-    recentLoad++;
     setPasswordVisibility(false);
     $('member-panel').hidden = true;
     $('member-form').hidden = false;
@@ -61,33 +59,6 @@
     $('member-google').textContent = member.googleLinked === true ? 'מחובר' :
       member.googleLinked === false ? 'טרם חובר' : 'לא זמין כרגע';
     $('member-google-link').hidden = member.googleLinked !== false;
-    loadRecent();
-  }
-
-  async function loadRecent() {
-    const load = ++recentLoad;
-    const list = $('member-recent-list');
-    const status = $('member-recent-status');
-    $('member-recent').hidden = true;
-    list.replaceChildren();
-    status.textContent = '';
-    try {
-      const { result } = await request('records', { method: 'recent', data: {} });
-      if (load !== recentLoad) return;
-      for (const entry of result) {
-        const item = document.createElement('li');
-        const link = document.createElement('a');
-        link.className = 'account-control';
-        link.href = '/app.html?installed=1&account=1&view=saved&record=' + encodeURIComponent(entry.id);
-        link.dir = 'auto';
-        link.textContent = entry.title;
-        item.appendChild(link);
-        list.appendChild(item);
-      }
-      $('member-recent').hidden = !result.length;
-    } catch (_) {
-      if (load === recentLoad) status.textContent = 'טעינת הפריטים האחרונים נכשלה.';
-    }
   }
 
   function notify(error) {
@@ -133,7 +104,7 @@
       if (result.target || target) location.replace(result.target || target);
       else {
         showMember(await request('session'));
-        $('member-panel').querySelector('a').focus();
+        $('member-logout').focus();
       }
     } catch (error) { notify(error); }
     finally { $('submit-account').disabled = false; }
@@ -145,7 +116,6 @@
       catch (error) { if (error.status !== 401) throw error; }
       remember(false);
       $('member-email').textContent = '';
-      $('member-recent-list').replaceChildren();
       showForm();
       $('email').focus();
     } catch (_) {
