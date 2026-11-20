@@ -194,6 +194,12 @@
     drawer.querySelector('summary').scrollIntoView({ block: 'start' });
   }
 
+  $('app-display-mode').addEventListener('click', event => {
+    const settings = $('app-display-settings');
+    settings.hidden = !settings.hidden;
+    event.currentTarget.setAttribute('aria-expanded', String(!settings.hidden));
+  });
+
   document.querySelectorAll('[data-model]').forEach(button => button.onclick = () => open(button.dataset.model, button));
   document.querySelectorAll('[data-size]').forEach(button => button.onclick = () => selectSize(button.dataset.size));
   document.querySelectorAll('[data-scroll]').forEach(button => button.onclick = () => scroll(Number(button.dataset.scroll)));

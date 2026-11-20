@@ -39,24 +39,30 @@
               </div>
             </details>
             <details class="entry-drawer">
-              <summary class="primary">הצגה כאפליקציה באתר <bdi id="visitors" class="install-count" aria-label="צופים באתר">—</bdi></summary>
+              <summary class="primary">כניסה לאתר <bdi id="visitors" class="install-count" aria-label="צופים באתר">—</bdi></summary>
               <div class="drawer-content">
-                <h2>גודל התצוגה</h2>
-                <div class="sizes" role="group" aria-label="גודל התצוגה">
-                  <button type="button" data-size="fit" aria-pressed="true">התאמה למסך</button>
-                  <button type="button" data-size="real" aria-pressed="false">גודל אמיתי</button>
+                <div class="display-modes" role="group" aria-label="מצב תצוגה">
+                  <a class="primary primary-centered" href="/app.html">מסך מלא</a>
+                  <button type="button" class="primary primary-centered" id="app-display-mode" aria-expanded="false" aria-controls="app-display-settings">כאפליקציה</button>
                 </div>
-                <details id="calibration" hidden>
-                  <summary>כיול גודל</summary>
-                  <label>התאם את הקו ל־5 ס״מ בסרגל פיזי <input id="scale" type="range" min="100" max="200" value="100"></label>
-                  <div id="ruler" aria-hidden="true"></div>
-                  <button id="reset-scale" type="button">איפוס</button>
-                </details>
-                <h2>בחירת מכשיר ופתיחה</h2>
-                <div id="profiles" role="group" aria-label="סוג מכשיר">
-                  <button type="button" data-model="smartphone">מגע · iPhone 15</button>
-                  <button type="button" data-model="touch">מגע ומקשים · Qin F21 Pro</button>
-                  <button type="button" data-model="keys">מקשים ללא מגע · Qin 1S+</button>
+                <div id="app-display-settings" hidden>
+                  <h2>גודל התצוגה</h2>
+                  <div class="sizes" role="group" aria-label="גודל התצוגה">
+                    <button type="button" data-size="fit" aria-pressed="true">התאמה למסך</button>
+                    <button type="button" data-size="real" aria-pressed="false">גודל אמיתי</button>
+                  </div>
+                  <details id="calibration" hidden>
+                    <summary>כיול גודל</summary>
+                    <label>התאם את הקו ל־5 ס״מ בסרגל פיזי <input id="scale" type="range" min="100" max="200" value="100"></label>
+                    <div id="ruler" aria-hidden="true"></div>
+                    <button id="reset-scale" type="button">איפוס</button>
+                  </details>
+                  <h2>בחירת מכשיר ופתיחה</h2>
+                  <div id="profiles" role="group" aria-label="סוג מכשיר">
+                    <button type="button" data-model="smartphone">מגע · iPhone 15</button>
+                    <button type="button" data-model="touch">מגע ומקשים · Qin F21 Pro</button>
+                    <button type="button" data-model="keys">מקשים ללא מגע · Qin 1S+</button>
+                  </div>
                 </div>
               </div>
             </details>
