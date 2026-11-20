@@ -9,7 +9,7 @@ button, .primary {
   min-height: 44px; min-width: 44px; font: inherit; color: inherit;
   border: 1px solid #637394; border-radius: 9px; background: #17243c; padding: 7px 12px; cursor: pointer;
 }
-button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid #c3d7ff; outline-offset: 3px; }
+button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid #c3d7ff; outline-offset: 3px; }
 button[aria-pressed="true"] { color: #142043; background: #dce7ff; border-color: #dce7ff; }
 a { color: #bed1ff; }
 #landing { max-width: 760px; margin: auto; padding: 38px 18px 46px; }
@@ -90,6 +90,9 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   background: linear-gradient(115deg, #edf3ff, #a8c1ff);
   border-color: #ccd9ff; box-shadow: 0 5px 23px #4d78db57;
 }
+#landing .install-options { width: 100%; max-width: 20rem; margin-inline: auto; }
+#landing .install-options .primary { width: 100%; justify-content: space-between; gap: 8px; }
+#landing .install-count { font-variant-numeric: tabular-nums; background: #162b58; color: #fff; border-radius: 999px; padding: 2px 8px; }
 #landing .safari-install summary { cursor: pointer; }
 #landing .safari-install p { text-align: start; margin-block: 9px 0; }
 #landing .launch { margin-top: 17px; }

@@ -90,7 +90,7 @@ export class SiteCounter extends DurableObject {
 }
 const files = ${JSON.stringify(assets)};
 const historicalDownloads = 15;
-const windowsInstaller = 'https://github.com/hopetohelp/ribit/releases/download/windows-v0.2.1/Ribit-Setup.exe';
+const windowsInstaller = 'https://github.com/hopetohelp/ribit/releases/download/windows-v0.2.2/Ribit-Setup.exe';
 const downloadMethods = ['GET', 'HEAD'];
 function isDownload(request) {
   return request.method === 'GET' && !['Sec-Purpose', 'Purpose'].some(
@@ -98,6 +98,7 @@ function isDownload(request) {
   );
 }
 const minimumViewers = 30;
+const validBrowserId = id => /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id);
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -130,16 +131,25 @@ export default {
         headers: { Location: windowsInstaller, 'Cache-Control': 'no-store' }
       });
     }
+    if (path === '/api/install/safari' && request.method === 'POST') {
+      const id = request.headers.get('X-Ribit-Visitor');
+      if (request.headers.get('Origin') !== url.origin || !validBrowserId(id)) {
+        return new Response(null, {status: 400});
+      }
+      await env.COUNTS.getByName('safari-installs').seeBrowser(id, 0);
+      return new Response(null, {status: 204});
+    }
     if (path === '/api/view' && request.method === 'POST') {
       const browserId = request.headers.get('X-Ribit-Visitor');
       const browsers = env.COUNTS.getByName('unique-browsers');
-      const validVisitor = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(browserId);
-      const [visitors, downloadRequests, windowsDownloads] = await Promise.all([
+      const validVisitor = validBrowserId(browserId);
+      const [visitors, downloadRequests, windowsDownloads, safariInstalls] = await Promise.all([
         validVisitor ? browsers.seeBrowser(browserId, minimumViewers) : browsers.total(false, minimumViewers),
         env.COUNTS.getByName('site-downloads').total(false),
-        env.COUNTS.getByName('windows-downloads').total(false)
+        env.COUNTS.getByName('windows-downloads').total(false),
+        env.COUNTS.getByName('safari-installs').total(false)
       ]);
-      return Response.json({visitors, downloads: historicalDownloads + downloadRequests, windowsDownloads}, {headers: {'Cache-Control': 'no-store'}});
+      return Response.json({visitors, downloads: historicalDownloads + downloadRequests, windowsDownloads, safariInstalls}, {headers: {'Cache-Control': 'no-store'}});
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(null, {status: 405, headers: {Allow: 'GET, HEAD'}});

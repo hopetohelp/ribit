@@ -547,6 +547,110 @@
     };
   }
 
+  function storageRequest(method, data) {
+    return new Promise(function (resolve, reject) {
+      store.request(method, data, function (error, result) {
+        if (error || (method === 'load' && !result)) reject(error || new Error('Missing calculation'));
+        else resolve(result);
+      });
+    });
+  }
+
+  function backupRecord(entry) {
+    var calculation = entry.calculation;
+    return {
+      title: entry.title || (calculation.plans.length === 2 ? 'השוואת מסלולים' : 'חישוב השקעה'),
+      updatedAt: entry.updatedAt || Date.now(),
+      calculation: {
+        currency: calculation.currency, plans: calculation.plans,
+        startedOn: calculation.startedOn, trackLabels: calculation.trackLabels
+      }
+    };
+  }
+
+  function encodeBackup(entries) {
+    return JSON.stringify({ format: 'ribit-backup', version: 1, entries: entries.map(backupRecord) });
+  }
+
+  function decodeBackup(source) {
+    var backup = JSON.parse(source);
+    if (!backup || backup.format !== 'ribit-backup' || backup.version !== 1 ||
+        !Array.isArray(backup.entries) || !backup.entries.length) throw new Error('Invalid backup');
+    return backup.entries.map(function (entry) {
+      var saved = entry.calculation;
+      if (!saved || typeof entry.title !== 'string' || !entry.title.trim() || entry.title.length > 80 ||
+          !Array.isArray(saved.plans) || saved.plans.length < 1 || saved.plans.length > 2) throw new Error('Invalid entry');
+      var plans = saved.plans.map(function (plan) {
+        var input = draftFrom(plan);
+        if (['NONE', 'MONTHLY', 'YEARLY'].indexOf(input.frequency) < 0 ||
+            ['START', 'END'].indexOf(input.timing) < 0 ||
+            ['NONE', 'NOMINAL', 'REAL'].indexOf(input.taxType) < 0 ||
+            !Number.isInteger(plan.months)) throw new Error('Invalid plan');
+        return planFrom(input);
+      });
+      var calculation = finance.calculate(saved.currency, plans);
+      var timestamp = new Date(entry.updatedAt);
+      var validTimestamp = isFinite(timestamp.getTime());
+      if (typeof saved.startedOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(saved.startedOn) &&
+          isFinite(new Date(saved.startedOn).getTime())) calculation.startedOn = saved.startedOn;
+      else if (validTimestamp) calculation.startedOn = chart.dateKey(timestamp);
+      if (Array.isArray(saved.trackLabels)) calculation.trackLabels = saved.trackLabels.slice(0, 2).map(function (label) {
+        return typeof label === 'string' ? label.slice(0, 120) : null;
+      });
+      return { title: entry.title.trim(), updatedAt: validTimestamp ? timestamp.getTime() : Date.now(), calculation: calculation };
+    });
+  }
+
+  function savedEntries() {
+    return storageRequest('list', {}).then(function (entries) {
+      return Promise.all(entries.map(loadForBackup));
+    });
+  }
+
+  function loadForBackup(summary) {
+    return storageRequest('load', { id: summary.id }).then(function (entry) {
+      entry.updatedAt = summary.updatedAt;
+      return entry;
+    });
+  }
+
+  function downloadBackup(source) {
+    if (new Blob([source]).size > 8 * 1024 * 1024) return notify('קובץ הגיבוי גדול מדי');
+    if (window.RibitDevice && window.RibitDevice.exportBackup) {
+      window.RibitDevice.exportBackup(source);
+      return;
+    }
+    var url = URL.createObjectURL(new Blob([source], { type: 'application/json' }));
+    var link = make('a');
+    link.href = url;
+    link.download = 'ribit-' + chart.dateKey(new Date()) + '.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function restoreBackup(source) {
+    var entries;
+    try { entries = decodeBackup(source); }
+    catch (error) { return notify('קובץ הגיבוי אינו תקין'); }
+    return storageRequest('import', { entries: entries }).then(function () {
+      if (state.view === 'saved') loadSaved();
+      notify('יובאו פריטים: ' + entries.length);
+    }).catch(function () { notify('הייבוא נכשל'); });
+  }
+
+  function importBackupFile(event) {
+    var file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) return notify('קובץ הגיבוי גדול מדי');
+    var reader = new FileReader();
+    reader.onload = function () { restoreBackup(reader.result); };
+    reader.onerror = function () { notify('קריאת הקובץ נכשלה'); };
+    reader.readAsText(file);
+  }
+
   function openSaved(summary) {
     store.request('load', { id: summary.id }, function (error, entry) {
       if (state.view !== 'saved') return;
@@ -663,7 +767,14 @@
         open.setAttribute('aria-label', 'פתיחה, ' + entry.title);
         var remove = action('מחיקה', function () { removeSaved(entry); });
         remove.setAttribute('aria-label', 'מחיקה, ' + entry.title);
+        var exportRecord = action('ייצוא', function () {
+          loadForBackup(entry).then(function (item) {
+            downloadBackup(encodeBackup([item]));
+          }).catch(function () { notify('הייצוא נכשל'); });
+        });
+        exportRecord.setAttribute('aria-label', 'ייצוא, ' + entry.title);
         actions.appendChild(open);
+        actions.appendChild(exportRecord);
         actions.appendChild(remove);
         record.appendChild(actions);
         list.appendChild(record);
@@ -1004,6 +1115,22 @@
     showEditor();
   });
   listen('save', saveDialog);
+  listen('export-result', function () { downloadBackup(encodeBackup([current()])); });
+  listen('export-all', function () {
+    savedEntries().then(function (entries) {
+      if (!entries.length) return notify('אין חישובים שמורים לייצוא');
+      downloadBackup(encodeBackup(entries));
+    }).catch(function () { notify('הייצוא נכשל'); });
+  });
+  listen('import-backup', function () {
+    if (window.RibitDevice && window.RibitDevice.importBackup) window.RibitDevice.importBackup();
+    else byId('backup-file').click();
+  });
+  window.RibitBackupFile = {
+    restore: restoreBackup,
+    status: function (saved) { notify(saved ? 'קובץ הגיבוי נשמר' : 'פעולת הקובץ נכשלה'); }
+  };
+  byId('backup-file').addEventListener('change', importBackupFile);
   listen('details', function () {
     var open = byId('details-content').hidden;
     if (open) fillDetails();
