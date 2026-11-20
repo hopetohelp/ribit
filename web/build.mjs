@@ -64,7 +64,7 @@ assets['/'] = assets['/index.html'];
 const cacheName = 'ribit-' + hash.digest('hex').slice(0, 16);
 const serviceWorker = `
 const CACHE = ${JSON.stringify(cacheName)};
-const FILES = ${JSON.stringify(Object.keys(assets).filter(url => !['/chat.html', '/chat.js', '/chat.css', '/account.html'].includes(url)))};
+const FILES = ${JSON.stringify(Object.keys(assets).filter(url => !['/account.html'].includes(url)))};
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });

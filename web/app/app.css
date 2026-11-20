@@ -162,15 +162,8 @@ canvas { display: block; width: 100%; height: 126px; }
 .record .actions { margin: 1px 0 0; }
 .record .actions button { padding-right: 0; }
 .status { position: absolute; z-index: 4; bottom: 41px; right: 16px; left: 16px; margin: auto; max-width: 512px; padding: 8px 12px; background: #17243a; color: #fff; border-radius: 9px; }
-.backdrop {
-  position: fixed; z-index: 5; top: 0; bottom: 0; left: 0; right: 0;
-  background: #15203666; display: flex; align-items: center; justify-content: center;
-  padding: 58px 12px 12px;
-}
-.dialog {
-  width: 100%; max-width: 405px; max-height: 100%; overflow: auto;
-  padding: 13px 15px; border-radius: 14px; background: #fff;
-}
+.floating-backdrop { --floating-gutter: 58px 12px 12px; }
+.dialog { width: 100%; max-width: 405px; padding: 13px 15px; }
 .dialog-heading { margin-bottom: 8px; }
 .dialog ul { margin: 0; padding-right: 21px; }
 .keypad-only #main, .keypad-only .dialog { overflow: hidden; }
@@ -180,7 +173,6 @@ canvas { display: block; width: 100%; height: 126px; }
 .about-dialog:focus { outline: 0; }
 .about-dialog .dialog-heading { justify-content: center; }
 .about-copy { font-size: 14px; }
-.about-email { font-size: 13px; }
 .about-dialog #dialog-content p:last-child { margin-bottom: 2px; }
 .dark { background: #13191a; color: #f0f5ec; color-scheme: dark; }
 .dark .disclosure { border-color: #61784a; background: #212d28; color: #d7f875; }
