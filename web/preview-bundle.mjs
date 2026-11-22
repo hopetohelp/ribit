@@ -15,6 +15,12 @@ ${escapeInlineStyle(css)}
 </style>`, 'navigation.css link');
 }
 
+async function inlineTheme(html, src) {
+  const script = await readFile(path.join(appDir, 'theme.js'), 'utf8');
+  return replaceRequired(html, `<script src="${src}"></script>`,
+    `<script>\n${escapeInlineScript(script)}\n</script>`, 'theme.js script');
+}
+
 function escapeInlineScript(source) {
   return source.replace(/<\/script/gi, '<\\/script');
 }
@@ -138,8 +144,9 @@ export async function buildAppHtml() {
   );
 
   html = await inlineNavigation(html, 'navigation.css');
-  const logo = await dataUri(path.join(appDir, 'icon-192.png'), 'image/png');
-  html = replaceRequired(html, 'src="icon-192.png"', `src="${logo}"`, 'app logo');
+  html = await inlineTheme(html, 'theme.js');
+  const logo = await dataUri(path.join(appDir, 'brand.svg'), 'image/svg+xml');
+  html = replaceRequired(html, 'src="brand.svg"', `src="${logo}"`, 'app logo');
 
   const scripts = [
     { tag: '<script src="vendor/decimal.js" defer></script>', file: 'vendor/decimal.js' },
@@ -147,6 +154,7 @@ export async function buildAppHtml() {
     { tag: '<script src="storage.js" defer></script>', file: 'storage.js', suffix: '\n' + STORAGE_FALLBACK_SHIM },
     { tag: '<script src="chart.js" defer></script>', file: 'chart.js' },
     { tag: '<script src="floating.js" defer></script>', file: 'floating.js' },
+    { tag: '<script src="icons.js" defer></script>', file: 'icons.js' },
     { tag: '<script src="app.js" defer></script>', file: 'app.js', patchPostMessage: true },
   ];
 
@@ -183,10 +191,10 @@ export async function buildFullPreviewHtml() {
     .replace(' src="/app.html?home=1"', '')
     .replace('href="/download"', 'href="https://ribit.hopetohelp.net/download"')
     .replace('href="/download/windows"', 'href="https://ribit.hopetohelp.net/download/windows"');
-  html = html.replace('class="brand-logo" href="/"', 'class="brand-logo" href="#landing"');
+  html = html.replace('class="brand-logo corner-logo" href="/"', 'class="brand-logo corner-logo" href="#landing"');
   html = html.replaceAll('href="/icon-192.png"', `href="${iconUri}"`);
-  const logoUri = await dataUri(path.join(hostingDir, 'icon-512.png'), 'image/png');
-  html = html.replaceAll('src="/icon-512.png"', `src="${logoUri}"`);
+  const logoUri = await dataUri(path.join(appDir, 'brand.svg'), 'image/svg+xml');
+  html = replaceRequired(html, 'src="/brand.svg"', `src="${logoUri}"`, 'landing logo');
   html = html.replace(
     '<script src="/android-store.js" defer></script>',
     '',
@@ -201,6 +209,7 @@ export async function buildFullPreviewHtml() {
   );
 
   html = await inlineNavigation(html, '/navigation.css');
+  html = await inlineTheme(html, '/theme.js');
 
   js = replaceRequired(
     js,

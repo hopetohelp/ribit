@@ -17,7 +17,9 @@ test('builds a self-contained app-only preview with inlined assets and fallback 
     assert.match(html, /^<!doctype html>/i);
     assert.ok(!html.includes('href="app.css"'), 'app.css should be inlined');
     assert.ok(!html.includes('href="navigation.css"'), 'shared navigation styles should be inlined');
-    assert.match(html, /id="brand-home"[^>]*>\s*<img src="data:image\/png;base64,/);
+    assert.match(html, /id="brand-home"[^>]*>\s*<img src="data:image\/svg\+xml;base64,/);
+    assert.ok(!html.includes('src="theme.js"'), 'shared theme script should be inlined');
+    assert.ok(!html.includes('src="icons.js"'), 'calculator icons should be inlined');
     assert.ok(!html.includes('src="vendor/decimal.js"'), 'decimal.js should be inlined');
     assert.ok(!html.includes('src="app.js"'), 'app.js should be inlined');
     assert.ok(!html.includes('url("fonts/'), 'woff2 fonts should be inlined as data URIs');
@@ -42,6 +44,8 @@ test('builds a self-contained full device-frame preview with embedded srcdoc app
     assert.ok(!html.includes('href="/preview.css"'), 'preview.css should be inlined');
     assert.ok(!html.includes('href="/navigation.css"'), 'landing navigation styles should be inlined');
     assert.ok(!html.includes('src="/preview.js"'), 'preview.js should be inlined');
+    assert.ok(!html.includes('src="/theme.js"'), 'landing theme script should be inlined');
+    assert.match(html, /class="brand-logo corner-logo"[^>]*>\s*<img src="data:image\/svg\+xml;base64,/);
     assert.ok(!html.includes('src="/icon-192.png"'), 'icon should be inlined');
     assert.ok(html.includes('data:image/png;base64,'), 'expected embedded PNG icon');
     assert.ok(html.includes('window.__RIBIT_APP_HTML__'), 'expected embedded app HTML payload');

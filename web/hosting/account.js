@@ -4,14 +4,7 @@
   const params = new URLSearchParams(location.search);
   const next = params.get('next');
   const googleResult = params.get('google');
-  if (next === 'chat' && $('page-back')) $('page-back').href = '/chat';
   const target = next === 'chat' ? '/chat?member=1' : next === 'calculator' ? '/app.html?installed=1&account=1' : null;
-  const drawer = $('account-drawer');
-  if (drawer) {
-    try {
-      if (localStorage.getItem('ribit-member-active') === '1') $('account-trigger').textContent = 'החשבון שלי';
-    } catch (_) {}
-  }
   let hasPassword = true;
   let registering = false;
   let linkingGoogle = false;
@@ -32,7 +25,6 @@
   }
 
   function remember(active) {
-    if (drawer) $('account-trigger').textContent = active ? 'החשבון שלי' : 'התחברות';
     try {
       if (active) localStorage.setItem('ribit-member-active', '1');
       else localStorage.removeItem('ribit-member-active');
@@ -200,13 +192,5 @@
       if (googleResult === 'error') $('account-status').textContent = 'הכניסה עם Google לא הושלמה. אפשר לנסות שוב.';
     }
   }
-  if (drawer && !drawer.open) {
-    drawer.addEventListener('toggle', function startOnOpen() {
-      if (!drawer.open) return;
-      drawer.removeEventListener('toggle', startOnOpen);
-      start();
-    });
-  } else {
-    start();
-  }
+  start();
 }());

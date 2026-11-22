@@ -1,8 +1,24 @@
-.back-button {
-  position: fixed;
-  top: 5px;
-  right: 8px;
-  z-index: 3;
+body, input, textarea, select { text-align: right; }
+.corner-logo { position: fixed; top: 5px; right: 8px; z-index: 3; }
+.ui-icon { display: inline-flex; width: 20px; height: 20px; flex: 0 0 20px; vertical-align: middle; }
+.ui-icon svg { display: block; width: 100%; height: 100%; }
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+:root[data-theme="light"] .brand-logo { color-scheme: light; }
+:root[data-theme="dark"] .brand-logo { color-scheme: dark; }
+.brand-logo img { display: block; border-radius: 50%; }
+.dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.dialog-close {
+  flex: 0 0 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -20,19 +36,15 @@
   box-shadow: 0 2px 8px #0004;
   cursor: pointer;
 }
-.back-button:hover { background: #403454; }
-.back-button:active { background: #211a32; }
-.back-button:focus, .back-button.key-focus { outline: 2px solid #9b89b8; outline-offset: 2px; }
-.brand-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-}
-.brand-logo img { display: block; border-radius: 50%; }
-.dialog-heading { display: flex; align-items: center; gap: 12px; }
+.dialog-close:hover { background: #403454; }
+.dialog-close:active { background: #211a32; }
+.dialog-close:focus, .dialog-close.key-focus { outline: 2px solid #9b89b8; outline-offset: 2px; }
+
+[data-theme="light"] .dialog-close { border-color: #8c9dc3; background: #f7f9ff; color: #152036; }
+[data-theme="light"] .dialog-close:hover { background: #eaf0ff; }
+[data-theme="light"] .dialog-close:active { background: #dde7ff; }
+[data-theme="light"] .dialog-close:is(:focus, .key-focus) { outline-color: #2549d4; }
+[data-theme="dark"] .dialog-close { border-color: #6c8379; background: #232f2b; color: #f0f5ec; }
+[data-theme="dark"] .dialog-close:hover { background: #303f37; }
+[data-theme="dark"] .dialog-close:active { background: #394b40; }
+[data-theme="dark"] .dialog-close:is(:focus, .key-focus) { outline-color: #d7f875; }

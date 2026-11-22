@@ -12,8 +12,7 @@
 <body>
   <main>
     <header class="page-header">
-      <a href="/" id="page-back" class="back-button" aria-label="חזרה">→</a>
-      <a href="/" class="brand-logo" aria-label="הפלא השמיני · למסך הראשי">
+      <a href="/" class="brand-logo corner-logo" aria-label="הפלא השמיני · למסך הראשי">
         <img src="/icon-192.png" alt="" width="34" height="34">
       </a>
       <button id="logout" type="button" hidden>יציאה</button>
@@ -39,13 +38,14 @@
           <label for="message">הודעה</label>
           <div class="compose">
             <textarea id="message" dir="auto" maxlength="2000" rows="2" required></textarea>
-            <button id="send-button">שליחה</button>
+            <button id="send-button"><span id="send-icon" data-icon="send" aria-hidden="true"></span><span id="send-label">שליחה</span></button>
           </div>
         </form>
       </section>
     </div>
     <p id="status" role="status"></p>
   </main>
+  <script src="/icons.js" defer></script>
   <script src="/chat.js" defer></script>
 </body>
 </html>

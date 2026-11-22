@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#fafbff">
+  <meta name="theme-color" content="#fafbff" data-light-color="#fafbff" data-dark-color="#13191a">
+  <script src="theme.js"></script>
   <title>ריבית</title>
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="navigation.css">
@@ -11,11 +12,10 @@
 </head>
 <body>
   <header class="bar" id="bar">
-    <button type="button" id="back" class="back-button" aria-label="חזרה">→</button>
-    <button type="button" id="brand-home" class="brand-logo" aria-label="ריבית · למסך הראשי">
-      <img src="icon-192.png" alt="" width="34" height="34">
+    <button type="button" id="brand-home" class="brand-logo corner-logo" aria-label="ריבית · למסך הראשי">
+      <img src="brand.svg" alt="" width="34" height="34">
     </button>
-    <button type="button" class="plain menu-trigger" id="menu" aria-label="תפריט" aria-expanded="false" aria-controls="menu-items">⋯</button>
+    <button type="button" class="plain menu-trigger" id="menu" aria-label="תפריט" aria-expanded="false" aria-controls="menu-items"><span data-icon="ellipsis" aria-hidden="true"></span></button>
     <div id="menu-backdrop" class="floating-backdrop floating-light-dismiss" hidden></div>
     <nav id="menu-items" class="menu floating-panel" aria-label="תפריט המחשבון" hidden>
       <a id="menu-account" class="plain" href="https://ribit.hopetohelp.net/account" target="_blank" rel="noopener">החשבון שלי</a>
@@ -34,6 +34,7 @@
         <button type="button" data-track="0" aria-pressed="true">מסלול א׳</button>
         <button type="button" data-track="1" aria-pressed="false">מסלול ב׳</button>
       </div>
+      <button type="button" id="pick-saved" class="outline" aria-haspopup="dialog" hidden>בחירה משמורים</button>
       <p id="picked-source" class="dim" hidden></p>
       <form id="calculator" novalidate>
         <label class="field"><span>סכום התחלתי</span><input name="initial" type="text" inputmode="decimal" dir="ltr" maxlength="24" placeholder="0"></label>
@@ -102,7 +103,7 @@
     <section id="saved" class="screen" aria-labelledby="saved-title" hidden>
       <div class="result-heading">
         <h1 id="saved-title">שמורים</h1>
-        <button type="button" id="saved-settings" class="plain menu-trigger" aria-label="הגדרות שמורים" aria-haspopup="dialog"><span aria-hidden="true">⚙︎</span></button>
+        <button type="button" id="saved-settings" class="plain menu-trigger" aria-label="הגדרות שמורים" aria-haspopup="dialog"><span data-icon="settings-2" aria-hidden="true"></span></button>
       </div>
       <label class="field saved-search">
         <span class="search-icon" aria-hidden="true"></span>
@@ -132,8 +133,8 @@
   <div id="dialog-backdrop" class="floating-backdrop" hidden>
     <section id="dialog" class="floating-panel dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" tabindex="-1">
       <div class="dialog-heading">
-        <button type="button" id="dialog-close" class="back-button" aria-label="סגירה">→</button>
         <h2 id="dialog-title"></h2>
+        <button type="button" id="dialog-close" class="dialog-close" aria-label="סגירה"><span data-icon="x" aria-hidden="true"></span></button>
       </div>
       <div id="dialog-content"></div>
     </section>
@@ -143,6 +144,7 @@
   <script src="storage.js" defer></script>
   <script src="chart.js" defer></script>
   <script src="floating.js" defer></script>
+  <script src="icons.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

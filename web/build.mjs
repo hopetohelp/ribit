@@ -15,15 +15,13 @@ for (const source of ['app', 'hosting']) {
 const version = (await readFile(path.join(web, 'version.txt'), 'utf8')).trim();
 if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid web version');
 const accountPanel = await readFile(path.join(web, 'account-panel.html'), 'utf8');
-for (const page of ['account.html', 'index.html']) {
-  const file = path.join(dist, page);
-  const html = await readFile(file, 'utf8');
-  await writeFile(file, html.replace(
-    /^[ \t]*<!-- account-panel -->[\s\S]*?<!-- \/account-panel -->/m,
-    () => accountPanel.trimEnd()
-  ).replace('</body>', '  <script src="/account.js" defer></script>\n</body>')
-    .replace('</head>', '  <link rel="stylesheet" href="/account.css">\n</head>'));
-}
+const accountPage = path.join(dist, 'account.html');
+const accountHtml = await readFile(accountPage, 'utf8');
+await writeFile(accountPage, accountHtml.replace(
+  /^[ \t]*<!-- account-panel -->[\s\S]*?<!-- \/account-panel -->/m,
+  () => accountPanel.trimEnd()
+).replace('</body>', '  <script src="/account.js" defer></script>\n</body>')
+  .replace('</head>', '  <link rel="stylesheet" href="/account.css">\n</head>'));
 
 const hostedApp = path.join(dist, 'app.html');
 const landingPage = path.join(dist, 'index.html');

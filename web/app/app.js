@@ -3,6 +3,7 @@
 
   var finance = window.RibitFinance;
   var chart = window.RibitChart;
+  var icons = window.RibitIcons;
   var localStore = window.RibitStorage;
   var hosted = !!document.querySelector('script[src="/app-offline.js"]');
   var memberActive = false;
@@ -174,13 +175,14 @@
     main.scrollTop = 0;
   }
 
-  function view(name, openEditor) {
+  function view(name, openEditor, reset) {
     stash();
     setMenu(false);
     state.view = name;
     if (name !== 'saved') {
       state.comparing = name === 'compare';
       state.active = 0;
+      if (reset) state.sessions[name] = session(state.comparing ? 2 : 1);
     }
     Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (button) {
       button.setAttribute('aria-pressed', String(button.getAttribute('data-view') === name));
@@ -216,6 +218,7 @@
     fill();
     clearError();
     visibility(byId('tracks'), state.comparing);
+    visibility(byId('pick-saved'), state.comparing);
     text('editor-title', state.comparing ? 'השוואת מסלולים' : 'חישוב השקעה');
     text('compute', state.comparing ? 'השוואה' : 'חישוב');
     setAdvanced(false);
@@ -509,9 +512,8 @@
     state.dialogFocus = null;
   }
 
-  function saveDialog() {
-    var selected = current();
-    openDialog(state.comparing ? 'שמירת השוואה' : 'שמירת חישוב', function (content) {
+  function saveDialog(selected) {
+    openDialog(selected.calculation.plans.length === 2 ? 'שמירת השוואה' : 'שמירת חישוב', function (content) {
       var form = make('form');
       var label = make('label', null, 'field');
       label.appendChild(make('span', 'שם'));
@@ -553,12 +555,23 @@
           Array.prototype.forEach.call(actions.children, function (button) { button.disabled = false; });
           if (error) return notify(error.status === 401 ? 'החיבור לחשבון פג. התחברו מחדש כדי לשמור בענן.' :
             source === cloudStore ? 'השמירה בענן נכשלה. בדקו את החיבור ונסו שוב.' : 'השמירה נכשלה');
-          selected.id = id;
-          selected.origin = source === cloudStore ? 'cloud' : 'device';
+          if (selected === current()) {
+            selected.id = id;
+            selected.origin = source === cloudStore ? 'cloud' : 'device';
+            selected.title = title;
+            updateResultTitle();
+          } else if (!copy) {
+            Object.keys(state.sessions).forEach(function (key) {
+              var item = state.sessions[key];
+              if (item.id === id && item.origin === selected.origin) item.title = title;
+            });
+          }
           if (source === localStore) scheduleSync();
-          selected.title = title;
-          updateResultTitle();
           closeDialog();
+          if (state.view === 'saved') {
+            byId('saved-search').focus();
+            loadSaved();
+          }
           notify('נשמר');
         });
       }
@@ -838,21 +851,14 @@
         content.appendChild(title);
       }
       var actions = dialogActions(content);
-      if (!summary) {
-        add('שמירה', function () { withCalculation(saveDialog); });
-        add('פתיחה', function () {
-          closeDialog();
-          view('saved');
-          byId('saved-search').focus();
-        });
-        if (editing && state.comparing) add('בחירה משמורים', pickSaved);
-        if (!editing) add('חדש', startNewItem);
-      }
-      add('שיתוף', function () {
-        if (summary) shareItem(summary);
-        else withCalculation(shareItem);
+      actions.classList.add('item-actions');
+      add('חדש', 'plus', function () {
+        closeDialog();
+        var count = summary ? summary.planCount : entry.drafts.length;
+        view(count === 2 ? 'compare' : 'single', true, true);
+        fields.initial.focus();
       });
-      add('עריכה', function () {
+      add('עריכה', 'square-pen', function () {
         closeDialog();
         if (summary) openSaved(summary, true);
         else {
@@ -860,11 +866,33 @@
           fields.initial.focus();
         }
       }).disabled = editing;
-      add('שינוי שם', function () { renameItem(entry); });
-      add('מחיקה', function () { removeSaved(entry); }).disabled = !entry.id;
+      var save = add('שמירה', 'save', function () {
+        if (!summary) return withCalculation(function () { saveDialog(entry); });
+        save.disabled = true;
+        loadForBackup(summary).then(function (item) {
+          if (byId('dialog-backdrop').hidden || !byId('dialog-content').contains(save)) return;
+          item.id = summary.id;
+          item.origin = summary.origin;
+          saveDialog(item);
+        }).catch(function () {
+          save.disabled = false;
+          notify('טעינת הפריט נכשלה');
+        });
+      });
+      add('שיתוף', 'share-2', function () {
+        if (summary) shareItem(summary);
+        else withCalculation(shareItem);
+      });
+      add('ייצוא', 'download', function () {
+        if (summary) exportSummaries([summary]);
+        else withCalculation(function () { downloadBackup(encodeBackup([entry])); });
+      });
+      add('מחיקה', 'trash-2', function () { removeSaved(entry); }).disabled = !entry.id;
+      add('שינוי שם', 'text-cursor-input', function () { renameItem(entry); });
 
-      function add(label, handler) {
+      function add(label, icon, handler) {
         var button = action(label, handler, 'outline');
+        icons.render(button.insertBefore(make('span'), button.firstChild), icon);
         actions.appendChild(button);
         return button;
       }
@@ -878,14 +906,6 @@
       }
       handler();
     }
-  }
-
-  function startNewItem() {
-    closeDialog();
-    state.sessions[state.comparing ? 'compare' : 'single'] = session(state.comparing ? 2 : 1);
-    state.active = 0;
-    showEditor();
-    byId('editor-actions').focus();
   }
 
   function pickSaved() {
@@ -1394,13 +1414,11 @@
     }, true);
   }
 
-  function setTheme(dark, remember) {
+  function applyTheme() {
+    var dark = window.RibitTheme.dark;
     state.dark = dark;
     document.body.classList.toggle('dark', dark);
     text('theme', dark ? 'מראה בהיר' : 'מראה כהה');
-    if (remember) {
-      try { localStorage.setItem('ribit-dark', dark ? '1' : '0'); } catch (error) { /* preference unavailable */ }
-    }
     if (window.RibitDevice && window.RibitDevice.theme) window.RibitDevice.theme(dark);
     draw();
   }
@@ -1677,11 +1695,11 @@
       }
     });
   });
-  listen('back', requestBack);
   listen('brand-home', goHome);
-  listen('theme', function () { setTheme(!state.dark, true); setMenu(false); byId('menu').focus(); });
+  listen('theme', function () { window.RibitTheme.toggle(); setMenu(false); byId('menu').focus(); });
   listen('advanced', function () { setAdvanced(byId('advanced-fields').hidden, true); });
   listen('help', explanations);
+  listen('pick-saved', pickSaved);
   listen('about', about);
   listen('dialog-close', closeDialog);
   window.RibitFloating.dismissOutside(byId('dialog-backdrop'), closeDialog);
@@ -1713,7 +1731,8 @@
     if (open) fillDetails();
     disclosure('details', 'details-content', open);
   });
-  try { setTheme(localStorage.getItem('ribit-dark') === '1', false); } catch (error) { setTheme(false, false); }
+  window.addEventListener('ribit:themechange', applyTheme);
+  applyTheme();
   if (hosted && query.get('view') === 'saved') {
     view('saved');
     var recordId = query.get('record');

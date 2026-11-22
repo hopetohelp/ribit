@@ -14,7 +14,15 @@
   const glass = document.querySelector('.glass');
   const footprint = document.querySelector('.footprint');
   const stage = document.querySelector('.stage');
-  const landingBack = $('landing-back');
+  const themeToggle = $('landing-theme');
+  function updateThemeLabel() {
+    $('landing-theme-label').textContent = window.RibitTheme.dark ? 'מראה בהיר' : 'מראה כהה';
+  }
+  themeToggle.addEventListener('click', () => window.RibitTheme.toggle());
+  window.addEventListener('ribit:themechange', updateThemeLabel);
+  updateThemeLabel();
+  themeToggle.hidden = false;
+
   const openDrawers = new Set();
   // Body dimensions, display diagonal and native panel proportions.
   const models = {
@@ -185,10 +193,8 @@
     drawer.addEventListener('toggle', () => {
       if (drawer.open) openDrawers.add(drawer);
       else openDrawers.delete(drawer);
-      landingBack.hidden = !openDrawers.size;
     });
   });
-  landingBack.addEventListener('click', back);
   if (launchAndroidDrawer) {
     const drawer = $('android-drawer');
     drawer.open = true;
@@ -300,7 +306,6 @@
   }).then(stats => {
     if (!stats) return;
     $('visitors').textContent = stats.visitors.toLocaleString('he-IL');
-    $('home-visitors').hidden = false;
     $('downloads').textContent = stats.downloads.toLocaleString('he-IL');
     $('windows-downloads').textContent = stats.windowsDownloads.toLocaleString('he-IL');
     $('safari-installs').textContent = stats.safariInstalls.toLocaleString('he-IL');

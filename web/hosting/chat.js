@@ -33,7 +33,8 @@
       'הטיוטות נשמרות בדפדפן הזה. כדי לשלוח הודעה ולשמור את השיחה בחשבון, התחברו.';
     if ($('intro').textContent !== notice) $('intro').textContent = notice;
     $('chat-sign-in').hidden = mode !== 'guest';
-    $('send-button').textContent = member ? 'שליחה' : 'שמירת טיוטה';
+    $('send-label').textContent = member ? 'שליחה' : 'שמירת טיוטה';
+    window.RibitIcons.render($('send-icon'), member ? 'send' : 'file-text');
     let drafts = [];
     try { drafts = readGuestDrafts(); }
     catch (_) { $('status').textContent = 'לא ניתן לפתוח טיוטות בדפדפן הזה.'; }

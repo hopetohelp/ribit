@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <style>
+    svg {
+      --tile-light: #f8faff;
+      --tile-dark: #e0eaff;
+      --border: #7891ce;
+      --grid: #8ca4d2;
+      --line-start: #2849bb;
+      --line-end: #106b82;
+    }
+    @media (prefers-color-scheme: dark) {
+      svg {
+        --tile-light: #2c4135;
+        --tile-dark: #131e1a;
+        --border: #759480;
+        --grid: #658272;
+        --line-start: #8be0bb;
+        --line-end: #d7f875;
+      }
+    }
+    .tile-light { stop-color: var(--tile-light); }
+    .tile-dark { stop-color: var(--tile-dark); }
+    .line-start { stop-color: var(--line-start); }
+    .line-end { stop-color: var(--line-end); }
+    .profile { stroke: var(--border); }
+    .grid { stroke: var(--grid); }
+    .point { fill: var(--line-end); stroke: var(--tile-light); }
+  </style>
+  <defs>
+    <linearGradient id="tile" x2="1" y2="1">
+      <stop class="tile-light" stop-color="#f8faff"/>
+      <stop class="tile-dark" stop-color="#e0eaff" offset="1"/>
+    </linearGradient>
+    <linearGradient id="line" x2="1" y2="0">
+      <stop class="line-start" stop-color="#2849bb"/>
+      <stop class="line-end" stop-color="#106b82" offset="1"/>
+    </linearGradient>
+  </defs>
+  <circle class="profile" cx="48" cy="48" r="46" fill="url(#tile)" stroke="#7891ce" stroke-width="2"/>
+  <path class="grid" d="M22 26v44h52M22 48h52M22 26h52M48 26v44m26-44v44" fill="none" stroke="#8ca4d2" stroke-width="1.6" opacity=".6"/>
+  <path d="M23 64l13-12 12 2 11-13 14-14" fill="none" stroke="url(#line)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="point" cx="73" cy="27" r="5" fill="#106b82" stroke="#f8faff" stroke-width="2"/>
+</svg>
