@@ -42,6 +42,21 @@ class MemberStore {
     return { status: 200, token: await this.newSession() };
   }
 
+  async changePassword(token, currentSecret, newSecret) {
+    if (!(await this.session(token))) return 401;
+    const existing = this.sql.exec('SELECT salt, password FROM member WHERE slot = 1').one();
+    if (!existing.password) return 409;
+    if (!sameSecret(existing.password, await passwordHash(currentSecret, existing.salt))) return 403;
+    const salt = randomHex(16);
+    const updated = await passwordHash(newSecret, salt);
+    const sessionHash = await digest(token);
+    return this.storage.transactionSync(() => {
+      if (!this.sql.exec('SELECT 1 FROM member_sessions WHERE token = ? AND expires > ?', sessionHash, Date.now()).toArray().length) return 401;
+      const result = this.sql.exec('UPDATE member SET salt = ?, password = ? WHERE slot = 1 AND salt = ?', salt, updated, existing.salt);
+      return result.rowsWritten ? 200 : 403;
+    });
+  }
+
   googleSignup(email, subject, register) {
     return this.storage.transactionSync(() => {
       this.sql.exec('CREATE TABLE IF NOT EXISTS member_google_signup (slot INTEGER PRIMARY KEY CHECK(slot = 1), subject TEXT NOT NULL)');
@@ -71,7 +86,7 @@ class MemberStore {
     const session = this.sql.exec('SELECT token FROM member_sessions WHERE token = ? AND expires > ?', hash, Date.now()).toArray()[0];
     if (!session) return null;
     if (revoke) this.sql.exec('DELETE FROM member_sessions WHERE token = ?', hash);
-    return this.sql.exec('SELECT name, email FROM member WHERE slot = 1').toArray()[0] ?? null;
+    return this.sql.exec("SELECT name, email, password <> '' AS hasPassword FROM member WHERE slot = 1").toArray()[0] ?? null;
   }
 
   async records(token, action, data) {
@@ -169,9 +184,9 @@ async function accountsApi(request, url, env) {
         googleLinked = await env.COUNTS.getByName('member-google-links').googleOperation('hasAccount', user.account);
       } catch { /* Keep password login available if the Google link store is unavailable. */ }
     }
-    return memberResponse({ name: user.name, email: user.email, googleLinked });
+    return memberResponse({ name: user.name, email: user.email, googleLinked, hasPassword: Boolean(user.hasPassword) });
   }
-  if (!['register', 'login', 'logout', 'records'].includes(action)) return memberResponse({}, 404);
+  if (!['register', 'login', 'logout', 'password', 'records'].includes(action)) return memberResponse({}, 404);
   if (request.method !== 'POST') return memberResponse({}, 405);
   if (request.headers.get('Origin') !== url.origin) return memberResponse({}, 403);
 
@@ -201,6 +216,23 @@ async function accountsApi(request, url, env) {
   if (action === 'logout') {
     await member.memberOperation('session', session.token, true);
     return memberResponse({}, 200, '');
+  }
+
+  if (action === 'password') {
+    let body;
+    try { body = await readChatBody(request); } catch { return memberResponse({}, 400); }
+    const { currentPassword, newPassword } = body ?? {};
+    if (typeof currentPassword !== 'string' || !currentPassword || currentPassword.length > 128 ||
+        typeof newPassword !== 'string' || newPassword.length < 10 || newPassword.length > 128 ||
+        newPassword === currentPassword) return memberResponse({}, 400);
+    if (!(await member.memberOperation('session', session.token))) return memberResponse({}, 401);
+    const allowed = await env.COUNTS.getByName('member-auth:' + session.account)
+      .chatOperation('permit', 'auth', 15 * 60 * 1000, 15);
+    if (!allowed) return memberResponse({}, 429);
+    const [currentSecret, newSecret] = await Promise.all([currentPassword, newPassword].map(
+      password => memberKey(env.RIBIT_ACCOUNT_KEY, 'password', password)));
+    const status = await member.memberOperation('changePassword', session.token, currentSecret, newSecret);
+    return memberResponse({}, status);
   }
 
   let body, values;
