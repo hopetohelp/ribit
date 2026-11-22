@@ -38,7 +38,9 @@ button { border: 1px solid transparent; border-radius: 12px; padding: 7px 12px; 
 }
 .bar .brand-logo { grid-column: 2; }
 .menu-trigger { grid-column: 3; justify-self: end; min-width: 44px; font-size: 24px; line-height: 1; }
-.menu {
+.menu.floating-panel {
+  max-height: calc(100vh - 64px);
+  max-height: calc(100dvh - 64px);
   display: grid; grid-template-columns: minmax(0, 1fr);
   position: absolute; top: 100%; inset-inline-end: 16px;
   z-index: 6; width: min(208px, calc(100% - 32px)); padding: 4px; background: #fff; border: 1px solid #c5cee0;
