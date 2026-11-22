@@ -108,11 +108,6 @@
     if (opened && reveal) byId('advanced').scrollIntoView();
   }
 
-  function setMenu(opened) {
-    disclosure('menu', 'menu-items', opened);
-    visibility(byId('menu-backdrop'), opened);
-  }
-
   function readDraft() {
     var value = {};
     keys.forEach(function (key) { value[key] = fields[key].type === 'checkbox' ? fields[key].checked : fields[key].value; });
@@ -177,7 +172,6 @@
 
   function view(name, openEditor, reset) {
     stash();
-    setMenu(false);
     state.view = name;
     if (name !== 'saved') {
       state.comparing = name === 'compare';
@@ -490,11 +484,9 @@
   }
 
   function openDialog(title, render, centered) {
-    var focused = document.activeElement;
     if (byId('dialog-backdrop').hidden) {
-      state.dialogFocus = byId('menu-items').contains(focused) ? byId('menu') : focused;
+      state.dialogFocus = document.activeElement;
     }
-    setMenu(false);
     var dialog = byId('dialog');
     dialog.classList.toggle('about-dialog', Boolean(centered));
     text('dialog-title', title);
@@ -817,8 +809,8 @@
     });
   }
 
-  function dialogActions(content) {
-    var actions = make('div', null, 'dialog-actions');
+  function dialogActions(content, singleColumn) {
+    var actions = make('div', null, singleColumn ? 'dialog-actions item-actions' : 'dialog-actions');
     content.appendChild(actions);
     return actions;
   }
@@ -850,8 +842,7 @@
         title.dir = 'auto';
         content.appendChild(title);
       }
-      var actions = dialogActions(content);
-      actions.classList.add('item-actions');
+      var actions = dialogActions(content, true);
       add('חדש', 'plus', function () {
         closeDialog();
         var count = summary ? summary.planCount : entry.drafts.length;
@@ -1414,18 +1405,63 @@
     }, true);
   }
 
+  function updateThemeAction(control) {
+    if (!control) return;
+    control.textContent = state.dark ? 'מראה בהיר' : 'מראה כהה';
+    icons.render(control.insertBefore(make('span'), control.firstChild), state.dark ? 'sun' : 'moon');
+  }
+
+  function menuLink(id, label, path, icon) {
+    var link = make('a', label, 'outline');
+    link.id = id;
+    link.href = hosted ? '/' + path : 'https://ribit.hopetohelp.net/' + path;
+    link.target = hosted ? '_top' : '_blank';
+    link.rel = 'noopener';
+    icons.render(link.insertBefore(make('span'), link.firstChild), icon);
+    link.addEventListener('click', function (event) {
+      if (hosted && window !== window.parent && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+        event.preventDefault();
+        window.parent.postMessage(path === 'account' ? 'ribit:account-page' : 'ribit:support-page', location.origin);
+      }
+      closeDialog();
+    });
+    return link;
+  }
+
+  function showMenu() {
+    byId('menu').focus();
+    openDialog('תפריט', function (content) {
+      var actions = dialogActions(content, true);
+      actions.id = 'menu-items';
+      actions.appendChild(menuLink('menu-account', 'החשבון שלי', 'account', 'user-round'));
+      actions.appendChild(menuLink('menu-support', 'נשמח לשמוע אתכם', 'chat', 'message-circle'));
+
+      var themeAction = action('', function () {
+        window.RibitTheme.toggle();
+        closeDialog();
+      }, 'outline');
+      themeAction.id = 'theme';
+      updateThemeAction(themeAction);
+      actions.appendChild(themeAction);
+
+      var aboutAction = action('אודות', about, 'outline');
+      aboutAction.id = 'about';
+      icons.render(aboutAction.insertBefore(make('span'), aboutAction.firstChild), 'info');
+      actions.appendChild(aboutAction);
+    });
+  }
+
   function applyTheme() {
     var dark = window.RibitTheme.dark;
     state.dark = dark;
     document.body.classList.toggle('dark', dark);
-    text('theme', dark ? 'מראה בהיר' : 'מראה כהה');
+    updateThemeAction(byId('theme'));
     if (window.RibitDevice && window.RibitDevice.theme) window.RibitDevice.theme(dark);
     draw();
   }
 
   function back() {
     if (!byId('dialog-backdrop').hidden) { closeDialog(); return true; }
-    if (!byId('menu-items').hidden) { setMenu(false); byId('menu').focus(); return true; }
     if (chart.dismiss()) return true;
     if (state.view !== 'saved' && current().result) { showEditor(); return true; }
     if (!byId('advanced-fields').hidden) { setAdvanced(false, false); return true; }
@@ -1460,7 +1496,6 @@
 
   function navigationScope() {
     if (!byId('dialog-backdrop').hidden) return byId('dialog');
-    if (!byId('menu-items').hidden) return byId('menu-items');
     return document.body;
   }
 
@@ -1556,15 +1591,13 @@
     var dialog = !byId('dialog-backdrop').hidden;
     var scope = navigationScope();
     var items = focusable(scope).filter(function (control) {
-      return !bar.contains(control) || control.id === 'brand-home' || byId('menu-items').contains(control);
+      return !bar.contains(control) || control.id === 'brand-home';
     });
     if (dialog) items.push.apply(items, scope.querySelectorAll('li[tabindex="-1"]'));
     var active = items.indexOf(previewFocus) < 0 ? null : previewFocus;
     if (key === 'Menu') {
-      if (!dialog) {
-        keypadFocus(byId('menu'));
-        byId('menu').click();
-      }
+      if (!dialog) showMenu();
+      else if (byId('menu-items')) closeDialog();
       return;
     }
     if (key.indexOf('Arrow') === 0 || key === 'Next') {
@@ -1675,32 +1708,11 @@
   Array.prototype.forEach.call(byId('money-mode').children, function (button) {
     button.addEventListener('click', function () { current().display = button.getAttribute('data-value'); showResults(); });
   });
-  listen('menu', function () { setMenu(byId('menu-items').hidden); });
-  window.RibitFloating.dismissOutside(byId('menu-backdrop'), function () {
-    setMenu(false);
-    byId('menu').focus();
-  });
-  if (hosted) {
-    byId('menu-account').href = '/account';
-    byId('menu-support').href = '/chat';
-    byId('menu-account').target = byId('menu-support').target = '_top';
-  }
-  ['menu-account', 'menu-support'].forEach(function (id) {
-    listen(id, function (event) {
-      setMenu(false);
-      byId('menu').focus();
-      if (hosted && window !== window.parent && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
-        event.preventDefault();
-        window.parent.postMessage(id === 'menu-account' ? 'ribit:account-page' : 'ribit:support-page', location.origin);
-      }
-    });
-  });
+  listen('menu', showMenu);
   listen('brand-home', goHome);
-  listen('theme', function () { window.RibitTheme.toggle(); setMenu(false); byId('menu').focus(); });
   listen('advanced', function () { setAdvanced(byId('advanced-fields').hidden, true); });
   listen('help', explanations);
   listen('pick-saved', pickSaved);
-  listen('about', about);
   listen('dialog-close', closeDialog);
   window.RibitFloating.dismissOutside(byId('dialog-backdrop'), closeDialog);
   listen('editor-actions', function () { showItemActions(); });

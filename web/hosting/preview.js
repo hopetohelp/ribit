@@ -14,15 +14,6 @@
   const glass = document.querySelector('.glass');
   const footprint = document.querySelector('.footprint');
   const stage = document.querySelector('.stage');
-  const themeToggle = $('landing-theme');
-  function updateThemeLabel() {
-    $('landing-theme-label').textContent = window.RibitTheme.dark ? 'מראה בהיר' : 'מראה כהה';
-  }
-  themeToggle.addEventListener('click', () => window.RibitTheme.toggle());
-  window.addEventListener('ribit:themechange', updateThemeLabel);
-  updateThemeLabel();
-  themeToggle.hidden = false;
-
   const openDrawers = new Set();
   // Body dimensions, display diagonal and native panel proportions.
   const models = {

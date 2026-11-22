@@ -191,7 +191,7 @@ export async function buildFullPreviewHtml() {
     .replace(' src="/app.html?home=1"', '')
     .replace('href="/download"', 'href="https://ribit.hopetohelp.net/download"')
     .replace('href="/download/windows"', 'href="https://ribit.hopetohelp.net/download/windows"');
-  html = html.replace('class="brand-logo corner-logo" href="/"', 'class="brand-logo corner-logo" href="#landing"');
+  html = html.replace('class="brand-logo" href="/"', 'class="brand-logo" href="#landing"');
   html = html.replaceAll('href="/icon-192.png"', `href="${iconUri}"`);
   const logoUri = await dataUri(path.join(appDir, 'brand.svg'), 'image/svg+xml');
   html = replaceRequired(html, 'src="/brand.svg"', `src="${logoUri}"`, 'landing logo');

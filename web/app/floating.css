@@ -9,7 +9,3 @@
   border-radius: 14px;
   background: var(--floating-surface, #fff);
 }
-.floating-backdrop.floating-light-dismiss {
-  --floating-shade: transparent;
-  --floating-gutter: 0;
-}

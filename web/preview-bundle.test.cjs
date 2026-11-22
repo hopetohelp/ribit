@@ -45,7 +45,7 @@ test('builds a self-contained full device-frame preview with embedded srcdoc app
     assert.ok(!html.includes('href="/navigation.css"'), 'landing navigation styles should be inlined');
     assert.ok(!html.includes('src="/preview.js"'), 'preview.js should be inlined');
     assert.ok(!html.includes('src="/theme.js"'), 'landing theme script should be inlined');
-    assert.match(html, /class="brand-logo corner-logo"[^>]*>\s*<img src="data:image\/svg\+xml;base64,/);
+    assert.match(html, /class="brand-logo" href="#landing"[^>]*>\s*<img src="data:image\/svg\+xml;base64,/);
     assert.ok(!html.includes('src="/icon-192.png"'), 'icon should be inlined');
     assert.ok(html.includes('data:image/png;base64,'), 'expected embedded PNG icon');
     assert.ok(html.includes('window.__RIBIT_APP_HTML__'), 'expected embedded app HTML payload');
