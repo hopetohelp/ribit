@@ -9,6 +9,7 @@
   }
   const $ = id => document.getElementById(id);
   const frame = $('app');
+  const homeApp = $('home-app');
   const device = document.querySelector('.device');
   const glass = document.querySelector('.glass');
   const footprint = document.querySelector('.footprint');
@@ -226,8 +227,12 @@
     updateScreen();
   });
   window.addEventListener('message', event => {
-    if (event.source !== frame.contentWindow || event.origin !== location.origin) return;
-    if (event.data === 'ribit:exit') home();
+    const fromHome = event.source === homeApp.contentWindow;
+    if ((!fromHome && event.source !== frame.contentWindow) || event.origin !== location.origin) return;
+    if (event.data === 'ribit:exit') {
+      if (fromHome) $('landing').scrollIntoView({ block: 'start' });
+      else home();
+    }
     if (event.data === 'ribit:account-page') location.assign('/account');
     if (event.data === 'ribit:support-page') location.assign('/chat');
   });
@@ -295,6 +300,7 @@
   }).then(stats => {
     if (!stats) return;
     $('visitors').textContent = stats.visitors.toLocaleString('he-IL');
+    $('home-visitors').hidden = false;
     $('downloads').textContent = stats.downloads.toLocaleString('he-IL');
     $('windows-downloads').textContent = stats.windowsDownloads.toLocaleString('he-IL');
     $('safari-installs').textContent = stats.safariInstalls.toLocaleString('he-IL');

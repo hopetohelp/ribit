@@ -45,6 +45,9 @@ test('builds a self-contained full device-frame preview with embedded srcdoc app
     assert.ok(!html.includes('src="/icon-192.png"'), 'icon should be inlined');
     assert.ok(html.includes('data:image/png;base64,'), 'expected embedded PNG icon');
     assert.ok(html.includes('window.__RIBIT_APP_HTML__'), 'expected embedded app HTML payload');
+    assert.match(html, /<iframe id="home-app" title="מחשבון ריבית דריבית"/);
+    assert.ok(!html.includes('src="/app.html?home=1"'), 'the home frame should load from the bundle');
+    assert.ok(html.includes("document.getElementById('home-app').srcdoc = window.__RIBIT_APP_HTML__"));
     assert.ok(html.includes('frame.srcdoc = window.__RIBIT_APP_HTML__'), 'expected srcdoc launcher');
     assert.ok(html.includes('data-model="smartphone"'), 'expected iPhone 15 profile');
     assert.ok(html.includes('data-model="touch"'), 'expected Qin F21 Pro profile');
