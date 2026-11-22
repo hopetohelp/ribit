@@ -2,6 +2,7 @@
   'use strict';
   const admin = location.pathname === '/admin-chat';
   const $ = id => document.getElementById(id);
+  const embedded = admin ? null : window.RibitFloating.connectFrame(refreshVisitor);
   let mode = 'checking';
   let cloudMessages = [];
   let visitorRequest = 0;
@@ -57,7 +58,7 @@
   }
 
   async function refreshVisitor() {
-    if (document.hidden || $('send-button').disabled) return;
+    if (document.hidden || (embedded && !embedded.open) || $('send-button').disabled) return;
     const current = ++visitorRequest;
     if (!navigator.onLine) {
       updateVisitor('offline');
@@ -267,6 +268,18 @@
     });
   } else {
     document.body.classList.add('visitor-chat');
+    if (embedded) {
+      const signIn = $('chat-sign-in');
+      signIn.setAttribute('aria-haspopup', 'dialog');
+      signIn.addEventListener('click', event => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        window.parent.RibitFloating.openWindow('החשבון שלי', 'account');
+      });
+      embedded.addEventListener('close', () => {
+        if (!embedded.open) visitorRequest++;
+      });
+    }
     window.addEventListener('storage', event => {
       if (event.key === 'ribit-member-active') refreshVisitor();
       if (event.key === null || event.key?.startsWith(guestDraftPrefix)) {

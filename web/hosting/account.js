@@ -1,13 +1,29 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const params = new URLSearchParams(location.search);
+  const embedded = window.RibitFloating.connectFrame(refreshSession);
+  const params = new URLSearchParams(embedded ? '' : location.search);
   const next = params.get('next');
   const googleResult = params.get('google');
   const target = next === 'chat' ? '/chat?member=1' : next === 'calculator' ? '/app.html?installed=1&account=1' : null;
   let hasPassword = true;
   let registering = false;
   let linkingGoogle = false;
+  let checkingSession = false;
+
+  if (embedded) {
+    $('google-sign-in').target = '_blank';
+    $('google-sign-in').rel = 'noopener';
+    embedded.addEventListener('close', () => {
+      if (embedded.open) return;
+      $('password').value = '';
+      $('password-change-form').reset();
+      setPasswordVisibility(false);
+    });
+    window.addEventListener('storage', event => {
+      if (event.key === 'ribit-member-active' && embedded.open) refreshSession();
+    });
+  }
 
   async function request(action, payload) {
     const response = await fetch('/api/account/' + action, {
@@ -176,6 +192,12 @@
       $('password').focus();
       return;
     }
+    await refreshSession();
+  }
+
+  async function refreshSession() {
+    if (checkingSession || $('submit-account').disabled || $('member-logout').disabled) return;
+    checkingSession = true;
     try {
       const member = await request('session');
       remember(true);
@@ -190,6 +212,8 @@
       else notify(error);
       if (googleResult === 'missing') $('account-status').textContent = 'עדיין אין חשבון למייל הזה. בחרו הרשמה עם Google.';
       if (googleResult === 'error') $('account-status').textContent = 'הכניסה עם Google לא הושלמה. אפשר לנסות שוב.';
+    } finally {
+      checkingSession = false;
     }
   }
   start();

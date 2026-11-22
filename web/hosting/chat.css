@@ -60,3 +60,22 @@ button[aria-pressed="true"] { background: #ddd0ff; color: #1c132e; }
 .visitor-chat #status { margin-block: 6px 0; }
 
 #send-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+
+.embedded-service { background: #192320; color-scheme: dark; }
+.embedded-service main { margin: 0 auto; padding: 4px; }
+.embedded-service :is(.page-header, h1) { display: none; }
+.embedded-service :is(.thread, .account-panel) {
+  background: transparent; border: 0; border-radius: 0; padding: 0;
+}
+.embedded-service .thread #messages { min-height: 44px; }
+[data-theme="light"] .embedded-service { background: #fff; color: #152036; color-scheme: light; }
+[data-theme="light"] .embedded-service :is(a, #intro, #status, #account-status, .message time, .message strong) { color: inherit; }
+[data-theme="light"] .embedded-service :is(input, textarea, .message) { background: #f0f4ff; }
+[data-theme="light"] .embedded-service :is(button, .chat-control, .account-panel button) { background: #e4ebff; }
+[data-theme="light"] .embedded-service button[aria-pressed="true"] { background: #cec0fb; }
+[data-theme="light"] .embedded-service :focus-visible { outline-color: #2549d4; }
+@media (max-width: 300px) {
+  .embedded-service .chat-notice { font-size: .875rem; }
+  .embedded-service .compose { flex-wrap: wrap; justify-content: flex-end; }
+  .embedded-service .compose textarea { flex-basis: 100%; }
+}

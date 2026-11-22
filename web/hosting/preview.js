@@ -230,8 +230,6 @@
       if (fromHome) $('landing').scrollIntoView({ block: 'start' });
       else home();
     }
-    if (event.data === 'ribit:account-page') location.assign('/account');
-    if (event.data === 'ribit:support-page') location.assign('/chat');
   });
   document.addEventListener('keydown', deviceKeyboard);
   document.addEventListener('pointerdown', event => {

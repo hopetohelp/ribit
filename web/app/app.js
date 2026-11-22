@@ -4,6 +4,7 @@
   var finance = window.RibitFinance;
   var chart = window.RibitChart;
   var icons = window.RibitIcons;
+  var floating = window.RibitFloating;
   var localStore = window.RibitStorage;
   var hosted = !!document.querySelector('script[src="/app-offline.js"]');
   var memberActive = false;
@@ -192,7 +193,7 @@
   }
 
   function shiftTab(direction) {
-    if (state.busy || !byId('dialog-backdrop').hidden) return;
+    if (state.busy || floating.activeWindow() || !byId('dialog-backdrop').hidden) return;
     var selected = document.querySelector('.tabs [aria-pressed="true"]');
     var tab = direction > 0 ? selected.nextElementSibling : selected.previousElementSibling;
     if (tab) {
@@ -1413,17 +1414,19 @@
 
   function menuLink(id, label, path, icon) {
     var link = make('a', label, 'outline');
+    var opensWindow = hosted && typeof HTMLDialogElement !== 'undefined' && HTMLDialogElement.prototype.showModal;
     link.id = id;
     link.href = hosted ? '/' + path : 'https://ribit.hopetohelp.net/' + path;
-    link.target = hosted ? '_top' : '_blank';
+    link.target = '_blank';
     link.rel = 'noopener';
+    if (opensWindow) link.setAttribute('aria-haspopup', 'dialog');
     icons.render(link.insertBefore(make('span'), link.firstChild), icon);
     link.addEventListener('click', function (event) {
-      if (hosted && window !== window.parent && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
-        event.preventDefault();
-        window.parent.postMessage(path === 'account' ? 'ribit:account-page' : 'ribit:support-page', location.origin);
-      }
       closeDialog();
+      if (opensWindow && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+        event.preventDefault();
+        floating.openWindow(label, path);
+      }
     });
     return link;
   }
@@ -1461,6 +1464,8 @@
   }
 
   function back() {
+    var panel = floating.activeWindow();
+    if (panel) { panel.close(); return true; }
     if (!byId('dialog-backdrop').hidden) { closeDialog(); return true; }
     if (chart.dismiss()) return true;
     if (state.view !== 'saved' && current().result) { showEditor(); return true; }
@@ -1489,12 +1494,20 @@
   }
 
   function focusable(scope) {
-    return Array.prototype.filter.call(scope.querySelectorAll('button, input, select, a[href]'), function (element) {
+    var selector = 'button, input, select, textarea, a[href]';
+    var controls = Array.from(scope.querySelectorAll(selector));
+    if (scope === floating.activeWindow()) {
+      var frameDocument = scope.querySelector('iframe').contentDocument;
+      if (frameDocument) controls.push.apply(controls, frameDocument.querySelectorAll(selector));
+    }
+    return controls.filter(function (element) {
       return !element.disabled && element.getClientRects().length > 0;
     });
   }
 
   function navigationScope() {
+    var panel = floating.activeWindow();
+    if (panel) return panel;
     if (!byId('dialog-backdrop').hidden) return byId('dialog');
     return document.body;
   }
@@ -1505,8 +1518,11 @@
     var sections = [[], [], []];
     items.forEach(function (control) {
       var box = control.getBoundingClientRect();
+      var frame = control.ownerDocument.defaultView.frameElement;
+      var offset = control.ownerDocument === document || !frame ? { left: 0, top: 0 } : frame.getBoundingClientRect();
       var section = bar.contains(control) ? 0 : control.closest('.tabs') ? 2 : 1;
-      sections[section].push({ control: control, x: (box.left + box.right) / 2, y: (box.top + box.bottom) / 2, height: box.height });
+      sections[section].push({ control: control, x: (box.left + box.right) / 2 + offset.left,
+        y: (box.top + box.bottom) / 2 + offset.top, height: box.height });
     });
     sections.forEach(function (section) {
       var row;
@@ -1549,7 +1565,12 @@
 
   function keypadFocus(control) {
     if (!control) return;
+    if (previewFocus && previewFocus !== control) {
+      previewFocus.classList.remove('key-focus');
+      lastTap = null;
+    }
     control.focus();
+    previewFocus = control;
     control.classList.add('key-focus');
   }
 
@@ -1588,13 +1609,16 @@
 
   function keypad(key, literal) {
     if (key === 'Back') { requestBack(); return; }
-    var dialog = !byId('dialog-backdrop').hidden;
+    var panel = floating.activeWindow();
+    var dialog = panel || !byId('dialog-backdrop').hidden;
     var scope = navigationScope();
     var items = focusable(scope).filter(function (control) {
       return !bar.contains(control) || control.id === 'brand-home';
     });
     if (dialog) items.push.apply(items, scope.querySelectorAll('li[tabindex="-1"]'));
-    var active = items.indexOf(previewFocus) < 0 ? null : previewFocus;
+    var frameDocument = panel && panel.querySelector('iframe').contentDocument;
+    var focused = frameDocument && document.activeElement.tagName === 'IFRAME' ? frameDocument.activeElement : previewFocus;
+    var active = items.indexOf(focused) < 0 ? null : focused;
     if (key === 'Menu') {
       if (!dialog) showMenu();
       else if (byId('menu-items')) closeDialog();
@@ -1620,11 +1644,12 @@
       } else active.click();
       return;
     }
-    if (active.tagName !== 'INPUT' || active.readOnly || (active.type !== 'text' && active.type !== 'search')) return;
-    var title = active.id === 'save-title' || active.id === 'saved-search';
+    if (active.readOnly || !(active.tagName === 'TEXTAREA' ||
+      active.tagName === 'INPUT' && /^(text|search|password|email)$/.test(active.type))) return;
+    var title = active.id === 'save-title' || active.id === 'saved-search' || active.tagName === 'TEXTAREA';
     if (!title && !/^(?:Backspace|[0-9.\-])$/.test(key)) return;
-    var start = active.selectionStart;
-    var end = active.selectionEnd;
+    var start = active.selectionStart === null ? active.value.length : active.selectionStart;
+    var end = active.selectionEnd === null ? start : active.selectionEnd;
     if (key === 'Backspace' && start === end) start = Math.max(0, start - 1);
     var insert = key === 'Backspace' ? '' : key;
     var previousTap = lastTap;
@@ -1650,14 +1675,18 @@
     }
     if (active.maxLength >= 0 && active.value.length - (end - start) + insert.length > active.maxLength) return;
     active.value = active.value.slice(0, start) + insert + active.value.slice(end);
-    active.setSelectionRange(start + insert.length, start + insert.length);
+    if (active.selectionStart !== null) active.setSelectionRange(start + insert.length, start + insert.length);
     var input = document.createEvent('Event');
     input.initEvent('input', true, false);
     active.dispatchEvent(input);
   }
 
   function scroll(direction) {
-    var content = byId('dialog-backdrop').hidden ? main : byId('dialog');
+    var panel = floating.activeWindow();
+    var frameDocument = panel && panel.querySelector('iframe').contentDocument;
+    var content = frameDocument ? frameDocument.getElementById('messages') || frameDocument.scrollingElement :
+      byId('dialog-backdrop').hidden ? main : byId('dialog');
+    if (!content) return;
     content.scrollTop += direction * Math.max(35, Math.round(content.clientHeight * .65));
   }
 
@@ -1755,18 +1784,22 @@
     }
   } else showEditor();
   openSharedCalculation();
-  if (hosted && query.get('home') === '1' && window !== window.parent) {
+  if (hosted) {
     window.addEventListener('storage', function (event) {
-      if (event.key === 'ribit-member-active') location.reload();
-    });
-  }
-  if (cloudAvailable) {
-    window.addEventListener('online', function () {
+      if (event.key !== 'ribit-member-active') return;
+      cloudAvailable = event.newValue === '1';
+      cloud = cloudAvailable && query.get('local') !== '1';
+      store = cloud ? cloudStore : localStore;
+      if (!cloudAvailable && savedSource === 'cloud') savedSource = '';
       if (state.view === 'saved') loadSaved();
       scheduleSync();
     });
+    window.addEventListener('online', function () {
+      if (cloudAvailable && state.view === 'saved') loadSaved();
+      scheduleSync();
+    });
     window.addEventListener('offline', function () {
-      if (state.view === 'saved') loadSaved();
+      if (cloudAvailable && state.view === 'saved') loadSaved();
     });
     scheduleSync();
   }

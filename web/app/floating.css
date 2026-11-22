@@ -9,3 +9,18 @@
   border-radius: 14px;
   background: var(--floating-surface, #fff);
 }
+
+.floating-window.dialog {
+  width: min(520px, calc(100% - 24px));
+  height: min(620px, calc(100% - 24px));
+  height: min(620px, calc(100dvh - 24px));
+  max-width: none;
+  max-height: none;
+  border: 0;
+  color: inherit;
+}
+.floating-window[open] { display: flex; flex-direction: column; }
+.floating-window::backdrop { background: var(--floating-shade, #15203666); }
+.floating-window .dialog-heading { flex: none; }
+.floating-window h2 { margin: 0; }
+.floating-window iframe { display: block; width: 100%; flex: 1; min-height: 0; border: 0; }

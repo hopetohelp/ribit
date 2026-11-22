@@ -222,8 +222,7 @@ export async function buildFullPreviewHtml() {
     "if ((!fromHome && event.source !== frame.contentWindow) || event.origin !== location.origin) return;",
     "if ((!fromHome && event.source !== frame.contentWindow) || (event.origin !== location.origin && event.origin !== 'null')) return;",
     'device message origin check',
-  ).replace("    if (event.data === 'ribit:account-page') location.assign('/account');", '')
-    .replace("    if (event.data === 'ribit:support-page') location.assign('/chat');", '');
+  );
   js = js.replace(
     "if (navigator.serviceWorker) navigator.serviceWorker.register('/sw.js').catch(() => {});",
     "// Service worker registration skipped in standalone preview bundle.",
