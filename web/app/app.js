@@ -1012,6 +1012,7 @@
     var load = ++savedLoad;
     savedLoading = true;
     savedSummaries = [];
+    refreshSavedExport();
     byId('saved-list').textContent = '';
     byId('retry-saved').hidden = true;
     text('saved-status', 'טוענים שמורים…');
@@ -1023,6 +1024,7 @@
       visibility(byId('retry-saved'), savedWarnings.length > 0);
       var origins = new Set(savedSummaries.map(function (entry) { return entry.origin; }));
       visibility(byId('saved-source'), origins.size > 1);
+      refreshSavedExport();
       setSavedFilter('saved-source', savedSource);
       renderSaved();
     });
@@ -1098,6 +1100,13 @@
     else runSync(false).catch(function () {});
   }
 
+  function refreshSavedExport() {
+    var button = byId('saved-export-all');
+    if (button) button.disabled = savedLoading || !savedSummaries.length;
+    var note = byId('saved-export-note');
+    if (note) visibility(note, savedWarnings.length > 0 && savedSummaries.length > 0);
+  }
+
   function showSavedSettings() {
     openDialog('הגדרות שמורים', function (content) {
       var actions = make('div', null, 'saved-settings-actions');
@@ -1105,7 +1114,7 @@
         closeDialog();
         exportSummaries(savedSummaries);
       }, 'outline');
-      exportAll.disabled = savedLoading || !savedSummaries.length;
+      exportAll.id = 'saved-export-all';
       actions.appendChild(exportAll);
       actions.appendChild(action('ייבוא', function () {
         closeDialog();
@@ -1113,7 +1122,10 @@
         else byId('backup-file').click();
       }, 'outline'));
       content.appendChild(actions);
-      if (savedWarnings.length && savedSummaries.length) content.appendChild(make('p', 'הייצוא יכלול את הפריטים שזמינים כרגע.', 'dim'));
+      var exportNote = make('p', 'הייצוא יכלול את הפריטים שזמינים כרגע.', 'dim');
+      exportNote.id = 'saved-export-note';
+      content.appendChild(exportNote);
+      refreshSavedExport();
 
       content.appendChild(make('h3', 'סנכרון לענן'));
       var status = make('p', 'בודקים אם יש חיבור לחשבון…', 'dim');
@@ -1155,7 +1167,7 @@
           run.disabled = true;
           status.textContent = 'מסנכרנים…';
           runSync(true, member.email).then(function (changed) {
-            status.textContent = changed ? 'הסנכרון הושלם. פריטים שעודכנו: ' + changed : 'כל הפריטים מהמכשיר כבר מסונכרנים.';
+            status.textContent = changed ? 'הסנכרון הושלם. פריטים שעודכנו: ' + changed : 'הסנכרון הושלם. אין פריטים לעדכון.';
           }).catch(function (error) {
             status.textContent = error.status === 409 ? 'אין מספיק מקום בחשבון.' :
               error.status === 401 ? 'החיבור לחשבון פג.' : 'הסנכרון נכשל. בדקו את החיבור ונסו שוב.';
