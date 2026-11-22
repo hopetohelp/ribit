@@ -105,9 +105,11 @@ h3 { font-size: 16px; }
 }
 .tabs button + button { margin-right: 4px; }
 .tabs [aria-pressed="true"] { background: #edf2ff; color: #2445bb; font-weight: 700; }
-.result-heading { display: flex; align-items: baseline; justify-content: space-between; }
-.result-heading h1 { margin-left: 8px; overflow-wrap: break-word; }
-.result-heading button { padding-left: 0; }
+.result-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.result-heading h1 { min-width: 0; overflow-wrap: break-word; overflow-wrap: anywhere; font-size: clamp(1.25rem, 1rem + 1vw, 1.5rem); }
+.result-heading button { flex-shrink: 0; }
+.heading-actions { display: flex; gap: 4px; }
+.heading-actions .text-action { min-width: 44px; padding-inline: 6px; }
 #result-data { display: flex; flex-direction: column; }
 .hero { margin-bottom: 15px; padding-right: 10px; border-right: 3px solid #2549d4; }
 .hero span { display: block; color: #4e5c74; font-size: 13px; }
@@ -123,7 +125,7 @@ h3 { font-size: 16px; }
 .track-overview { border: 1px solid #dae2f0; border-radius: 9px; padding: 7px; }
 .track-overview strong, .track-overview small { display: block; }
 .track-overview strong { text-align: right; font-variant-numeric: tabular-nums; }
-.metric, .record { border-top: 1px solid #dae2f0; padding: 9px 0; }
+.metric { border-top: 1px solid #dae2f0; padding: 9px 0; }
 .metric { display: flex; align-items: center; justify-content: space-between; }
 .metric strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .track-name { display: block; font-size: 13px; }
@@ -166,12 +168,23 @@ canvas { display: block; width: 100%; height: 126px; }
 .comparison-badge.same { background: #e3f2e9; color: #28593a; }
 .comparison-badge.different { background: #fcf0dd; color: #77501c; }
 .year-title { margin-top: 14px; }
-.record p { overflow-wrap: break-word; margin-bottom: 3px; }
-.record .actions { margin: 1px 0 0; }
-.record .actions button { padding-right: 0; }
+.record {
+  margin-block-end: 10px; padding: 12px; padding: clamp(10px, 3vw, 16px);
+  border: 1px solid #dae2f0; overflow-wrap: break-word; overflow-wrap: anywhere;
+  font-size: clamp(.875rem, .8rem + .45vw, 1rem);
+}
+.record h2 { font-size: clamp(1rem, .875rem + .7vw, 1.25rem); margin-block-end: 4px; }
+.record-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 10px 0 0; }
+.record-actions button { margin: 0; padding-inline: 4px; }
 .status { position: absolute; z-index: 4; bottom: 41px; right: 16px; left: 16px; margin: auto; max-width: 512px; padding: 8px 12px; background: #17243a; color: #fff; border-radius: 9px; }
 .floating-backdrop { --floating-gutter: 58px 12px 12px; }
-.dialog { width: 100%; max-width: 405px; padding: 13px 15px; }
+.dialog {
+  width: 100%; max-width: 405px; padding: 13px 15px; padding: clamp(10px, 3vw, 16px);
+  font-size: clamp(.875rem, .8rem + .45vw, 1rem); overflow-wrap: anywhere;
+}
+.dialog h2 { font-size: clamp(1.1rem, .95rem + .7vw, 1.35rem); }
+.dialog-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.dialog-actions button { min-width: 0; padding-inline: 6px; }
 .dialog-heading { margin-bottom: 8px; }
 .dialog ul { margin: 0; padding-right: 21px; }
 .keypad-only #main, .keypad-only .dialog { overflow: hidden; }
@@ -196,7 +209,7 @@ canvas { display: block; width: 100%; height: 126px; }
 .dark .error { color: #ffa29b; }
 .dark .bar, .dark .tabs, .dark .track-overview, .dark .chart-track, .dark .metric, .dark .record,
 .dark .segments button, .dark .comparison-table th, .dark .comparison-table td { border-color: #384744; }
-.dark .dialog, .dark .menu { background: #192320; }
+.dark .dialog, .dark .menu, .dark .record { background: #192320; }
 .dark .chart-tip { background: #192320; border-color: #61784a; }
 .dark #chart-dismiss:hover, .dark #chart-dismiss:focus { background: #303d33; }
 .dark .chart-date { color: #d7f875; }
@@ -237,7 +250,4 @@ canvas { display: block; width: 100%; height: 126px; }
   right: -5px; bottom: -3px; transform: rotate(45deg);
 }
 .saved-settings-actions button { width: 100%; margin-block-end: 8px; }
-.saved-share-link input { text-align: left; }
-.record h2, #web-account { overflow-wrap: anywhere; }
-.saved-record-options summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
-.saved-record-options .actions { margin-block-start: 0; }
+.share-link input[dir="ltr"] { text-align: left; }

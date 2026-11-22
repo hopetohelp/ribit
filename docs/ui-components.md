@@ -7,6 +7,6 @@
 | תמיכה | [chat.html](../web/hosting/chat.html) · [chat.js](../web/hosting/chat.js) · [chat.css](../web/hosting/chat.css) | מסך הפתיחה ותפריט המחשבון מקשרים לאותו מסך מלא. הצ׳אט מזהה את מצב החשבון והחיבור ומציג הודעת מצב בהתאם. |
 | מגירות וכפתורי פתיחה | [index.html](../web/hosting/index.html) · [preview.css](../web/hosting/preview.css) | משתמשים ב־`.primary` לכל כפתור מקביל, וב־`.entry-drawer` עם `.drawer-content` לתוכן נפתח. |
 | חשבון | [account-panel.html](../web/account-panel.html) · [account.css](../web/hosting/account.css) | המגירה ועמוד החשבון חולקים את טופס הכניסה ופעולות היציאה והחלפת הסיסמה. פעולות מקבילות משתמשות ב־`.account-control` בתוך `.account-options`. |
-| טפסים ופעולות במחשבון | [app.html](../web/app/app.html) · [app.css](../web/app/app.css) | משתמשים ב־`.field` לשדה עם תווית, `.actions` לקבוצת פעולות וב־`.primary` או `.outline` לפי ההיררכיה. |
+| טפסים ופעולות במחשבון | [app.html](../web/app/app.html) · [app.css](../web/app/app.css) | משתמשים ב־`.field` לשדה עם תווית, `.actions` לקבוצת פעולות וב־`.primary` או `.outline` לפי ההיררכיה. תפריט פעולות וחלון שיתוף משתמשים בחלון הצף המשותף וב־`.dialog-actions` לפעולות מקבילות. |
 
 בכל חלון ממקמים את המיקוד בתוכן או בפקד הסגירה, מאפשרים סגירה במקלדת, ומחזירים את המיקוד לפקד שפתח אותו. מוודאים שהלחיצה בתוך החלון אינה סוגרת אותו ושהחלון נגיש ברוחב נייד.

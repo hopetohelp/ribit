@@ -26,7 +26,10 @@
   </header>
   <main id="main">
     <section id="editor" class="screen" aria-labelledby="editor-title">
-      <h1 id="editor-title">חישוב השקעה</h1>
+      <div class="result-heading">
+        <h1 id="editor-title">חישוב השקעה</h1>
+        <button type="button" id="editor-actions" class="outline" aria-haspopup="dialog">פעולות</button>
+      </div>
       <div id="tracks" class="segments" role="group" aria-label="בחירת מסלול" hidden>
         <button type="button" data-track="0" aria-pressed="true">מסלול א׳</button>
         <button type="button" data-track="1" aria-pressed="false">מסלול ב׳</button>
@@ -69,7 +72,13 @@
       </form>
     </section>
     <section id="result" class="screen" aria-labelledby="result-title" hidden>
-      <div class="result-heading"><h1 id="result-title">תוצאה</h1><button type="button" id="new" class="plain text-action">חדש</button></div>
+      <div class="result-heading">
+        <h1 id="result-title">תוצאה</h1>
+        <div class="heading-actions">
+          <button type="button" id="new" class="plain text-action">חדש</button>
+          <button type="button" id="result-actions" class="outline" aria-haspopup="dialog">פעולות</button>
+        </div>
+      </div>
       <div id="money-mode" class="segments" role="group" aria-label="יחידות תצוגה" hidden>
         <button type="button" data-value="net" aria-pressed="true">סכום עתידי</button>
         <button type="button" data-value="realNet" aria-pressed="false">כסף של היום</button>
@@ -90,11 +99,6 @@
             <div id="chart-values" role="status" aria-live="polite"></div>
           </div>
         </figure>
-      </div>
-      <div class="actions">
-        <button type="button" id="save" class="primary">שמירה</button>
-        <button type="button" id="export-result" class="outline">ייצוא</button>
-        <button type="button" id="edit" class="outline">עריכה</button>
       </div>
       <button type="button" id="details" class="disclosure" aria-expanded="false" aria-controls="details-content"><span>פירוט</span><span class="chevron" aria-hidden="true"></span></button>
       <div id="details-content" hidden></div>

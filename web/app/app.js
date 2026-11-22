@@ -260,7 +260,7 @@
   }
 
   function calculate(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
     stash();
     clearError();
     var currentSession = current();
@@ -276,6 +276,7 @@
       currentSession.calculation = calculation;
       currentSession.result = true;
       showResults();
+      return true;
     } catch (error) {
       if (!error.field) return notify('החישוב נכשל');
       state.active = index;
@@ -300,6 +301,10 @@
   function money(value) { return finance.amount(value, current().currency, true); }
   function last(points) { return points[points.length - 1]; }
 
+  function updateResultTitle() {
+    text('result-title', current().title || (state.comparing ? 'תוצאות ההשוואה' : 'תוצאה'));
+  }
+
   function showResults() {
     var currentSession = current();
     var calculation = currentSession.calculation;
@@ -317,7 +322,7 @@
       amount = gap.abs();
       label = gap.eq(0) ? 'פער נטו · היתרות שוות' : 'פער נטו · ' + (gap.gt(0) ? trackNames[0] : trackNames[1]);
     }
-    text('result-title', currentSession.title || (compare ? 'תוצאות ההשוואה' : 'תוצאה'));
+    updateResultTitle();
     text('hero-label', label);
     text('hero-period', 'אחרי ' + duration(common));
     text('hero-amount', money(amount));
@@ -507,7 +512,7 @@
 
   function saveDialog() {
     var selected = current();
-    openDialog('שמירת חישוב', function (content) {
+    openDialog(state.comparing ? 'שמירת השוואה' : 'שמירת חישוב', function (content) {
       var form = make('form');
       var label = make('label', null, 'field');
       label.appendChild(make('span', 'שם'));
@@ -553,7 +558,7 @@
           selected.origin = source === cloudStore ? 'cloud' : 'device';
           if (source === localStore) scheduleSync();
           selected.title = title;
-          text('result-title', title);
+          updateResultTitle();
           closeDialog();
           notify('נשמר');
         });
@@ -736,7 +741,7 @@
     reader.readAsText(file);
   }
 
-  function showSavedCalculation(entry, summary) {
+  function showSavedCalculation(entry, summary, editing) {
     var calculation = entry.calculation;
     if (!calculation.startedOn) calculation.startedOn = chart.dateKey(new Date(entry.updatedAt || summary.updatedAt || Date.now()));
     var target = calculation.plans.length === 2 ? 'compare' : 'single';
@@ -745,15 +750,16 @@
       followsA: false, labels: calculation.trackLabels || [],
       calculation: calculation, id: summary.id || null, origin: summary.origin, title: entry.title, result: true, display: 'net'
     };
-    view(target);
+    view(target, editing);
   }
 
-  function openSaved(summary) {
+  function openSaved(summary, editing) {
     var source = storageFor(summary.origin);
     source.request(summary.origin === 'cloud' ? 'open' : 'load', { id: summary.id }, function (error, entry) {
       if (state.view !== 'saved') return;
       if (error || !entry || !entry.calculation) return notify('הפתיחה נכשלה');
-      showSavedCalculation(entry, summary);
+      showSavedCalculation(entry, summary, editing);
+      if (editing) fields.initial.focus();
     });
   }
 
@@ -767,41 +773,111 @@
     } catch (_) { notify('קישור השיתוף אינו תקין'); }
   }
 
-  function shareSaved(summary) {
-    openDialog('שיתוף', function (content) {
-      var status = make('p', 'טוענים את הפריט…');
+  function showShareLink(backup) {
+    openDialog('קישור לשיתוף', function (content) {
+      var label = make('label', null, 'field share-link');
+      label.appendChild(make('span', 'כל מי שמקבל את הקישור יכול לפתוח את פרטי הפריט.'));
+      var input = make('input');
+      input.type = 'text';
+      input.dir = 'ltr';
+      input.readOnly = true;
+      input.value = 'https://ribit.hopetohelp.net/app.html#share=' + encodeURIComponent(backup);
+      label.appendChild(input);
+      content.appendChild(label);
+      var status = make('p', null, 'dim');
       status.setAttribute('role', 'status');
       content.appendChild(status);
-      loadForBackup(summary).then(function (entry) {
+      content.appendChild(action('העתקת קישור', function () {
+        input.focus();
+        input.select();
+        if (!navigator.clipboard) {
+          var copied = false;
+          try { copied = document.execCommand('copy'); } catch (_) {}
+          status.textContent = copied ? 'הקישור הועתק' : 'הקישור מסומן להעתקה';
+          return;
+        }
+        navigator.clipboard.writeText(input.value).then(function () {
+          status.textContent = 'הקישור הועתק';
+        }, function () {
+          status.textContent = 'הקישור מסומן להעתקה';
+        });
+      }, 'primary full'));
+    });
+  }
+
+  function dialogActions(content) {
+    var actions = make('div', null, 'dialog-actions');
+    content.appendChild(actions);
+    return actions;
+  }
+
+  function shareItem(summary) {
+    openDialog('שיתוף', function (content) {
+      var status = make('p', 'טוענים את הפריט…', 'dim');
+      status.setAttribute('role', 'status');
+      content.appendChild(status);
+      var item = summary ? loadForBackup(summary) : Promise.resolve(current());
+      item.then(function (entry) {
         if (byId('dialog-backdrop').hidden || status.parentNode !== content) return;
         var backup = encodeBackup([entry]);
-        status.textContent = entry.title;
         status.dir = 'auto';
-        var actions = make('div', null, 'actions');
+        status.textContent = entry.title || '';
+        var actions = dialogActions(content);
         actions.appendChild(action('כקובץ', function () { downloadBackup(backup); }, 'outline'));
-        actions.appendChild(action('כקישור', function () {
-          actions.hidden = true;
-          var label = make('label', null, 'field saved-share-link');
-          label.appendChild(make('span', 'כל מי שמקבל את הקישור יכול לפתוח את פרטי הפריט.'));
-          var input = make('input');
-          input.type = 'text';
-          input.dir = 'ltr';
-          input.readOnly = true;
-          input.value = 'https://ribit.hopetohelp.net/app.html#share=' + encodeURIComponent(backup);
-          label.appendChild(input);
-          content.appendChild(label);
-          content.appendChild(action('העתקת קישור', function () {
-            input.focus();
-            input.select();
-            if (!navigator.clipboard) return notify(document.execCommand('copy') ? 'הקישור הועתק' : 'הקישור מסומן להעתקה');
-            navigator.clipboard.writeText(input.value).then(function () { notify('הקישור הועתק'); }, function () { notify('הקישור מסומן להעתקה'); });
-          }, 'primary'));
-          input.focus();
-          input.select();
-        }, 'outline'));
-        content.appendChild(actions);
+        actions.appendChild(action('כקישור', function () { showShareLink(backup); }, 'outline'));
       }).catch(function () { status.textContent = 'טעינת הפריט נכשלה.'; });
     });
+  }
+
+  function showItemActions(summary) {
+    var entry = summary || current();
+    var editing = !summary && !entry.result;
+    openDialog('פעולות', function (content) {
+      if (entry.title) {
+        var title = make('p', entry.title, 'dim');
+        title.dir = 'auto';
+        content.appendChild(title);
+      }
+      var actions = dialogActions(content);
+      if (!summary) add('שמירה', function () { withCalculation(saveDialog); });
+      add('פתיחה', function () {
+        closeDialog();
+        if (summary) openSaved(summary);
+        else {
+          view('saved');
+          byId('saved-search').focus();
+        }
+      });
+      add('שיתוף', function () {
+        if (summary) shareItem(summary);
+        else withCalculation(shareItem);
+      });
+      add('עריכה', function () {
+        closeDialog();
+        if (summary) openSaved(summary, true);
+        else {
+          showEditor();
+          fields.initial.focus();
+        }
+      }).disabled = editing;
+      add('שינוי שם', function () { renameItem(entry); });
+      add('מחיקה', function () { removeSaved(entry); }).disabled = !entry.id;
+
+      function add(label, handler) {
+        var button = action(label, handler, 'outline');
+        actions.appendChild(button);
+        return button;
+      }
+    });
+
+    function withCalculation(handler) {
+      if (editing) {
+        closeDialog();
+        if (!calculate()) return;
+        byId('result-actions').focus();
+      }
+      handler();
+    }
   }
 
   function pickSaved() {
@@ -876,7 +952,7 @@
             }
           });
           closeDialog();
-          loadSaved();
+          refreshItemView();
           notify('נמחק');
         });
       }, 'primary'));
@@ -890,14 +966,21 @@
     }).catch(function () { notify('הייצוא נכשל'); });
   }
 
-  function renameSaved(entry) {
+  function refreshItemView() {
+    if (state.view === 'saved') {
+      byId('saved-search').focus();
+      loadSaved();
+    } else if (current().result) updateResultTitle();
+  }
+
+  function renameItem(entry) {
     openDialog('שינוי שם', function (content) {
       var form = make('form');
       var label = make('label', null, 'field');
       label.appendChild(make('span', 'שם הפריט'));
       var input = make('input');
       input.dir = 'auto';
-      input.value = entry.title;
+      input.value = entry.title || '';
       input.required = true;
       input.maxLength = 80;
       if (keypadEnabled) {
@@ -920,18 +1003,22 @@
         if (!title || state.busy) return;
         state.busy = submit.disabled = true;
         var source = storageFor(entry.origin);
-        var update = entry.origin === 'cloud' || !window.RibitDevice ? storageRequest('rename', { id: entry.id, title: title }, source) :
-          loadForBackup(entry).then(function (saved) {
-            return storageRequest('save', { id: entry.id, title: title, calculation: saved.calculation }, source);
-          });
+        var update = Promise.resolve();
+        if (entry.id) {
+          update = entry.origin === 'cloud' || !window.RibitDevice ? storageRequest('rename', { id: entry.id, title: title }, source) :
+            loadForBackup(entry).then(function (saved) {
+              return storageRequest('save', { id: entry.id, title: title, calculation: saved.calculation }, source);
+            });
+        }
         update.then(function () {
           state.busy = submit.disabled = false;
           Object.keys(state.sessions).forEach(function (key) {
-            if (state.sessions[key].id === entry.id && state.sessions[key].origin === entry.origin) state.sessions[key].title = title;
+            var item = state.sessions[key];
+            if (item === entry || (entry.id && item.id === entry.id && item.origin === entry.origin)) item.title = title;
           });
           closeDialog();
-          loadSaved();
-          if (source === localStore) scheduleSync();
+          refreshItemView();
+          if (entry.id && source === localStore) scheduleSync();
           notify('השם עודכן');
         }).catch(function () {
           state.busy = submit.disabled = false;
@@ -975,29 +1062,26 @@
     text('saved-status', savedWarnings.join(' ') || (entries.length ? '' :
       savedSummaries.length ? 'לא נמצאו פריטים שמתאימים לסינון' : 'אין עדיין חישובים או השוואות שמורים'));
     entries.forEach(function (entry) {
-      var record = make('article', null, 'record');
+      var record = make('article', null, 'record floating-panel');
       var title = make('h2', entry.title);
       title.dir = 'auto';
       record.appendChild(title);
       var date = new Date(entry.updatedAt).toLocaleDateString('he-IL');
       var locationLabel = mixed ? (entry.origin === 'cloud' ? ' · בענן' : ' · במכשיר') : '';
       record.appendChild(make('p', (entry.planCount === 1 ? 'חישוב' : 'השוואה') + ' · ' + date + locationLabel, 'dim'));
-      var mainActions = make('div', null, 'actions');
+      var mainActions = make('div', null, 'actions record-actions');
       var open = action('פתיחה', function () { openSaved(entry); }, 'outline');
       open.setAttribute('aria-label', 'פתיחה, ' + entry.title);
       mainActions.appendChild(open);
-      var share = action('שיתוף', function () { shareSaved(entry); }, 'outline');
+      var share = action('שיתוף', function () { shareItem(entry); }, 'outline');
       share.setAttribute('aria-label', 'שיתוף, ' + entry.title);
       share.setAttribute('aria-haspopup', 'dialog');
       mainActions.appendChild(share);
+      var menu = action('פעולות', function () { showItemActions(entry); }, 'outline');
+      menu.setAttribute('aria-label', 'פעולות, ' + entry.title);
+      menu.setAttribute('aria-haspopup', 'dialog');
+      mainActions.appendChild(menu);
       record.appendChild(mainActions);
-      var menu = make('details', null, 'saved-record-options');
-      menu.appendChild(make('summary', 'פעולות'));
-      var actions = make('div', null, 'actions');
-      actions.appendChild(action('שינוי שם', function () { renameSaved(entry); }, 'outline'));
-      actions.appendChild(action('מחיקה', function () { removeSaved(entry); }, 'outline'));
-      menu.appendChild(actions);
-      record.appendChild(menu);
       list.appendChild(record);
     });
   }
@@ -1577,14 +1661,13 @@
   listen('about', about);
   listen('dialog-close', closeDialog);
   window.RibitFloating.dismissOutside(byId('dialog-backdrop'), closeDialog);
-  listen('edit', showEditor);
+  listen('editor-actions', function () { showItemActions(); });
+  listen('result-actions', function () { showItemActions(); });
   listen('new', function () {
     state.sessions[state.comparing ? 'compare' : 'single'] = session(state.comparing ? 2 : 1);
     state.active = 0;
     showEditor();
   });
-  listen('save', saveDialog);
-  listen('export-result', function () { downloadBackup(encodeBackup([current()])); });
   listen('saved-settings', showSavedSettings);
   byId('saved-search').addEventListener('input', renderSaved);
   byId('saved-type').addEventListener('click', function (event) {
