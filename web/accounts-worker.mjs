@@ -29,6 +29,7 @@ class MemberStore {
     this.sql.exec('CREATE TABLE IF NOT EXISTS member_records (id TEXT PRIMARY KEY, title TEXT NOT NULL, updatedAt INTEGER NOT NULL, planCount INTEGER NOT NULL, calculation TEXT NOT NULL)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS member_imports (id TEXT PRIMARY KEY, importedAt INTEGER NOT NULL)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS member_device_sync (sourceId TEXT PRIMARY KEY, recordId TEXT REFERENCES member_records(id) ON DELETE SET NULL, syncedAt INTEGER NOT NULL)');
+    this.sql.exec('CREATE INDEX IF NOT EXISTS member_device_sync_record ON member_device_sync(recordId)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS member_recent (id TEXT PRIMARY KEY REFERENCES member_records(id) ON DELETE CASCADE, openedAt INTEGER NOT NULL)');
   }
 
@@ -98,7 +99,10 @@ class MemberStore {
       return this.syncDevice(data.entries);
     }
     if (action === 'list') {
-      return { status: 200, value: this.sql.exec('SELECT id, title, updatedAt, planCount FROM member_records ORDER BY updatedAt DESC, id').toArray() };
+      const value = this.sql.exec(
+        'SELECT r.id, r.title, r.updatedAt, r.planCount, s.sourceId, s.syncedAt FROM member_records r LEFT JOIN member_device_sync s ON s.recordId = r.id ORDER BY r.updatedAt DESC, r.id'
+      ).toArray();
+      return { status: 200, value };
     }
     if (action === 'recent') {
       const value = this.sql.exec('SELECT r.id, r.title FROM member_recent o JOIN member_records r ON r.id = o.id ORDER BY o.openedAt DESC, o.id LIMIT 3').toArray();

@@ -77,7 +77,10 @@ test('device sync is idempotent, keeps the cloud record ID, and respects cloud e
   const local = { ...example, sourceId: 'device-1' };
   assert.equal((await sync([local], 'different@example.test')).status, 401);
   assert.equal((await sync([local])).value, 1);
-  const id = (await list())[0].id;
+  const first = (await list())[0];
+  const id = first.id;
+  assert.equal(first.sourceId, local.sourceId);
+  assert.equal(first.syncedAt, local.updatedAt);
   assert.equal((await sync([local])).value, 0);
 
   const edited = { ...local, title: 'עדכון מקומי', updatedAt: 2000 };
@@ -86,6 +89,7 @@ test('device sync is idempotent, keeps the cloud record ID, and respects cloud e
   await store.records(token, 'rename', { id, title: 'עדכון מהענן' });
   assert.equal((await sync([{ ...edited, updatedAt: 3000 }])).value, 0);
   assert.equal((await list())[0].title, 'עדכון מהענן');
+  assert.equal((await list())[0].syncedAt, edited.updatedAt);
   await store.records(token, 'remove', { id });
   assert.equal((await sync([edited])).value, 0);
   assert.equal((await list()).length, 0);

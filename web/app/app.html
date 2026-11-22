@@ -34,7 +34,6 @@
         <button type="button" data-track="0" aria-pressed="true">מסלול א׳</button>
         <button type="button" data-track="1" aria-pressed="false">מסלול ב׳</button>
       </div>
-      <button type="button" id="pick-saved" class="outline" hidden>בחירה משמורים</button>
       <p id="picked-source" class="dim" hidden></p>
       <form id="calculator" novalidate>
         <label class="field"><span>סכום התחלתי</span><input name="initial" type="text" inputmode="decimal" dir="ltr" maxlength="24" placeholder="0"></label>
@@ -74,10 +73,7 @@
     <section id="result" class="screen" aria-labelledby="result-title" hidden>
       <div class="result-heading">
         <h1 id="result-title">תוצאה</h1>
-        <div class="heading-actions">
-          <button type="button" id="new" class="plain text-action">חדש</button>
-          <button type="button" id="result-actions" class="outline" aria-haspopup="dialog">פעולות</button>
-        </div>
+        <button type="button" id="result-actions" class="outline" aria-haspopup="dialog">פעולות</button>
       </div>
       <div id="money-mode" class="segments" role="group" aria-label="יחידות תצוגה" hidden>
         <button type="button" data-value="net" aria-pressed="true">סכום עתידי</button>

@@ -216,7 +216,6 @@
     fill();
     clearError();
     visibility(byId('tracks'), state.comparing);
-    visibility(byId('pick-saved'), state.comparing);
     text('editor-title', state.comparing ? 'השוואת מסלולים' : 'חישוב השקעה');
     text('compute', state.comparing ? 'השוואה' : 'חישוב');
     setAdvanced(false);
@@ -839,15 +838,16 @@
         content.appendChild(title);
       }
       var actions = dialogActions(content);
-      if (!summary) add('שמירה', function () { withCalculation(saveDialog); });
-      add('פתיחה', function () {
-        closeDialog();
-        if (summary) openSaved(summary);
-        else {
+      if (!summary) {
+        add('שמירה', function () { withCalculation(saveDialog); });
+        add('פתיחה', function () {
+          closeDialog();
           view('saved');
           byId('saved-search').focus();
-        }
-      });
+        });
+        if (editing && state.comparing) add('בחירה משמורים', pickSaved);
+        if (!editing) add('חדש', startNewItem);
+      }
       add('שיתוף', function () {
         if (summary) shareItem(summary);
         else withCalculation(shareItem);
@@ -878,6 +878,14 @@
       }
       handler();
     }
+  }
+
+  function startNewItem() {
+    closeDialog();
+    state.sessions[state.comparing ? 'compare' : 'single'] = session(state.comparing ? 2 : 1);
+    state.active = 0;
+    showEditor();
+    byId('editor-actions').focus();
   }
 
   function pickSaved() {
@@ -1028,12 +1036,27 @@
     });
   }
 
+  function distinctSaved(entries) {
+    var synced = new Map();
+    entries.forEach(function (entry) {
+      if (entry.origin === 'cloud' && entry.sourceId && Number.isFinite(entry.syncedAt)) synced.set(entry.sourceId, entry);
+    });
+    return entries.filter(function (entry) {
+      if (entry.origin !== 'device') return true;
+      var copy = synced.get(entry.id);
+      return !copy || entry.updatedAt > copy.syncedAt;
+    });
+  }
+
   function listSaved() {
     var origins = cloudAvailable ? ['device', 'cloud'] : ['device'];
     return Promise.all(origins.map(function (origin) {
       return storageRequest('list', {}, storageFor(origin)).then(function (entries) {
         return { entries: entries.map(function (entry) {
-          return { id: entry.id, title: entry.title, updatedAt: entry.updatedAt, planCount: entry.planCount, origin: origin };
+          return {
+            id: entry.id, title: entry.title, updatedAt: entry.updatedAt, planCount: entry.planCount,
+            origin: origin, sourceId: entry.sourceId, syncedAt: entry.syncedAt
+          };
         }) };
       }, function (error) {
         var warning = origin === 'device' ? 'טעינת השמורים במכשיר נכשלה.' :
@@ -1042,7 +1065,7 @@
       });
     })).then(function (parts) {
       return {
-        entries: [].concat.apply([], parts.map(function (part) { return part.entries; }))
+        entries: distinctSaved([].concat.apply([], parts.map(function (part) { return part.entries; })))
           .sort(function (a, b) { return b.updatedAt - a.updatedAt || a.title.localeCompare(b.title, 'he'); }),
         warnings: parts.map(function (part) { return part.warning; }).filter(Boolean)
       };
@@ -1063,25 +1086,27 @@
       savedSummaries.length ? 'לא נמצאו פריטים שמתאימים לסינון' : 'אין עדיין חישובים או השוואות שמורים'));
     entries.forEach(function (entry) {
       var record = make('article', null, 'record floating-panel');
-      var title = make('h2', entry.title);
-      title.dir = 'auto';
-      record.appendChild(title);
-      var date = new Date(entry.updatedAt).toLocaleDateString('he-IL');
-      var locationLabel = mixed ? (entry.origin === 'cloud' ? ' · בענן' : ' · במכשיר') : '';
-      record.appendChild(make('p', (entry.planCount === 1 ? 'חישוב' : 'השוואה') + ' · ' + date + locationLabel, 'dim'));
-      var mainActions = make('div', null, 'actions record-actions');
-      var open = action('פתיחה', function () { openSaved(entry); }, 'outline');
+      var open = action(null, function () { openSaved(entry); }, 'plain record-open');
       open.setAttribute('aria-label', 'פתיחה, ' + entry.title);
-      mainActions.appendChild(open);
-      var share = action('שיתוף', function () { shareItem(entry); }, 'outline');
-      share.setAttribute('aria-label', 'שיתוף, ' + entry.title);
-      share.setAttribute('aria-haspopup', 'dialog');
-      mainActions.appendChild(share);
-      var menu = action('פעולות', function () { showItemActions(entry); }, 'outline');
+      var title = make('span', entry.title, 'record-title');
+      title.dir = 'auto';
+      open.appendChild(title);
+      var metadata = make('span', null, 'record-date dim');
+      var updatedAt = new Date(entry.updatedAt);
+      var date = make('time', updatedAt.toLocaleDateString('he-IL'));
+      date.dateTime = chart.dateKey(updatedAt);
+      date.dir = 'ltr';
+      metadata.appendChild(date);
+      if (mixed) metadata.appendChild(make('small', entry.origin === 'cloud' ? 'בענן' : 'במכשיר'));
+      open.appendChild(metadata);
+      record.appendChild(open);
+      var menu = action('פעולות', function () { showItemActions(entry); }, 'outline record-menu');
       menu.setAttribute('aria-label', 'פעולות, ' + entry.title);
       menu.setAttribute('aria-haspopup', 'dialog');
-      mainActions.appendChild(menu);
-      record.appendChild(mainActions);
+      record.appendChild(menu);
+      record.addEventListener('click', function (event) {
+        if (!open.contains(event.target) && !menu.contains(event.target)) open.click();
+      });
       list.appendChild(record);
     });
   }
@@ -1656,18 +1681,12 @@
   listen('brand-home', goHome);
   listen('theme', function () { setTheme(!state.dark, true); setMenu(false); byId('menu').focus(); });
   listen('advanced', function () { setAdvanced(byId('advanced-fields').hidden, true); });
-  listen('pick-saved', pickSaved);
   listen('help', explanations);
   listen('about', about);
   listen('dialog-close', closeDialog);
   window.RibitFloating.dismissOutside(byId('dialog-backdrop'), closeDialog);
   listen('editor-actions', function () { showItemActions(); });
   listen('result-actions', function () { showItemActions(); });
-  listen('new', function () {
-    state.sessions[state.comparing ? 'compare' : 'single'] = session(state.comparing ? 2 : 1);
-    state.active = 0;
-    showEditor();
-  });
   listen('saved-settings', showSavedSettings);
   byId('saved-search').addEventListener('input', renderSaved);
   byId('saved-type').addEventListener('click', function (event) {
@@ -1706,7 +1725,13 @@
   } else showEditor();
   openSharedCalculation();
   if (cloudAvailable) {
-    window.addEventListener('online', scheduleSync);
+    window.addEventListener('online', function () {
+      if (state.view === 'saved') loadSaved();
+      scheduleSync();
+    });
+    window.addEventListener('offline', function () {
+      if (state.view === 'saved') loadSaved();
+    });
     scheduleSync();
   }
   if (androidUpdater || desktopUpdater) {
