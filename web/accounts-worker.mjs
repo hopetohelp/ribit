@@ -28,6 +28,7 @@ class MemberStore {
     this.sql.exec('CREATE TABLE IF NOT EXISTS member_sessions (token TEXT PRIMARY KEY, expires INTEGER NOT NULL)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS member_records (id TEXT PRIMARY KEY, title TEXT NOT NULL, updatedAt INTEGER NOT NULL, planCount INTEGER NOT NULL, calculation TEXT NOT NULL)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS member_imports (id TEXT PRIMARY KEY, importedAt INTEGER NOT NULL)');
+    this.sql.exec('CREATE TABLE IF NOT EXISTS member_device_sync (sourceId TEXT PRIMARY KEY, recordId TEXT REFERENCES member_records(id) ON DELETE SET NULL, syncedAt INTEGER NOT NULL)');
     this.sql.exec('CREATE TABLE IF NOT EXISTS member_recent (id TEXT PRIMARY KEY REFERENCES member_records(id) ON DELETE CASCADE, openedAt INTEGER NOT NULL)');
   }
 
@@ -75,7 +76,12 @@ class MemberStore {
   }
 
   async records(token, action, data) {
-    if (!(await this.session(token))) return { status: 401 };
+    const user = await this.session(token);
+    if (!user) return { status: 401 };
+    if (action === 'sync') {
+      if (user.email !== data.email) return { status: 401 };
+      return this.syncDevice(data.entries);
+    }
     if (action === 'list') {
       return { status: 200, value: this.sql.exec('SELECT id, title, updatedAt, planCount FROM member_records ORDER BY updatedAt DESC, id').toArray() };
     }
@@ -124,6 +130,35 @@ class MemberStore {
       return { status: 200, value: action === 'save' ? ids[0] : null };
     });
   }
+
+  syncDevice(entries) {
+    return this.storage.transactionSync(() => {
+      const changes = entries.flatMap(row => {
+        const existing = this.sql.exec(
+          'SELECT s.recordId, s.syncedAt, r.updatedAt FROM member_device_sync s LEFT JOIN member_records r ON r.id = s.recordId WHERE s.sourceId = ?', row.sourceId
+        ).toArray()[0];
+        // Preserve a newer cloud edit and keep a deleted copy deleted until the device entry changes.
+        if (existing && (row.updatedAt <= existing.syncedAt || row.updatedAt <= existing.updatedAt)) return [];
+        return [{ row, id: existing?.recordId ?? null }];
+      });
+      const count = this.sql.exec('SELECT count(*) AS count FROM member_records').one().count;
+      if (count + changes.filter(change => !change.id).length > recordLimit) return { status: 409 };
+      for (const change of changes) {
+        const { row } = change;
+        const id = change.id ?? crypto.randomUUID();
+        if (change.id) {
+          this.sql.exec('UPDATE member_records SET title = ?, updatedAt = ?, planCount = ?, calculation = ? WHERE id = ?',
+            row.title, row.updatedAt, row.planCount, row.calculation, id);
+        } else {
+          this.sql.exec('INSERT INTO member_records VALUES (?, ?, ?, ?, ?)', id, row.title, row.updatedAt, row.planCount, row.calculation);
+        }
+        this.sql.exec('INSERT INTO member_device_sync VALUES (?, ?, ?) ON CONFLICT(sourceId) DO UPDATE SET recordId = excluded.recordId, syncedAt = excluded.syncedAt',
+          row.sourceId, id, row.updatedAt);
+      }
+      return { status: 200, value: changes.length };
+    });
+  }
+
 }
 
 function readMemberToken(request) {
@@ -207,7 +242,7 @@ async function accountsApi(request, url, env) {
   try {
     body = await readChatBody(request, recordBodyLimit);
     const method = body?.method;
-    if (!['list', 'recent', 'load', 'open', 'save', 'rename', 'remove', 'import'].includes(method)) throw new Error('Invalid operation');
+    if (!['list', 'recent', 'load', 'open', 'save', 'rename', 'remove', 'import', 'sync'].includes(method)) throw new Error('Invalid operation');
     const id = body.data?.id;
     if ((['load', 'open', 'rename', 'remove'].includes(method) || id != null) &&
         (typeof id !== 'string' || !/^[0-9a-f-]{36}$/.test(id))) throw new Error('Invalid ID');
@@ -216,13 +251,21 @@ async function accountsApi(request, url, env) {
       const title = typeof body.data?.title === 'string' ? body.data.title.trim() : '';
       if (!title || title.length > 80) throw new Error('Invalid title');
       values = { id, title };
-    } else if (method === 'import') {
+    } else if (method === 'import' || method === 'sync') {
       const entries = body.data?.entries;
-      if (!Array.isArray(entries) || !entries.length || entries.length > recordLimit) throw new Error('Invalid import');
+      if (!Array.isArray(entries) || !entries.length || entries.length > recordLimit) throw new Error('Invalid batch');
       const requestId = body.data?.requestId;
       if (requestId != null && (typeof requestId !== 'string' ||
           !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(requestId))) throw new Error('Invalid request ID');
-      values = { requestId, entries: entries.map(entry => sanitizeRecord(entry, true)) };
+      if (method === 'sync') {
+        const email = body.data?.email;
+        const sourceIds = new Set(entries.map(entry => entry?.sourceId));
+        if (typeof email !== 'string' || email.length > 254 || sourceIds.size !== entries.length ||
+            [...sourceIds].some(id => typeof id !== 'string' || !/^[a-zA-Z0-9_-]{1,100}$/.test(id))) throw new Error('Invalid sync');
+        values = { email, entries: entries.map(entry => ({ ...sanitizeRecord(entry, true), sourceId: entry.sourceId })) };
+      } else {
+        values = { requestId, entries: entries.map(entry => sanitizeRecord(entry, true)) };
+      }
     } else values = { id };
   } catch { return memberResponse({}, 400); }
   const result = await member.memberOperation('records', session.token, body.method, values);

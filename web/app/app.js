@@ -10,11 +10,20 @@
     try { memberActive = localStorage.getItem('ribit-member-active') === '1'; } catch (_) {}
   }
   var query = hosted ? new URLSearchParams(location.search) : null;
-  var cloud = hosted && query.get('local') !== '1' && (query.get('account') === '1' || memberActive);
-  var store = cloud ? { request: cloudStorage } : localStore;
+  var cloudAvailable = hosted && (query.get('account') === '1' || memberActive);
+  var cloud = cloudAvailable && query.get('local') !== '1';
+  var cloudStore = { request: cloudStorage };
+  var store = cloud ? cloudStore : localStore;
   var savedSummaries = [];
-  var savedSelection = new Set();
   var savedLoad = 0;
+  var savedLoading = false;
+  var savedWarnings = [];
+  var savedType = '';
+  var savedSource = hosted && query.get('local') === '1' ? 'device' : '';
+  var syncPending;
+  var syncQueued = false;
+  var syncedSnapshot;
+  var syncEmail;
   var Money = finance.Money;
   var form = document.getElementById('calculator');
   var fields = form.elements;
@@ -534,12 +543,15 @@
         if (!title || state.busy) return;
         state.busy = true;
         Array.prototype.forEach.call(actions.children, function (button) { button.disabled = true; });
-        store.request('save', { id: copy ? null : selected.id, title: title, calculation: selected.calculation }, function (error, id) {
+        var source = selected.origin ? storageFor(selected.origin) : store;
+        source.request('save', { id: copy ? null : selected.id, title: title, calculation: selected.calculation }, function (error, id) {
           state.busy = false;
           Array.prototype.forEach.call(actions.children, function (button) { button.disabled = false; });
           if (error) return notify(error.status === 401 ? 'החיבור לחשבון פג. התחברו מחדש כדי לשמור בענן.' :
-            cloud ? 'השמירה בענן נכשלה. בדקו את החיבור ונסו שוב.' : 'השמירה נכשלה');
+            source === cloudStore ? 'השמירה בענן נכשלה. בדקו את החיבור ונסו שוב.' : 'השמירה נכשלה');
           selected.id = id;
+          selected.origin = source === cloudStore ? 'cloud' : 'device';
+          if (source === localStore) scheduleSync();
           selected.title = title;
           text('result-title', title);
           closeDialog();
@@ -560,6 +572,10 @@
       balanceFee: options.balanceFee, inflation: options.inflation, taxType: options.taxType, taxRate: options.taxRate,
       includeDepositFeeInBasis: options.includeDepositFeeInBasis
     };
+  }
+
+  function storageFor(origin) {
+    return origin === 'cloud' ? cloudStore : localStore;
   }
 
   function storageRequest(method, data, source) {
@@ -617,10 +633,10 @@
     return JSON.stringify({ format: 'ribit-backup', version: 1, entries: entries.map(backupRecord) });
   }
 
-  function decodeBackup(source) {
+  function decodeBackup(source, single) {
     var backup = JSON.parse(source);
     if (!backup || backup.format !== 'ribit-backup' || backup.version !== 1 ||
-        !Array.isArray(backup.entries) || !backup.entries.length) throw new Error('Invalid backup');
+        !Array.isArray(backup.entries) || !backup.entries.length || (single && backup.entries.length !== 1)) throw new Error('Invalid backup');
     return backup.entries.map(function (entry) {
       var saved = entry.calculation;
       if (!saved || typeof entry.title !== 'string' || !entry.title.trim() || entry.title.length > 80 ||
@@ -646,16 +662,9 @@
     });
   }
 
-  function savedEntries(source) {
-    return storageRequest('list', {}, source).then(function (entries) {
-      return Promise.all(entries.map(function (entry) { return loadForBackup(entry, source); }));
-    });
-  }
-
-  function loadForBackup(summary, source) {
-    return storageRequest('load', { id: summary.id }, source).then(function (entry) {
-      entry.updatedAt = summary.updatedAt;
-      return entry;
+  function loadForBackup(summary) {
+    return storageRequest('load', { id: summary.id }, storageFor(summary.origin)).then(function (entry) {
+      return { title: entry.title, calculation: entry.calculation, updatedAt: entry.updatedAt || summary.updatedAt };
     });
   }
 
@@ -675,16 +684,16 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
-  function confirmImport(entries, copying) {
+  function confirmImport(entries) {
     if (new Blob([encodeBackup(entries)]).size > 8 * 1024 * 1024) return notify('הגיבוי גדול מדי. ייצאו פריטים בקבוצות.');
     var requestId = cloud ? crypto.randomUUID() : undefined;
     var comparisons = entries.filter(function (entry) { return entry.calculation.plans.length === 2; }).length;
-    openDialog(copying ? 'העתקה לענן' : 'ייבוא קובץ', function (content) {
+    openDialog('ייבוא קובץ', function (content) {
       content.appendChild(make('p', 'חישובים: ' + (entries.length - comparisons) + ' · השוואות: ' + comparisons));
       content.appendChild(make('p', 'הפריטים יתווספו ל' + (cloud ? 'שמורים בענן' : 'שמורים במכשיר') + ' כעותקים.'));
       var status = make('p');
       status.setAttribute('role', 'status');
-      var submit = action(copying ? 'העתקה' : 'ייבוא', function () {
+      var submit = action('ייבוא', function () {
         if (state.busy) return;
         state.busy = true;
         submit.disabled = true;
@@ -692,6 +701,7 @@
         storageRequest('import', { entries: entries, requestId: requestId }).then(function () {
           state.busy = false;
           closeDialog();
+          if (!cloud) scheduleSync();
           if (state.view === 'saved') loadSaved();
           notify('נוספו פריטים: ' + entries.length);
         }).catch(function (error) {
@@ -712,7 +722,7 @@
     var entries;
     try { entries = decodeBackup(source); }
     catch (error) { return notify('קובץ הגיבוי אינו תקין'); }
-    confirmImport(entries, false);
+    confirmImport(entries);
   }
 
   function importBackupFile(event) {
@@ -726,19 +736,71 @@
     reader.readAsText(file);
   }
 
+  function showSavedCalculation(entry, summary) {
+    var calculation = entry.calculation;
+    if (!calculation.startedOn) calculation.startedOn = chart.dateKey(new Date(entry.updatedAt || summary.updatedAt || Date.now()));
+    var target = calculation.plans.length === 2 ? 'compare' : 'single';
+    state.sessions[target] = {
+      drafts: calculation.plans.map(draftFrom), currency: calculation.currency,
+      followsA: false, labels: calculation.trackLabels || [],
+      calculation: calculation, id: summary.id || null, origin: summary.origin, title: entry.title, result: true, display: 'net'
+    };
+    view(target);
+  }
+
   function openSaved(summary) {
-    store.request(cloud ? 'open' : 'load', { id: summary.id }, function (error, entry) {
+    var source = storageFor(summary.origin);
+    source.request(summary.origin === 'cloud' ? 'open' : 'load', { id: summary.id }, function (error, entry) {
       if (state.view !== 'saved') return;
       if (error || !entry || !entry.calculation) return notify('הפתיחה נכשלה');
-      var calculation = entry.calculation;
-      if (!calculation.startedOn) calculation.startedOn = chart.dateKey(new Date(entry.updatedAt || summary.updatedAt || Date.now()));
-      var target = calculation.plans.length === 2 ? 'compare' : 'single';
-      state.sessions[target] = {
-        drafts: calculation.plans.map(draftFrom), currency: calculation.currency,
-        followsA: false, labels: calculation.trackLabels || [],
-        calculation: calculation, id: summary.id, title: entry.title, result: true, display: 'net'
-      };
-      view(target);
+      showSavedCalculation(entry, summary);
+    });
+  }
+
+  function openSharedCalculation() {
+    if (!hosted || location.hash.indexOf('#share=') !== 0) return;
+    var payload = location.hash.slice(7);
+    if (payload.length > 24000) return notify('קישור השיתוף ארוך מדי');
+    try {
+      var entry = decodeBackup(decodeURIComponent(payload), true)[0];
+      showSavedCalculation(entry, {});
+    } catch (_) { notify('קישור השיתוף אינו תקין'); }
+  }
+
+  function shareSaved(summary) {
+    openDialog('שיתוף', function (content) {
+      var status = make('p', 'טוענים את הפריט…');
+      status.setAttribute('role', 'status');
+      content.appendChild(status);
+      loadForBackup(summary).then(function (entry) {
+        if (byId('dialog-backdrop').hidden || status.parentNode !== content) return;
+        var backup = encodeBackup([entry]);
+        status.textContent = entry.title;
+        status.dir = 'auto';
+        var actions = make('div', null, 'actions');
+        actions.appendChild(action('כקובץ', function () { downloadBackup(backup); }, 'outline'));
+        actions.appendChild(action('כקישור', function () {
+          actions.hidden = true;
+          var label = make('label', null, 'field saved-share-link');
+          label.appendChild(make('span', 'כל מי שמקבל את הקישור יכול לפתוח את פרטי הפריט.'));
+          var input = make('input');
+          input.type = 'text';
+          input.dir = 'ltr';
+          input.readOnly = true;
+          input.value = 'https://ribit.hopetohelp.net/app.html#share=' + encodeURIComponent(backup);
+          label.appendChild(input);
+          content.appendChild(label);
+          content.appendChild(action('העתקת קישור', function () {
+            input.focus();
+            input.select();
+            if (!navigator.clipboard) return notify(document.execCommand('copy') ? 'הקישור הועתק' : 'הקישור מסומן להעתקה');
+            navigator.clipboard.writeText(input.value).then(function () { notify('הקישור הועתק'); }, function () { notify('הקישור מסומן להעתקה'); });
+          }, 'primary'));
+          input.focus();
+          input.select();
+        }, 'outline'));
+        content.appendChild(actions);
+      }).catch(function () { status.textContent = 'טעינת הפריט נכשלה.'; });
     });
   }
 
@@ -759,7 +821,7 @@
       function choose(summary, position, label) {
         if (state.busy) return;
         state.busy = true;
-        store.request('load', { id: summary.id }, function (error, entry) {
+        storageFor(summary.origin).request('load', { id: summary.id }, function (error, entry) {
           state.busy = false;
           if (!stillOpen()) return;
           var calculation = entry && entry.calculation;
@@ -783,13 +845,10 @@
           clearError();
         });
       }
-      store.request('list', {}, function (error, entries) {
+      listSaved().then(function (listing) {
         if (!stillOpen()) return;
-        if (error) {
-          status.textContent = 'טעינת שמורים נכשלה';
-          return;
-        }
-        status.textContent = entries.length ? '' : 'אין חישובים שמורים';
+        var entries = listing.entries;
+        status.textContent = entries.length ? '' : listing.warnings.length ? 'טעינת שמורים נכשלה' : 'אין חישובים שמורים';
         entries.forEach(function (summary) {
           for (var index = 0; index < summary.planCount; index++) addChoice(summary, index);
         });
@@ -807,11 +866,11 @@
       content.appendChild(action('מחיקה', function () {
         if (state.busy) return;
         state.busy = true;
-        store.request('remove', { id: entry.id }, function (error) {
+        storageFor(entry.origin).request('remove', { id: entry.id }, function (error) {
           state.busy = false;
           if (error) return notify('המחיקה נכשלה');
           Object.keys(state.sessions).forEach(function (key) {
-            if (state.sessions[key].id === entry.id) {
+            if (state.sessions[key].id === entry.id && state.sessions[key].origin === entry.origin) {
               state.sessions[key].id = null;
               state.sessions[key].title = null;
             }
@@ -860,17 +919,19 @@
         var title = input.value.trim();
         if (!title || state.busy) return;
         state.busy = submit.disabled = true;
-        var update = cloud || !window.RibitDevice ? storageRequest('rename', { id: entry.id, title: title }) :
+        var source = storageFor(entry.origin);
+        var update = entry.origin === 'cloud' || !window.RibitDevice ? storageRequest('rename', { id: entry.id, title: title }, source) :
           loadForBackup(entry).then(function (saved) {
-            return storageRequest('save', { id: entry.id, title: title, calculation: saved.calculation });
+            return storageRequest('save', { id: entry.id, title: title, calculation: saved.calculation }, source);
           });
         update.then(function () {
           state.busy = submit.disabled = false;
           Object.keys(state.sessions).forEach(function (key) {
-            if (state.sessions[key].id === entry.id) state.sessions[key].title = title;
+            if (state.sessions[key].id === entry.id && state.sessions[key].origin === entry.origin) state.sessions[key].title = title;
           });
           closeDialog();
           loadSaved();
+          if (source === localStore) scheduleSync();
           notify('השם עודכן');
         }).catch(function () {
           state.busy = submit.disabled = false;
@@ -880,78 +941,227 @@
     });
   }
 
-  function updateSelection() {
-    byId('export-selected').disabled = !savedSelection.size;
+  function listSaved() {
+    var origins = cloudAvailable ? ['device', 'cloud'] : ['device'];
+    return Promise.all(origins.map(function (origin) {
+      return storageRequest('list', {}, storageFor(origin)).then(function (entries) {
+        return { entries: entries.map(function (entry) {
+          return { id: entry.id, title: entry.title, updatedAt: entry.updatedAt, planCount: entry.planCount, origin: origin };
+        }) };
+      }, function (error) {
+        var warning = origin === 'device' ? 'טעינת השמורים במכשיר נכשלה.' :
+          error.status === 401 ? 'החיבור לחשבון פג.' : 'השמורים בענן אינם זמינים כרגע.';
+        return { entries: [], warning: warning };
+      });
+    })).then(function (parts) {
+      return {
+        entries: [].concat.apply([], parts.map(function (part) { return part.entries; }))
+          .sort(function (a, b) { return b.updatedAt - a.updatedAt || a.title.localeCompare(b.title, 'he'); }),
+        warnings: parts.map(function (part) { return part.warning; }).filter(Boolean)
+      };
+    });
   }
 
   function renderSaved() {
+    if (savedLoading) return;
     var list = byId('saved-list');
     var search = byId('saved-search').value.trim().normalize('NFC').toLocaleLowerCase('he-IL');
-    var kind = byId('saved-type').value;
+    var mixed = !byId('saved-source').hidden;
     var entries = savedSummaries.filter(function (entry) {
-      return (!kind || String(entry.planCount) === kind) &&
+      return (!savedType || String(entry.planCount) === savedType) && (!mixed || !savedSource || entry.origin === savedSource) &&
         entry.title.normalize('NFC').toLocaleLowerCase('he-IL').indexOf(search) !== -1;
     });
     list.textContent = '';
-    text('saved-status', entries.length ? '' : savedSummaries.length ? 'לא נמצאו פריטים שמתאימים לחיפוש' : 'אין עדיין חישובים או השוואות שמורים');
+    text('saved-status', savedWarnings.join(' ') || (entries.length ? '' :
+      savedSummaries.length ? 'לא נמצאו פריטים שמתאימים לסינון' : 'אין עדיין חישובים או השוואות שמורים'));
     entries.forEach(function (entry) {
       var record = make('article', null, 'record');
       var title = make('h2', entry.title);
       title.dir = 'auto';
       record.appendChild(title);
       var date = new Date(entry.updatedAt).toLocaleDateString('he-IL');
-      record.appendChild(make('p', (entry.planCount === 1 ? 'חישוב' : 'השוואה') + ' · ' + date, 'dim'));
-      var selection = make('label', null, 'check saved-selection');
-      var checkbox = make('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = savedSelection.has(entry.id);
-      checkbox.setAttribute('aria-label', 'בחירה לייצוא, ' + entry.title);
-      checkbox.addEventListener('change', function () {
-        if (checkbox.checked) savedSelection.add(entry.id);
-        else savedSelection.delete(entry.id);
-        updateSelection();
-      });
-      selection.appendChild(checkbox);
-      selection.appendChild(make('span', 'בחירה לייצוא'));
-      record.appendChild(selection);
+      var locationLabel = mixed ? (entry.origin === 'cloud' ? ' · בענן' : ' · במכשיר') : '';
+      record.appendChild(make('p', (entry.planCount === 1 ? 'חישוב' : 'השוואה') + ' · ' + date + locationLabel, 'dim'));
+      var mainActions = make('div', null, 'actions');
       var open = action('פתיחה', function () { openSaved(entry); }, 'outline');
       open.setAttribute('aria-label', 'פתיחה, ' + entry.title);
-      record.appendChild(open);
+      mainActions.appendChild(open);
+      var share = action('שיתוף', function () { shareSaved(entry); }, 'outline');
+      share.setAttribute('aria-label', 'שיתוף, ' + entry.title);
+      share.setAttribute('aria-haspopup', 'dialog');
+      mainActions.appendChild(share);
+      record.appendChild(mainActions);
       var menu = make('details', null, 'saved-record-options');
       menu.appendChild(make('summary', 'פעולות'));
       var actions = make('div', null, 'actions');
       actions.appendChild(action('שינוי שם', function () { renameSaved(entry); }, 'outline'));
-      actions.appendChild(action('ייצוא', function () { exportSummaries([entry]); }, 'outline'));
       actions.appendChild(action('מחיקה', function () { removeSaved(entry); }, 'outline'));
       menu.appendChild(actions);
       record.appendChild(menu);
       list.appendChild(record);
     });
-    updateSelection();
+  }
+
+  function setSavedFilter(id, value) {
+    Array.prototype.forEach.call(byId(id).children, function (button) {
+      button.setAttribute('aria-pressed', String(button.getAttribute('data-saved-filter') === value));
+    });
   }
 
   function loadSaved() {
     var load = ++savedLoad;
+    savedLoading = true;
     savedSummaries = [];
     byId('saved-list').textContent = '';
-    byId('export-selected').disabled = byId('export-all').disabled = true;
     byId('retry-saved').hidden = true;
-    byId('saved-search').disabled = byId('saved-type').disabled = true;
     text('saved-status', 'טוענים שמורים…');
-    store.request('list', {}, function (error, entries) {
+    listSaved().then(function (listing) {
       if (state.view !== 'saved' || load !== savedLoad) return;
-      if (error) {
-        text('saved-status', error.status === 401 ? 'החיבור לחשבון פג. היכנסו דרך ניהול החשבון כדי לטעון את השמורים.' :
-          cloud ? 'השמורים בענן אינם זמינים. בדקו את החיבור או פתחו את השמורים במכשיר.' : 'טעינת השמורים נכשלה.');
-        byId('retry-saved').hidden = false;
-        return;
-      }
-      savedSummaries = entries;
-      var ids = new Set(entries.map(function (entry) { return entry.id; }));
-      savedSelection.forEach(function (id) { if (!ids.has(id)) savedSelection.delete(id); });
-      byId('saved-search').disabled = byId('saved-type').disabled = false;
-      byId('export-all').disabled = !entries.length;
+      savedLoading = false;
+      savedSummaries = listing.entries;
+      savedWarnings = listing.warnings;
+      visibility(byId('retry-saved'), savedWarnings.length > 0);
+      var origins = new Set(savedSummaries.map(function (entry) { return entry.origin; }));
+      visibility(byId('saved-source'), origins.size > 1);
+      setSavedFilter('saved-source', savedSource);
       renderSaved();
+    });
+  }
+
+  var syncPreferencePrefix = 'ribit-saved-sync:';
+
+  function cloudMember() {
+    if (!cloudAvailable) return Promise.resolve(null);
+    return fetch('/api/account/session', { cache: 'no-store' }).then(function (response) {
+      if (response.status === 401) return null;
+      if (!response.ok) throw new Error('Session unavailable');
+      return response.json();
+    });
+  }
+
+  function automaticSync(member) {
+    try { return localStorage.getItem(syncPreferencePrefix + member.email) === '1'; }
+    catch (_) { return false; }
+  }
+
+  function runSync(manual, expectedEmail) {
+    if (syncPending) {
+      if (!expectedEmail || syncEmail === expectedEmail) return syncPending;
+      return syncPending.catch(function () {}).then(function () { return runSync(manual, expectedEmail); });
+    }
+    syncEmail = expectedEmail;
+    syncPending = cloudMember().then(function (member) {
+      if (!member || (expectedEmail && member.email !== expectedEmail)) {
+        if (!manual) return 0;
+        var error = new Error('Sign-in required');
+        error.status = 401;
+        throw error;
+      }
+      if (!manual && !automaticSync(member)) return 0;
+      syncEmail = member.email;
+      return storageRequest('list', {}, localStore).then(function (entries) {
+        var snapshot = member.email + ':' + JSON.stringify(entries.map(function (entry) { return [entry.id, entry.updatedAt]; }));
+        if (!entries.length || (!manual && snapshot === syncedSnapshot)) return 0;
+        return Promise.all(entries.map(function (entry) {
+          return loadForBackup(entry).then(function (item) {
+            var record = backupRecord(item);
+            record.sourceId = entry.id;
+            return record;
+          });
+        })).then(function (records) {
+          return storageRequest('sync', { email: member.email, entries: records }, cloudStore);
+        }).then(function (changed) {
+          syncedSnapshot = snapshot;
+          if (changed && state.view === 'saved') loadSaved();
+          return changed;
+        });
+      });
+    });
+    function finished() {
+      syncPending = null;
+      syncEmail = null;
+      if (syncQueued) {
+        syncQueued = false;
+        scheduleSync();
+      }
+    }
+    syncPending.then(finished, finished);
+    return syncPending;
+  }
+
+  function scheduleSync() {
+    if (!cloudAvailable || navigator.onLine === false) return;
+    try {
+      if (!Object.keys(localStorage).some(function (key) { return key.indexOf(syncPreferencePrefix) === 0; })) return;
+    } catch (_) { return; }
+    if (syncPending) syncQueued = true;
+    else runSync(false).catch(function () {});
+  }
+
+  function showSavedSettings() {
+    openDialog('הגדרות שמורים', function (content) {
+      var actions = make('div', null, 'saved-settings-actions');
+      var exportAll = action('ייצוא הכול', function () {
+        closeDialog();
+        exportSummaries(savedSummaries);
+      }, 'outline');
+      exportAll.disabled = savedLoading || !savedSummaries.length;
+      actions.appendChild(exportAll);
+      actions.appendChild(action('ייבוא', function () {
+        closeDialog();
+        if (window.RibitDevice && window.RibitDevice.importBackup) window.RibitDevice.importBackup();
+        else byId('backup-file').click();
+      }, 'outline'));
+      content.appendChild(actions);
+      if (savedWarnings.length && savedSummaries.length) content.appendChild(make('p', 'הייצוא יכלול את הפריטים שזמינים כרגע.', 'dim'));
+
+      content.appendChild(make('h3', 'סנכרון לענן'));
+      var status = make('p', 'בודקים אם יש חיבור לחשבון…', 'dim');
+      status.setAttribute('role', 'status');
+      content.appendChild(status);
+      cloudMember().then(function (member) {
+        if (byId('dialog-backdrop').hidden || status.parentNode !== content) return;
+        if (!member) {
+          status.textContent = 'כדי לסנכרן, התחברו לחשבון באתר.';
+          return;
+        }
+        status.textContent = 'הסנכרון מעביר עותקים של פריטים מהמכשיר לענן.';
+        var group = make('div', null, 'segments');
+        group.setAttribute('role', 'group');
+        group.setAttribute('aria-label', 'מצב סנכרון');
+        var automatic = action('אוטומטי', function () { setMode(true); });
+        var manual = action('ידני', function () { setMode(false); });
+        group.appendChild(automatic);
+        group.appendChild(manual);
+        content.appendChild(group);
+        function renderMode() {
+          var enabled = automaticSync(member);
+          automatic.setAttribute('aria-pressed', String(enabled));
+          manual.setAttribute('aria-pressed', String(!enabled));
+        }
+        function setMode(enabled) {
+          try {
+            if (enabled) localStorage.setItem(syncPreferencePrefix + member.email, '1');
+            else localStorage.removeItem(syncPreferencePrefix + member.email);
+          } catch (_) { notify('שמירת ההעדפה נכשלה'); }
+          renderMode();
+          if (enabled) syncNow();
+        }
+        var run = action('סנכרון עכשיו', syncNow, 'outline');
+        content.appendChild(run);
+        renderMode();
+        function syncNow() {
+          if (run.disabled) return;
+          run.disabled = true;
+          status.textContent = 'מסנכרנים…';
+          runSync(true, member.email).then(function (changed) {
+            status.textContent = changed ? 'הסנכרון הושלם. פריטים שעודכנו: ' + changed : 'כל הפריטים מהמכשיר כבר מסונכרנים.';
+          }).catch(function (error) {
+            status.textContent = error.status === 409 ? 'אין מספיק מקום בחשבון.' :
+              error.status === 401 ? 'החיבור לחשבון פג.' : 'הסנכרון נכשל. בדקו את החיבור ונסו שוב.';
+          }).then(function () { run.disabled = false; });
+        }
+      }).catch(function () { status.textContent = 'אין כרגע חיבור לחשבון. בדקו את החיבור ונסו שוב.'; });
     });
   }
 
@@ -1180,6 +1390,9 @@
         input.removeAttribute('data-inputmode');
       }
     });
+    var search = byId('saved-search');
+    if (enabled) search.setAttribute('inputmode', 'none');
+    else search.removeAttribute('inputmode');
     var title = byId('save-title');
     if (title) {
       if (enabled) title.setAttribute('inputmode', 'none');
@@ -1235,8 +1448,8 @@
       } else active.click();
       return;
     }
-    if (active.tagName !== 'INPUT' || active.type !== 'text') return;
-    var title = active.id === 'save-title';
+    if (active.tagName !== 'INPUT' || active.readOnly || (active.type !== 'text' && active.type !== 'search')) return;
+    var title = active.id === 'save-title' || active.id === 'saved-search';
     if (!title && !/^(?:Backspace|[0-9.\-])$/.test(key)) return;
     var start = active.selectionStart;
     var end = active.selectionEnd;
@@ -1263,7 +1476,7 @@
         lastTap = { input: active, key: key, index: index, time: now, end: start + 1 };
       }
     }
-    if (active.value.length - (end - start) + insert.length > active.maxLength) return;
+    if (active.maxLength >= 0 && active.value.length - (end - start) + insert.length > active.maxLength) return;
     active.value = active.value.slice(0, start) + insert + active.value.slice(end);
     active.setSelectionRange(start + insert.length, start + insert.length);
     var input = document.createEvent('Event');
@@ -1358,49 +1571,24 @@
     state.active = 0;
     showEditor();
   });
-  if (hosted) {
-    var account = byId('web-account');
-    var accountLink = make('a', cloud ? 'ניהול החשבון' : 'כניסה לשמירה בענן');
-    accountLink.href = cloud ? '/account' : '/account?next=calculator';
-    accountLink.target = window === window.top ? '_self' : '_blank';
-    accountLink.rel = 'noopener';
-    if (cloud) {
-      byId('saved-title').textContent = 'שמורים בענן';
-      byId('copy-local').hidden = false;
-      var localLink = make('a', 'שמורים במכשיר');
-      localLink.href = '/app.html?installed=1&local=1&view=saved';
-      localLink.target = accountLink.target;
-      localLink.rel = 'noopener';
-      account.appendChild(localLink);
-      account.appendChild(document.createTextNode(' · '));
-    }
-    if (!cloud) byId('saved-title').textContent = 'שמורים במכשיר';
-    account.appendChild(accountLink);
-    visibility(account, true);
-  }
   listen('save', saveDialog);
   listen('export-result', function () { downloadBackup(encodeBackup([current()])); });
+  listen('saved-settings', showSavedSettings);
   byId('saved-search').addEventListener('input', renderSaved);
-  byId('saved-type').addEventListener('change', renderSaved);
+  byId('saved-type').addEventListener('click', function (event) {
+    if (event.target.tagName !== 'BUTTON') return;
+    var selected = event.target.getAttribute('data-saved-filter');
+    savedType = savedType === selected ? '' : selected;
+    setSavedFilter('saved-type', savedType);
+    renderSaved();
+  });
+  byId('saved-source').addEventListener('click', function (event) {
+    if (event.target.tagName !== 'BUTTON') return;
+    savedSource = event.target.getAttribute('data-saved-filter');
+    setSavedFilter('saved-source', savedSource);
+    renderSaved();
+  });
   listen('retry-saved', loadSaved);
-  listen('export-all', function () { exportSummaries(savedSummaries); });
-  listen('export-selected', function () {
-    exportSummaries(savedSummaries.filter(function (entry) { return savedSelection.has(entry.id); }));
-  });
-  listen('copy-local', function () {
-    var button = byId('copy-local');
-    button.disabled = true;
-    savedEntries(localStore).then(function (entries) {
-      if (state.view !== 'saved') return;
-      if (!entries.length) return notify('אין פריטים שמורים במכשיר להעתקה');
-      confirmImport(entries, true);
-    }).catch(function () { notify('קריאת השמורים מהמכשיר נכשלה'); })
-      .then(function () { button.disabled = false; });
-  });
-  listen('import-backup', function () {
-    if (window.RibitDevice && window.RibitDevice.importBackup) window.RibitDevice.importBackup();
-    else byId('backup-file').click();
-  });
   window.RibitBackupFile = {
     restore: restoreBackup,
     status: function (saved) { notify(saved ? 'קובץ הגיבוי נשמר' : 'פעולת הקובץ נכשלה'); }
@@ -1418,9 +1606,14 @@
     if (cloud && recordId) {
       query.delete('record');
       history.replaceState(null, '', location.pathname + '?' + query);
-      openSaved({ id: recordId });
+      openSaved({ id: recordId, origin: 'cloud' });
     }
   } else showEditor();
+  openSharedCalculation();
+  if (cloudAvailable) {
+    window.addEventListener('online', scheduleSync);
+    scheduleSync();
+  }
   if (androidUpdater || desktopUpdater) {
     if (androidUpdater) {
       window.RibitUpdate = {

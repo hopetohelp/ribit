@@ -218,8 +218,8 @@
     doc.addEventListener('pointerdown', event => {
       if (model !== 'touch') return;
       // Give direct taps on editable fields their normal browser keyboard.
-      const editable = event.target.closest('input[type="text"], input:not([type])') ||
-        event.target.closest('label')?.querySelector('input[type="text"], input:not([type])');
+      const editableField = 'input[type="text"]:not([readonly]), input[type="search"], input:not([type])';
+      const editable = event.target.closest(editableField) || event.target.closest('label')?.querySelector(editableField);
       setKeypadMode(!editable);
     }, true);
     configureKeypad();

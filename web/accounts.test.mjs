@@ -68,3 +68,25 @@ test('repeating a cloud import request does not duplicate the batch', async () =
   await store.records(token, 'import', { ...batch, requestId: crypto.randomUUID() });
   assert.equal((await store.records(token, 'list')).value.length, 4);
 });
+
+test('device sync is idempotent, keeps the cloud record ID, and respects cloud edits and deletion', async () => {
+  const store = createStore();
+  const token = await store.newSession();
+  const sync = (entries, email = 'test@example.test') => store.records(token, 'sync', { email, entries });
+  const list = async () => (await store.records(token, 'list')).value;
+  const local = { ...example, sourceId: 'device-1' };
+  assert.equal((await sync([local], 'different@example.test')).status, 401);
+  assert.equal((await sync([local])).value, 1);
+  const id = (await list())[0].id;
+  assert.equal((await sync([local])).value, 0);
+
+  const edited = { ...local, title: 'עדכון מקומי', updatedAt: 2000 };
+  assert.equal((await sync([edited])).value, 1);
+  assert.equal((await list())[0].id, id);
+  await store.records(token, 'rename', { id, title: 'עדכון מהענן' });
+  assert.equal((await sync([{ ...edited, updatedAt: 3000 }])).value, 0);
+  assert.equal((await list())[0].title, 'עדכון מהענן');
+  await store.records(token, 'remove', { id });
+  assert.equal((await sync([edited])).value, 0);
+  assert.equal((await list()).length, 0);
+});
