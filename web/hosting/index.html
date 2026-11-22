@@ -28,6 +28,10 @@
             <span>חשבו, השוו ושמרו מסלולי השקעה.</span>
           </p>
         </header>
+        <div class="home-app">
+          <iframe id="home-app" src="/app.html?home=1" title="מחשבון ריבית דריבית"
+            sandbox="allow-same-origin allow-downloads allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+        </div>
         <div class="entry-panel">
           <div class="install-options" aria-label="התחברות, פתיחה והתקנה">
             <details id="account-drawer" class="entry-drawer">
@@ -38,13 +42,15 @@
                 <!-- /account-panel -->
               </div>
             </details>
-            <details class="entry-drawer">
-              <summary class="primary">כניסה לאתר <bdi id="visitors" class="install-count" aria-label="צופים באתר">—</bdi></summary>
+            <details id="android-drawer" class="entry-drawer">
+              <summary class="primary">הורדה ל־Android <span id="downloads" class="install-count" aria-label="הורדות Android">—</span></summary>
               <div class="drawer-content">
-                <div class="display-modes" role="group" aria-label="מצב תצוגה">
-                  <a class="primary primary-centered" href="/app.html">מסך מלא</a>
-                  <button type="button" class="primary primary-centered" id="app-display-mode" aria-expanded="false" aria-controls="app-display-settings">כאפליקציה</button>
-                </div>
+                <p id="android-release-status" role="status">בודקים איזו גרסה זמינה…</p>
+                <a id="android-download" class="primary" href="/download" hidden>הורדת APK</a>
+                <button type="button" id="android-retry" hidden>בדיקה חוזרת</button>
+                <p>בסיום ההורדה, פתחו את הקובץ ואשרו את ההתקנה. ייתכן שבהתקנה ראשונה Android יבקש לאפשר התקנה מהדפדפן.</p>
+                <p><strong>כבר התקנתם את ריבית?</strong> השאירו את האפליקציה במכשיר. פתחו את הקובץ החדש ובחרו ״עדכון״. כך החישובים השמורים יישארו באפליקציה.</p>
+                <button type="button" class="primary primary-centered" id="app-display-mode" aria-expanded="false" aria-controls="app-display-settings">הצגה כאפליקציה</button>
                 <div id="app-display-settings" hidden>
                   <h2>גודל התצוגה</h2>
                   <div class="sizes" role="group" aria-label="גודל התצוגה">
@@ -66,16 +72,6 @@
                 </div>
               </div>
             </details>
-            <details id="android-drawer" class="entry-drawer">
-              <summary class="primary">הורדה ל־Android <span id="downloads" class="install-count" aria-label="הורדות Android">—</span></summary>
-              <div class="drawer-content">
-                <p id="android-release-status" role="status">בודקים איזו גרסה זמינה…</p>
-                <a id="android-download" class="primary" href="/download" hidden>הורדת APK</a>
-                <button type="button" id="android-retry" hidden>בדיקה חוזרת</button>
-                <p>בסיום ההורדה, פתחו את הקובץ ואשרו את ההתקנה. ייתכן שבהתקנה ראשונה Android יבקש לאפשר התקנה מהדפדפן.</p>
-                <p><strong>כבר התקנתם את ריבית?</strong> השאירו את האפליקציה במכשיר. פתחו את הקובץ החדש ובחרו ״עדכון״. כך החישובים השמורים יישארו באפליקציה.</p>
-              </div>
-            </details>
             <a class="primary" href="/download/windows">
               הורדה ל־Windows
               <span id="windows-downloads" class="install-count" aria-label="הורדות Windows">—</span></a>
@@ -90,6 +86,7 @@
             <a class="primary primary-centered" href="/chat">נשמח לשמוע אתכם</a>
           </div>
           <footer class="landing-footer">
+            <small id="home-visitors" hidden>צופים באתר <bdi id="visitors"></bdi></small>
             <small class="web-version" id="web-release" hidden>גרסה <bdi id="web-version"></bdi></small>
             <a href="https://github.com/hopetohelp/ribit">קוד המקור ב־GitHub</a>
           </footer>

@@ -180,7 +180,7 @@ export async function buildFullPreviewHtml() {
   html = html.replace(/\s*<link rel="manifest" href="\/manifest\.webmanifest">\n?/, '\n');
   html = html.replace('href="/chat"', 'href="https://ribit.hopetohelp.net/chat"')
     .replace('href="/account"', 'href="https://ribit.hopetohelp.net/account"')
-    .replace('href="/app.html"', 'href="https://ribit.hopetohelp.net/app.html"')
+    .replace(' src="/app.html?home=1"', '')
     .replace('href="/download"', 'href="https://ribit.hopetohelp.net/download"')
     .replace('href="/download/windows"', 'href="https://ribit.hopetohelp.net/download/windows"');
   html = html.replace('class="brand-logo" href="/"', 'class="brand-logo" href="#landing"');
@@ -210,8 +210,8 @@ export async function buildFullPreviewHtml() {
   );
   js = replaceRequired(
     js,
-    "if (event.source !== frame.contentWindow || event.origin !== location.origin) return;",
-    "if (event.source !== frame.contentWindow || (event.origin !== location.origin && event.origin !== 'null')) return;",
+    "if ((!fromHome && event.source !== frame.contentWindow) || event.origin !== location.origin) return;",
+    "if ((!fromHome && event.source !== frame.contentWindow) || (event.origin !== location.origin && event.origin !== 'null')) return;",
     'device message origin check',
   ).replace("    if (event.data === 'ribit:account-page') location.assign('/account');", '')
     .replace("    if (event.data === 'ribit:support-page') location.assign('/chat');", '');
@@ -224,7 +224,7 @@ export async function buildFullPreviewHtml() {
   html = replaceRequired(
     html,
     '<script src="/preview.js" defer></script>',
-    `<script>\n${escapeInlineScript(inlineAppPayload)}\n${escapeInlineScript(js)}\n</script>`,
+    `<script>\n${escapeInlineScript(inlineAppPayload)}\n${escapeInlineScript(js)}\ndocument.getElementById('home-app').srcdoc = window.__RIBIT_APP_HTML__;\n</script>`,
     'preview.js script',
   );
 

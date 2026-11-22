@@ -1724,6 +1724,11 @@
     }
   } else showEditor();
   openSharedCalculation();
+  if (hosted && query.get('home') === '1' && window !== window.parent) {
+    window.addEventListener('storage', function (event) {
+      if (event.key === 'ribit-member-active') location.reload();
+    });
+  }
   if (cloudAvailable) {
     window.addEventListener('online', function () {
       if (state.view === 'saved') loadSaved();

@@ -63,7 +63,7 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
   place-items: center;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: clamp(24px, 6vw, 80px);
+  padding: clamp(16px, 3vw, 52px);
   color: #f6f2ff;
   background:
     radial-gradient(ellipse at 82% 30%, #28204e 0%, transparent 53%),
@@ -72,38 +72,49 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 
 .landing-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(330px, 1fr);
-  align-items: center;
-  gap: clamp(28px, 7vw, 105px);
-  width: min(100%, 1130px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "intro app" "entry app";
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  gap: clamp(16px, 2.6vw, 36px);
+  width: min(100%, 1320px);
 }
-#landing .intro { padding-block: 18px 0; min-width: 0; }
+#landing .intro { grid-area: intro; min-width: 0; }
+.entry-panel { grid-area: entry; }
+.home-app {
+  grid-area: app;
+  position: sticky;
+  inset-block-start: 16px;
+  height: clamp(600px, 87dvh, 920px);
+  overflow: hidden;
+}
+.home-app iframe { position: static; width: 100%; height: 100%; }
 .brand-heading {
-  display: flex; flex-direction: column; align-items: center; text-align: center;
+  display: flex; justify-content: center; align-items: center; text-align: center;
   gap: clamp(10px, 1.6vw, 21px);
 }
 .brand-icon {
   display: block;
   flex: none;
-  width: clamp(132px, 15.9vw, 228px);
+  width: clamp(50px, 6vw, 88px);
   height: auto;
   border-radius: 50%;
   border: 1px solid #b8a6ed85;
   box-shadow: 0 0 30px #ad8eff42;
 }
-#landing h1 { margin: 0; font-size: clamp(2.65rem, 5.4vw, 5.5rem); line-height: 1.04; letter-spacing: -.055em; }
+#landing h1 { margin: 0; font-size: clamp(1.8rem, 4.1vw, 4.5rem); line-height: 1.04; letter-spacing: -.055em; }
 #landing h1 span { color: #e0bfff; }
-#landing .intro-copy { text-align: center; color: #d2cde5; font-size: clamp(1rem, 1.55vw, 1.25rem); margin-block: 18px 0; }
+#landing .intro-copy { text-align: center; color: #d2cde5; font-size: clamp(1rem, 1.55vw, 1.25rem); margin-block: 12px 0; }
 
 .intro-copy span { display: block; }
 
-.entry-panel {
-  padding: clamp(16px, 2.6vw, 32px);
+.entry-panel, .home-app {
   background: linear-gradient(148deg, #242134ec, #131523f5);
   border: 1px solid #9181c052;
   border-radius: 26px;
   box-shadow: 0 30px 80px #0007, inset 0 1px #e4d8ff14;
 }
+.entry-panel { padding: clamp(16px, 2.6vw, 32px); }
 .install-options { display: grid; gap: 10px; }
 .install-options .primary {
   width: 100%;
@@ -123,7 +134,7 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 .install-options .primary-centered { justify-content: center; text-align: center; }
 .install-options .primary-accent { border-color: #aa92d1; }
 .install-options :is(a, button, summary).primary:hover,
-.entry-drawer[open] > .primary, .display-modes .primary[aria-expanded="true"] { border-color: #cbb2fb; background: #393052; }
+.entry-drawer[open] > .primary, .drawer-content .primary[aria-expanded="true"] { border-color: #cbb2fb; background: #393052; }
 .entry-drawer { margin: 0; min-width: 0; }
 .install-count {
   flex: none;
@@ -150,8 +161,6 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 .drawer-content p { font-size: .9375rem; }
 .drawer-content p:first-child { margin-top: 0; }
 .drawer-content p:last-child { margin-bottom: 0; }
-.display-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-.drawer-content .display-modes .primary { min-height: 44px; padding: 7px 8px; }
 #app-display-settings { margin-block-start: 14px; }
 .drawer-content .sizes { margin: 0; }
 .drawer-content button { border-color: #8b77b07d; background: #252239; }
@@ -161,11 +170,13 @@ iframe { display: block; border: 0; transform-origin: left top; position: absolu
 #scale { max-width: 100%; }
 
 @media (max-width: 850px) {
-  .landing-layout { grid-template-columns: minmax(0, 1fr); max-width: 505px; gap: 22px; }
-  #landing .intro { padding: 0; }
-  #landing h1 { font-size: clamp(1.85rem, 11.2vw, 3.9rem); }
-  .brand-icon { width: clamp(126px, 33vw, 192px); }
-  #landing .intro-copy { margin-block-start: 12px; }
+  .landing-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "intro" "app" "entry";
+    max-width: 580px;
+  }
+  .home-app { position: static; height: clamp(480px, 76svh, 720px); }
+  #landing h1 { font-size: clamp(1.8rem, 7.4vw, 3.2rem); }
 }
 @media (max-width: 360px) {
   .install-options .primary { min-height: 70px; }
